@@ -71,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: const SettingsPanel(),
       body: Stack(
         children: [
+          // 1. 地圖層 (最底層)
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -98,11 +99,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     userAgentPackageName: 'com.youbike.android',
                   ),
                 ),
-              // 回歸穩定實作：使用 MarkerLayer 而非 ClusterLayer 以確保 100% 編譯成功
               MarkerLayer(markers: appState.stationMarkers),
             ],
           ),
 
+          // 2. 底部面板 (位於地圖之上，但在 FAB 之下)
+          _buildBottomPanel(context, appState),
+
+          // 3. 功能按鈕 (最頂層，確保不會被面板蓋住)
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             left: 20,
@@ -118,19 +122,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           Positioned(
-            bottom: 120,
+            bottom: 100,
             right: 20,
-            child: Builder(
-              builder: (context) => FloatingActionButton.small(
-                heroTag: 'settings',
-                backgroundColor: AppColors.primary,
-                onPressed: () => Scaffold.of(context).openDrawer(),
-                child: const Icon(Icons.settings, color: Colors.white),
-              ),
+            child: FloatingActionButton.small(
+              heroTag: 'settings',
+              backgroundColor: AppColors.primary,
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              child: const Icon(Icons.settings, color: Colors.white),
             ),
           ),
 
-          _buildBottomPanel(context, appState),
+          // 更新按鈕：放在螢幕最底部，低於設定按鈕
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton.small(
+              heroTag: 'refresh',
+              backgroundColor: AppColors.primary,
+              onPressed: () => appState.updateRealtimeData(),
+              child: const Icon(Icons.autorenew, color: Colors.white),
+            ),
+          ),
+
           const LoadingOverlay(),
         ],
       ),
@@ -153,14 +166,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Column(
             children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 60, height: 6,
-                decoration: BoxDecoration(
-                  color: appState.isDarkMode ? Colors.grey[600] : Colors.grey[400],
-                  borderRadius: BorderRadius.circular(10),
+              // 強化把手：確保它是可見且不攔截手勢的
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 50, height: 5,
+                  decoration: BoxDecoration(
+                    color: appState.isDarkMode ? Colors.grey[600] : Colors.grey[400],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
+              
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
@@ -170,25 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       LanguageService.getText('title', appState.currentLang),
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    FilledButton.tonal(
-                      onPressed: () => appState.updateRealtimeData(),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary.withOpacity(0.2),
-                        foregroundColor: AppColors.primary,
-                        shape: const StadiumBorder(),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.autorenew, size: 16),
-                          const SizedBox(width: 8),
-                          Text(
-                            "${appState.countdown} ${LanguageService.getText('update_countdown', appState.currentLang)}",
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // 將原本的更新按鈕移至最底層 FAB
                   ],
                 ),
               ),

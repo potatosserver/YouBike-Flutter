@@ -29,7 +29,7 @@ class AppState extends ChangeNotifier {
     'tainan': LatLng(22.99230083082, 120.18509419659),
     'kaohsiung': LatLng(22.631442, 120.301890),
     'pingtung': LatLng(22.683036253664, 120.48790854724),
-    'taitung': LatLng(22.755711056126138, 121.15035332587574),
+    'taitung': LatLng(22.755711056126138, 121.150353325875도),
     'custom': LatLng(22.631442, 120.301890),
   };
 
@@ -42,7 +42,7 @@ class AppState extends ChangeNotifier {
   List<Station> _allStations = [];
   List<Station> _searchResults = [];
   List<Marker> _stationMarkers = [];
-  bool _showOnlyAvailable = false; // 翻譯自 JS 的過濾邏輯
+  bool _showOnlyAvailable = false;
   
   int _countdown = 60;
   Timer? _refreshTimer;
@@ -63,16 +63,28 @@ class AppState extends ChangeNotifier {
       : (regionCoordinates[_currentRegion] ?? regionCoordinates['kaohsiung']!);
 
   AppState() {
-    _initSettings();
-    _startRefreshCycle();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      // 並行執行設定加載與數據加載
+      await Future.wait([
+        _initSettings(),
+        loadBaseStations(),
+      ]);
+    } catch (e) {
+      debugPrint("Initialization error: $e");
+    } finally {
+      _startRefreshCycle();
+      notifyListeners();
+    }
   }
 
   Future<void> _initSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _currentLang = prefs.getString('lang') ?? 'zh';
     _isDarkMode = prefs.getBool('darkMode') ?? false;
-    await loadBaseStations();
-    notifyListeners();
   }
 
   Future<void> loadBaseStations() async {
@@ -167,14 +179,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 模仿 locationTracker.js: 實作即時追蹤
   Future<void> toggleUserTracking(bool enable) async {
     _isFollowingUser = enable;
     if (enable) {
       try {
         final status = await _locationService.requestPermission();
         if (status == LocationPermissionStatus.granted) {
-          // 開始監聽位置流
           _locationSubscription?.cancel();
           _locationSubscription = _locationService.getPositionStream().listen((position) {
             _currentRegion = 'custom';
@@ -183,7 +193,6 @@ class AppState extends ChangeNotifier {
           });
         } else {
           _isFollowingUser = false;
-          // 這裡會在 UI 層觸發 PermissionModal
         }
       } catch (e) {
         _isFollowingUser = false;
@@ -193,11 +202,6 @@ class AppState extends ChangeNotifier {
       _locationSubscription?.cancel();
     }
     notifyListeners();
-  }
-
-  // 保留此方法以兼容舊版 UI 呼叫，但內部導向 toggleUserTracking
-  Future<void> updateUserLocation() async {
-    await toggleUserTracking(true);
   }
 
   void setRegion(String region) {
