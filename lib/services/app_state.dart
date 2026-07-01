@@ -70,12 +70,10 @@ class AppState extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      await Future.wait([
-        _initSettings(),
-        loadBaseStations(),
-      ]);
+      await _initSettings();
+      await loadBaseStations();
     } catch (e) {
-      debugPrint("Critical Initialization Error: $e");
+      debugPrint("Critical Init Error: $e");
     } finally {
       _startRefreshCycle();
       _isLoading = false;
@@ -96,7 +94,9 @@ class AppState extends ChangeNotifier {
       await updateRealtimeData();
       _generateMarkers();
     } catch (e) {
-      debugPrint("Error loading base stations: $e");
+      debugPrint("Error loading stations: $e");
+    } finally {
+      notifyListeners();
     }
   }
 
@@ -111,7 +111,7 @@ class AppState extends ChangeNotifier {
       _generateMarkers();
       notifyListeners();
     } catch (e) {
-      debugPrint("Error updating vehicle data: $e");
+      debugPrint("Error updating realtime data: $e");
     }
   }
 
@@ -204,8 +204,6 @@ class AppState extends ChangeNotifier {
 
   void setRegion(String region) {
     _currentRegion = region;
-    // 當切換地區時，應立即重新加載該地區的站牌 (如果 API 支持) 
-    // 這裡我們目前是全量加載，所以只需更新中心點
     notifyListeners();
   }
 
