@@ -14,8 +14,8 @@ class StationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context, listen: false);
     
-    // Fix: Use non-const Distance() and ensure correct import
-    final distance = const Distance().as(
+    // Fix: Remove 'const' from Distance() and ensure correct types
+    final distance = Distance().as(
       LengthUnit.Meter, 
       LatLng(station.lat, station.lng), 
       appState.center
