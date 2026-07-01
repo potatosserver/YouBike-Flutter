@@ -42,6 +42,7 @@ class AppState extends ChangeNotifier {
   List<Station> _allStations = [];
   List<Station> _searchResults = [];
   List<Marker> _stationMarkers = [];
+  bool _showOnlyAvailable = false; // 翻譯自 JS 的過濾邏輯
   
   int _countdown = 60;
   Timer? _refreshTimer;
@@ -104,8 +105,21 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  bool get showOnlyAvailable => _showOnlyAvailable;
+
+  void toggleAvailableOnly(bool value) {
+    _showOnlyAvailable = value;
+    _generateMarkers();
+    notifyListeners();
+  }
+
   void _generateMarkers() {
-    _stationMarkers = _allStations.map((s) {
+    _stationMarkers = _allStations.where((s) {
+      if (_showOnlyAvailable) {
+        return (s.availableBikes + s.availableElectricBikes) > 0;
+      }
+      return true;
+    }).map((s) {
       return Marker(
         point: LatLng(s.lat, s.lng),
         width: 36,

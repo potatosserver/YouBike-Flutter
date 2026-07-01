@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/language_service.dart';
@@ -8,6 +9,8 @@ import '../widgets/app_theme.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/settings_panel.dart';
 import '../widgets/permission_modal.dart';
+import '../widgets/route_detail_panel.dart';
+import '../models/station.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final LocationService _locationService = LocationService();
+  final MapController _mapController = MapController();
 
   Future<void> _handleLocationToggle(bool enable) async {
     final appState = Provider.of<AppState>(context, listen: false);
@@ -44,6 +48,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _onStationSelected(Station s) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    appState.focusStation(s);
+    
+    _mapController.move(LatLng(s.lat, s.lng), 16.0);
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => RouteDetailPanel(
+        destination: s.nameTw,
+        steps: ["這是模擬的路徑步驟 1: 從目前位置出發", "步驟 2: 沿著主要道路直行", "步驟 3: 到達 ${s.nameTw} 站牌"],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -52,8 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: const SettingsPanel(),
       body: Stack(
         children: [
-          // 1. 地圖層
           FlutterMap(
+            mapController: _mapController,
             options: MapOptions(
               initialCenter: appState.center,
               initialZoom: 15.0,
@@ -66,11 +87,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.youbike.android',
               ),
+              if (appState.isDarkMode)
+                ColorFiltered(
+                  colorFilter: const ColorFilter.matrix([
+                    -1,  0,  0, 0, 255,
+                     0, -1,  0, 0, 255,
+                     0,  0, -1, 0, 255,
+                     0,  0,  0, 1, 0,
+                  ]),
+                  child: TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.youbike.android',
+                  ),
+                ),
               MarkerLayer(markers: appState.stationMarkers),
             ],
           ),
 
-          // 2. 定位按鈕 -> 移至左上角 (模仿原版)
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             left: 20,
@@ -85,9 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 3. 設定按鈕 -> 移至右下角
           Positioned(
-            bottom: 120, // 位於搜尋面板上方
+            bottom: 120,
             right: 20,
             child: Builder(
               builder: (context) => FloatingActionButton.small(
@@ -99,10 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 4. 底部面板 (包含重新整理按鈕 + 搜尋)
           _buildBottomPanel(context, appState),
-
-          // 5. 啟動遮罩
           const LoadingOverlay(),
         ],
       ),
@@ -125,18 +154,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Column(
             children: [
-              // 拖拽把手 (強化視覺)
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 50,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey[400],
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                width: 50, height: 5,
+                decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(10)),
               ),
-              
-              // 重新整理按鈕 (移至底部面板頂端)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
@@ -168,18 +190,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-
-              // 搜尋框
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: LanguageService.getText('search_placeholder', appState.currentLang),
                     prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
                     filled: true,
                     fillColor: appState.isDarkMode ? Colors.black26 : Colors.grey[100],
                   ),
@@ -187,8 +204,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              
-              // 結果列表 (完全還原卡片樣式)
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
@@ -206,10 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         leading: Container(
                           padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
                           child: const Icon(Icons.directions_bike, color: AppColors.primary, size: 20),
                         ),
                         title: Text(
@@ -221,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(color: Colors.grey[600], fontSize: 13),
                         ),
                         trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => appState.focusStation(s),
+                        onTap: () => _onStationSelected(s),
                       ),
                     );
                   },
