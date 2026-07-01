@@ -255,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: const Icon(Icons.directions_bike, color: AppColors.primary, size: 20),
                     ),
                     title: Text(
-                      appState.currentLang == 'en' ? s.nameEn : s.//nameTw,
+                      appState.currentLang == 'en' ? s.nameEn : s.nameTw,
                       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                     ),
                     subtitle: Text(
