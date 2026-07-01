@@ -12,6 +12,7 @@ import '../widgets/settings_panel.dart';
 import '../widgets/permission_modal.dart';
 import '../widgets/route_detail_panel.dart';
 import '../models/station.dart';
+import 'debug_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final LocationService _locationService = LocationService();
   final MapController _mapController = MapController();
   final PanelController _panelController = PanelController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   Future<void> _handleLocationToggle(bool enable) async {
     final appState = Provider.of<AppState>(context, listen: false);
@@ -71,7 +73,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
 
-    // 同步地圖中心點 (實作定位跳轉)
     WidgetsBinding.instance.addPostFrameCallback((_) {
        if(appState.isFollowingUser) {
          _mapController.move(appState.center, 15.0);
@@ -79,86 +80,79 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     return Scaffold(
+      key: _scaffoldKey, // 使用 GlobalKey 確保能開啟 Drawer
       drawer: const SettingsPanel(),
-      body: Stack(
-        children: [
-          // 1. 底部面板層 (最底層)
-          SlidingUpPanel(
-            controller: _panelController,
-            minHeight: MediaQuery.of(context).size.height * 0.2,
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            panel: _buildPanelContent(context, appState),
-            body: Container(), // body 留空，讓地圖層獨立
-          ),
-
-          // 2. 地圖層 (位於面板之下，但-在按鈕之下)
-          // 注意：為了讓地圖能被操作，我們將地圖放在 Stack 的獨立層
-          Positioned.fill(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: appState.center,
-                initialZoom: 15.0,
-                onPositionChanged: (position, hasGesture) {
-                  if (hasGesture) appState.setFollowingUser(false);
-                },
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.youbike.android',
+      body: SlidingUpPanel(
+        controller: _panelController,
+        minHeight: MediaQuery.of(context).size.height * 0.2,
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        panel: _buildPanelContent(context, appState),
+        body: Stack(
+          children: [
+            // 1. 地圖層 (最底)
+            Positioned.fill(
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: appState.center,
+                  initialZoom: 15.0,
+                  onPositionChanged: (position, hasGesture) {
+                    if (hasGesture) appState.setFollowingUser(false);
+                  },
                 ),
-                if (appState.isDarkMode)
-                  ColorFiltered(
-                    colorFilter: const ColorFilter.matrix([
-                      -1,  0,  0, 0, 255,
-                       0, -1,  0, 0, 255,
-                       0,  0, -1, 0, 255,
-                       0,  0,  0, 1, 0,
-                    ]),
-                    child: TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.youbike.android',
-                    ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.youbike.android',
                   ),
-                MarkerLayer(markers: appState.stationMarkers),
-              ],
-            ),
-          ),
-
-          // 3. 功能按鈕層 (絕對頂層 - 永遠不被遮擋)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 20,
-            child: FloatingActionButton.small(
-              heroTag: 'location',
-              backgroundColor: AppColors.primary,
-              onPressed: () => _handleLocationToggle(true),
-              child: Icon(
-                Icons.my_location,
-                color: appState.isFollowingUser ? Colors.white : Colors.black54,
+                  if (appState.isDarkMode)
+                    ColorFiltered(
+                      colorFilter: const ColorFilter.matrix([
+                        -1,  0,  0, 0, 255,
+                         0, -1,  0, 0, 255,
+                         0,  0, -1, 0, 255,
+                         0,  0,  0, 1, 0,
+                      ]),
+                      child: TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.youbike.android',
+                      ),
+                    ),
+                  MarkerLayer(markers: appState.stationMarkers),
+                ],
               ),
             ),
-          ),
 
-          Positioned(
-            bottom: 100,
-            right: 20,
-            child: FloatingActionButton.small(
-              heroTag: 'settings',
-              backgroundColor: AppColors.primary,
-              onPressed: () => Scaffold.of(context).openDrawer(),
-              child: const Icon(Icons.settings, color: Colors.white),
+            // 2. 功能按鈕層 (頂層)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              left: 20,
+              child: FloatingActionButton.small(
+                heroTag: 'location',
+                backgroundColor: AppColors.primary,
+                onPressed: () => _handleLocationToggle(true),
+                child: Icon(
+                  Icons.my_location,
+                  color: appState.isFollowingUser ? Colors.white : Colors.black54,
+                ),
+              ),
             ),
-          ),
 
-          // 更新按鈕：位於螢幕正下方中央
-          Positioned(
-            bottom: 20,
-            left: 0,
-            right: 0,
-            child: Center(
+            Positioned(
+              bottom: 100,
+              right: 20,
+              child: FloatingActionButton.small(
+                heroTag: 'settings',
+                backgroundColor: AppColors.primary,
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(), // 使用 GlobalKey
+                child: const Icon(Icons.settings, color: Colors.white),
+              ),
+            ),
+
+            Positioned(
+              bottom: 20,
+              right: 20,
               child: FloatingActionButton.small(
                 heroTag: 'refresh',
                 backgroundColor: AppColors.primary,
@@ -166,10 +160,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Icon(Icons.autorenew, color: Colors.white),
               ),
             ),
-          ),
+            
+            // 偵錯按鈕 (左下角)
+            Positioned(
+              bottom: 20,
+              left: 20,
+              child: FloatingActionButton.small(
+                heroTag: 'debug',
+                backgroundColor: Colors.redAccent,
+                onPressed: () => Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (context) => const DebugScreen())
+                ),
+                child: const Icon(Icons.bug_report, color: Colors.white),
+              ),
+            ),
 
-          const LoadingOverlay(),
-        ],
+            const LoadingOverlay(),
+          ],
+        ),
       ),
     );
   }
