@@ -70,8 +70,10 @@ class AppState extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      await _initSettings();
-      await loadBaseStations();
+      await Future.wait([
+        _initSettings(),
+        loadBaseStations(),
+      ]);
     } catch (e) {
       debugPrint("Critical Init Error: $e");
     } finally {

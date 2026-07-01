@@ -11,9 +11,14 @@ class ApiService {
     final response = await http.get(Uri.parse(stationsUrl));
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => Station.fromJson(json)).toList();
+      
+      // 使用容錯解析：過濾掉所有返回 null 的無效站牌
+      return data
+          .map((json) => Station.fromJson(json as Map<String, dynamic>))
+          .whereType<Station>() 
+          .toList();
     } else {
-      throw Exception('Failed to load station base data');
+      throw Exception('Failed to load station base data: ${response.statusCode}');
     }
   }
 
@@ -23,7 +28,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      throw Exception('Failed to load real-time vehicle data');
+      throw Exception('Failed to load real-time vehicle data: ${response.statusCode}');
     }
   }
 }
