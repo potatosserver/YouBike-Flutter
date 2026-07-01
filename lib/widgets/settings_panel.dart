@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/language_service.dart';
+import '../widgets/app_theme.dart';
 
 class SettingsPanel extends StatelessWidget {
   const SettingsPanel({super.key});
@@ -10,7 +11,7 @@ class SettingsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     
-    return Drawer( // 確保封裝在 Drawer 中以支持 Scaffold.openDrawer()
+    return Drawer( 
       child: NavigationDrawer(
         children: [
           Padding(
@@ -18,7 +19,7 @@ class SettingsPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.settings, size: 48, color: AppColors.primary),
+                Icon(Icons.settings, size: 48, color: AppColors.primary), // 移除 const，因為 AppColors.primary 是 static const
                 const SizedBox(height: 16),
                 Text(
                   "系統設定",
@@ -28,7 +29,6 @@ class SettingsPanel extends StatelessWidget {
             ),
           ),
           const Divider(),
-          // 地區選擇
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: ListTile(
@@ -45,7 +45,6 @@ class SettingsPanel extends StatelessWidget {
               ),
             ),
           ),
-          // 語言選擇
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: ListTile(
@@ -60,7 +59,6 @@ class SettingsPanel extends StatelessWidget {
               ),
             ),
           ),
-          // 深色模式
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: SwitchListTile(
