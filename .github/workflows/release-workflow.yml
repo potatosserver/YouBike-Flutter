@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'The version to release (e.g., v1.2.0)'
+        description: 'The version to release (e.g., v1.0.0)'
         required: true
         type: string
 
@@ -12,43 +12,18 @@ jobs:
   build-and-release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed to push changes and create a release
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # Fetch all history for proper commit analysis
+          fetch-depth: 0
 
       - name: Configure Git User
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Smart Update CHANGELOG.md
-        run: |
-          RAW_VERSION="${{ github.event.inputs.version }}"
-          VERSION_NAME=$(echo "$RAW_VERSION" | sed 's/^[vV]//')
-          if grep -q "## \[$VERSION_NAME\]" CHANGELOG.md; then
-            echo "Changelog entry for $VERSION_NAME already exists. Skipping."
-          else
-            echo "Creating default changelog entry for $VERSION_NAME."
-            TODAY=$(date +'%Y-%m-%d')
-            
-            # Create a temporary file with the new content
-            echo -e "## [$VERSION_NAME] - $TODAY\\n\\n- 更新功能並修復了一些錯誤\\n\\n---\\n" > new_entry.txt
-            
-            # Split the existing changelog
-            # Use a safer way to handle headers if the file is short
-            head -n 5 CHANGELOG.md > header.txt || true
-            tail -n +6 CHANGELOG.md > old_body.txt || true
-            
-            # Rebuild the file with the new entry at the top
-            cat header.txt new_entry.txt old_body.txt > CHANGELOG.md
-            
-            # Clean up temporary files
-            rm new_entry.txt old_body.txt header.txt
-          fi
 
       - name: Bump Version in pubspec.yaml
         run: |
@@ -60,14 +35,12 @@ jobs:
           echo "Bumping version to $NEW_VERSION"
           sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
 
-      - name: Commit and Push Changes
+      - name: Commit and Push Version Bump
         run: |
-          git add pubspec.yaml CHANGELOG.md
+          git add pubspec.yaml
           if ! git diff --staged --quiet; then
-            git commit -m "chore(release): Release ${{ github.event.inputs.version }}"
+            git commit -m "chore(release): bump version to ${{ github.event.inputs.version }}"
             git push
-          else
-            echo "No changes to commit."
           fi
 
       - name: Set up JDK 17
@@ -85,54 +58,27 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Generate L10n
-        run: flutter gen-l10n
-
-      - name: Decode Keystore and Google Services
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          FIREBASE_GOOGLE_SERVICES_BASE64: ${{ secrets.FIREBASE_GOOGLE_SERVICES_BASE64 }}
+      - name: Build Release APK
         run: |
-          echo "${KEYSTORE_BASE64}" | base64 --decode > android/upload-keystore.jks
-          echo "storeFile=upload-keystore.jks" > android/key.properties
-          echo "keyAlias=${KEY_ALIAS}" >> android/key.properties
-          echo "keyPassword=${KEY_PASSWORD}" >> android/key.properties
-          echo "storePassword=${STORE_PASSWORD}" >> android/key.properties
-          
-          # 解決 google-services.json 缺失之問題
-          echo "${FIREBASE_GOOGLE_SERVICES_BASE64}" | base64 --decode > android/app/google-services.json
+          # Use debug signature if secrets are missing, otherwise use release
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "No keystore found, building with debug signature..."
+            flutter build apk --debug
+          else
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
+            echo "storeFile=upload-keystore.jks" > android/key.properties
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+            echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
+            flutter build apk --release
+          fi
 
-      - name: Build App Bundle and APK
-        run: |
-          flutter build appbundle --flavor googlePlay --obfuscate --split-debug-info=./build/app/outputs/debug-info --dart-define=UPDATE_CHANNEL=google_play
-          flutter build apk --flavor github --split-per-abi --obfuscate --split-debug-info=./build/app/outputs/debug-info --dart-define=UPDATE_CHANNEL=github
-
-      - name: Re-pull Latest CHANGELOG.md
-        run: |
-          git pull origin main
-          echo "Re-pulled latest CHANGELOG.md to capture user edits during build."
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: WalkGo-Release-AAB
-          path: build/app/outputs/bundle/googlePlayRelease/app-googlePlay-release.aab
-          retention-days: 7
-
-      - name: Extract Release Notes from CHANGELOG
-        run: |
-          RAW_VERSION="${{ github.event.inputs.version }}"
-          VERSION_NAME=$(echo "$RAW_VERSION" | sed 's/^[vV]//')
-          awk -v ver="[$VERSION_NAME]" '/^## / { if (p) { exit }; if ($2 == ver) { p=1; next } } p && !/^---/' CHANGELOG.md > current_release_notes.txt
-
-      - name: Create GitHub Release and Upload APKs
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.version }}
-          body_path: "current_release_notes.txt"
+          name: Release ${{ github.event.inputs.version }}
+          body: "Automated release of YouBike Android version ${{ github.event.inputs.version }}"
           files: build/app/outputs/flutter-apk/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

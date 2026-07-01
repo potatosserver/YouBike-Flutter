@@ -2,12 +2,6 @@ name: Build and Test APK
 
 on:
   workflow_dispatch:
-    inputs:
-      update_channel:
-        description: 'Value for UPDATE_CHANNEL (e.g., google_play). Leave empty to omit.'
-        required: false
-        default: ''
-        type: string
 
 jobs:
   build:
@@ -31,41 +25,8 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Generate L10n
-        run: flutter gen-l10n
-
-      - name: Decode Keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-        run: |
-          echo "${KEYSTORE_BASE64}" | base64 --decode > android/upload-keystore.jks
-          echo "storeFile=upload-keystore.jks" > android/key.properties
-          echo "keyAlias=${KEY_ALIAS}" >> android/key.properties
-          echo "keyPassword=${KEY_PASSWORD}" >> android/key.properties
-          echo "storePassword=${STORE_PASSWORD}" >> android/key.properties
-          
-          echo "${{ secrets.FIREBASE_GOOGLE_SERVICES_BASE64 }}" | base64 --decode > android/app/google-services.json
-
-
       - name: Build APK
-        run: |
-          FLAVOR="github"
-          DART_DEFINE_ARGS=""
-          CHANNEL="${{ github.event.inputs.update_channel }}"
-          
-          if [[ "$CHANNEL" == "google_play" ]]; then
-            FLAVOR="googlePlay"
-            DART_DEFINE_ARGS="--dart-define=UPDATE_CHANNEL=google_play"
-          elif [[ -n "$CHANNEL" ]]; then
-            # Default to 'direct' flavor for other channels, but still pass the dart-define
-            FLAVOR="github"
-            DART_DEFINE_ARGS="--dart-define=UPDATE_CHANNEL=$CHANNEL"
-          fi
-          
-          flutter build apk --flavor $FLAVOR --split-per-abi --obfuscate --split-debug-info=./build/app/outputs/debug-info $DART_DEFINE_ARGS
+        run: flutter build apk --debug
 
       - name: Upload Test APKs
         uses: actions/upload-artifact@v7
