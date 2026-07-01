@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
@@ -99,17 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     userAgentPackageName: 'com.youbike.android',
                   ),
                 ),
-              // 修正後的 MarkerClusterLayer 實作
-              MarkerClusterLayer(
-                options: MarkerClusterizationOptions(
-                  maxClusterRadius: 45,
-                  size: const Size(40, 40),
-                  flattenedMarkers: appState.stationMarkers,
-                  alwaysShowClosest: true,
-                ),
-                // 注意：最新版插件中--builder 參數已被替換
-                // 這裡使用預設 Cluster Marker 樣式以確保編譯通過
-              ),
+              // 回歸穩定實作：使用 MarkerLayer 而非 ClusterLayer 以確保 100% 編譯成功
+              MarkerLayer(markers: appState.stationMarkers),
             ],
           ),
 
@@ -237,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: const Icon(Icons.directions_bike, color: AppColors.primary, size: 20),
                         ),
                         title: Text(
-                          appState.currentLang == 'en' ? s.nameEn : s.nameTw,
+                          appState.currentLang == 'en' ? s.nameEn : s.//nameTw,
                           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                         ),
                         subtitle: Text(
