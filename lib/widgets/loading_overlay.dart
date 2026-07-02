@@ -1,84 +1,91 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
-import '../services/notification_service.dart';
-import '../widgets/app_theme.dart';
 
 class LoadingOverlay extends StatefulWidget {
-  const LoadingOverlay({super.key});
+  final bool isVisible;
+  final int progress;
+  final String notice;
+  final bool isOffline;
+
+  const LoadingOverlay({
+    super.key, 
+    required this.isVisible, 
+    required this.progress, 
+    required this.notice,
+    this.isOffline = false,
+  });
 
   @override
   State<LoadingOverlay> createState() => _LoadingOverlayState();
 }
 
 class _LoadingOverlayState extends State<LoadingOverlay> {
-  double _progress = 0.0;
-  late Timer _timer;
-  String _currentNotice = "";
-
-  @override
-  void initState() {
-    super.initState();
-    _currentNotice = NotificationService.getRandomNotice();
-    _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      setState(() {
-        if (_progress < 1.0) {
-          _progress += 0.01;
-        } else {
-          timer.cancel();
-        }
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    if (!appState.isLoading) return const SizedBox.shrink();
+    if (!widget.isVisible) return const SizedBox.shrink();
 
-    return Container(
-      color: appState.isDarkMode ? AppColors.bgDark : Colors.white,
-      width: double.infinity,
-      height: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(color: AppColors.primary),
-          const SizedBox(height: 20),
-          Text(
-            "${(_progress * 100).toInt()}%",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: appState.isDarkMode ? AppColors.textDark : AppColors.textLight,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            margin: const EdgeInsets.symmetric(horizontal: 40),
-            decoration: BoxDecoration(
-              color: appState.isDarkMode ? AppColors.cardDark : Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-            ),
-            child: Text(
-              _currentNotice,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: appState.isDarkMode ? AppColors.textDark : AppColors.textLight,
-              ),
-            ),
-          ),
-        ],
+    return Material(
+      color: Colors.white,
+      child: Center(
+        child: widget.isOffline 
+          ? _buildOfflineContent() 
+          : _buildLoadingContent(),
       ),
+    );
+  }
+
+  Widget _buildLoadingContent() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          "載入中：${widget.progress}%",
+          style: const TextStyle(fontSize: 24, color: Color(0xFF007BFF), fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            widget.notice,
+            style: const TextStyle(fontSize: 16, color: Colors.black87),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOfflineContent() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.wifi_off, size: 80, color: Colors.grey),
+        const SizedBox(height: 20),
+        const Text(
+          "請連接網路後重試",
+          style: TextStyle(fontSize: 24, color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 30),
+        FilledButton(
+          onPressed: () {
+            // Note: In a real app, this would trigger a reload of AppState
+            Provider.of<AppState>(context, listen: false).refreshStations();
+          },
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFFDCACB),
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          ),
+          child: const Text("重整"),
+        ),
+      ],
     );
   }
 }

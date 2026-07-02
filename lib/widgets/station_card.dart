@@ -1,32 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/station.dart';
+import '../services/app_state.dart';
+import '../widgets/app_theme.dart';
 
 class StationCard extends StatelessWidget {
   final Station station;
   final VoidCallback onTap;
+  final VoidCallback onNavigate;
 
   const StationCard({
     super.key, 
     required this.station, 
-    required this.onTap
+    required this.onTap,
+    required this.onNavigate,
   });
 
   @override
   Widget build(BuildContext context) {
-    // 從 variables.css 抄來的精確參數
-    const primaryColor = Color(0xFFE44D26); // --primary-color
-    const borderColor = Color(0xFFE0E0E0);    // --border-color
-    const bgColor = Color(0xFFFFFFFF);       // --bg-color
-    const secondaryTextColor = Color(0xFF757575); // --secondary-text-color
+    final appState = Provider.of<AppState>(context);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: bgColor,
+          color: appState.isDarkMode ? AppColors.cardDark : AppColors.cardLight,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1),
+          border: Border.all(color: Colors.grey[300]!, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -43,7 +44,7 @@ class StationCard extends StatelessWidget {
               children: [
                 Container(
                   width: 6,
-                  color: primaryColor,
+                  color: AppColors.primary,
                 ),
                 Expanded(
                   child: Padding(
@@ -56,36 +57,36 @@ class StationCard extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                station.nameTw,
+                                appState.currentLang == 'zh' ? station.nameTw : station.nameEn,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: primaryColor, // 站點名稱使用主色調
+                                  color: AppColors.primary,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            _buildActionButtons(),
+                            _buildActionButtons(appState),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "距離: ${station.distance} ${station.distanceUnit}",
+                          appState.currentLang == 'zh' ? "距離: ${station.distance} ${station.distanceUnit}" : "Distance: ${station.distance} ${station.distanceUnit}",
                           style: const TextStyle(
                             fontSize: 14,
-                            color: secondaryTextColor,
+                            color: Colors.grey,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "地址: ${station.addressTw}",
+                          appState.currentLang == 'zh' ? "地址: ${station.addressTw}" : "Address: ${station.addressEn}",
                           style: const TextStyle(
                             fontSize: 14,
-                            color: secondaryTextColor,
+                            color: Colors.grey,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _buildBikeInfoRow(),
+                        _buildBikeInfoRow(appState),
                       ],
                     ),
                   ),
@@ -98,36 +99,46 @@ class StationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(AppState appState) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          icon: const Icon(Icons.star_border, size: 20, color: Colors.grey),
-          onPressed: () {
-            // 收藏邏輯
-          },
+          icon: Icon(
+            appState.pinnedStationIds.contains(station.id) 
+              ? Icons.star 
+              : Icons.star_border, 
+            size: 20, 
+            color: appState.pinnedStationIds.contains(station.id) 
+              ? Colors.amber 
+              : Colors.grey,
+          ),
+          onPressed: () => appState.togglePinStation(station.id),
         ),
         IconButton(
           icon: const Icon(Icons.navigation, size: 20, color: Colors.grey),
-          onPressed: () {
-            // 導航邏輯
-          },
+          onPressed: onNavigate,
         ),
       ],
     );
   }
 
-  Widget _buildBikeInfoRow() {
+  Widget _buildBikeInfoRow(AppState appState) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("YouBike 2.0: ${station.availableBikes}", 
-          style: const TextStyle(fontSize: 14, color: Colors.black87)),
-        Text("YouBike 2.0E: ${station.availableElectricBikes}", 
-          style: const TextStyle(fontSize: 14, color: Colors.black87)),
-        Text("可停空位數: ${station.emptySpaces}", 
-          style: const TextStyle(fontSize: 14, color: Colors.black87)),
+        Text(
+          "${appState.currentLang == 'zh' ? 'YouBike 2.0' : 'YouBike 2.0'}: ${station.availableBikes}", 
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+        ),
+        Text(
+          "${appState.currentLang == 'zh' ? 'YouBike 2.0E' : 'YouBike 2.0E'}: ${station.availableElectricBikes}", 
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+        ),
+        Text(
+          "${appState.currentLang == 'zh' ? '可停空位數' : 'Available Slots'}: ${station.emptySpaces}", 
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+        ),
       ],
     );
   }

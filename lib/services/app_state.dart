@@ -15,14 +15,20 @@ class AppState extends ChangeNotifier {
   bool isDarkMode = false;
   bool useLocation = true;
   
+  // --- Loading State (Mirrors web loadingService.js) ---
+  bool isLoading = true;
+  int loadingProgress = 0;
+  String currentNotice = "";
+  bool isOffline = false;
+  
   // --- Pinned Stations ---
   Set<String> pinnedStationIds = {};
+
 
   // --- Location State ---
   LatLng center = const LatLng(22.6273, 120.3014); 
   bool isFollowingUser = false;
   bool hasObtainedRealLocation = false;
-  bool isLoading = true;
   
   // --- Data State ---
   List<Station> allStations = [];
@@ -233,7 +239,7 @@ class AppState extends ChangeNotifier {
             border: Border.all(color: Colors.white, width: 2),
             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
           ),
-          child: const Center(child: Icon(Icons.location_on, color: Colors.white, size: 20)),
+          child: const Center(child: Icon(Icons.directions_bike, color: Colors.white, size: 20)),
         ),
       ));
     }

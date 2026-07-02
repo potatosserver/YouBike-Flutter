@@ -5,8 +5,11 @@ import 'package:provider/provider.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import '../services/app_state.dart';
 import '../services/api_service.dart';
+import '../services/route_service.dart';
 import '../widgets/pulse_marker.dart';
 import '../widgets/station_card.dart';
+import '../widgets/route_detail_panel.dart';
+import '../widgets/loading_overlay.dart';
 import 'settings_page.dart';
 import 'debug_screen.dart';
 import '../models/station.dart';
@@ -104,6 +107,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showRoutePanel(Station station) async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    final routeService = RouteService();
+    
+    final steps = await routeService.getRoute(
+      appState.center, 
+      LatLng(station.lat, station.lng), 
+      appState.currentLang
+    );
+
+    if (!mounted) return;
+
+    if (steps.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appState.currentLang == 'zh' ? "找不到路線" : "Route not found"))
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => RouteDetailPanel(
+        steps: steps.map((s) => s.instruction).toList(),
+        destination: station.nameTw,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -176,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.white,
               child: Icon(
                 appState.isFollowingUser ? Icons.my_location : Icons.location_on,
-                color: appState.isFollowingUser ? Colors.blue : Colors.black87,
+                color: appState.isFollowingUser ? const Color(0xFF007BFF) : Colors.black87,
               ),
             ),
           ),
@@ -191,8 +223,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(builder: (context) => const SettingsPage()),
                 );
               },
-              backgroundColor: Colors.white,
-              child: const Icon(Icons.settings, color: Colors.black87),
+              backgroundColor: const Color(0xFFFDCACB),
+              child: const Icon(Icons.settings, color: Color(0xFF333333)),
             ),
           ),
           Positioned(
@@ -224,11 +256,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           if (appState.isLoading)
-            Container(
-              color: Colors.black.withValues(alpha: 0.3),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+            LoadingOverlay(
+              isVisible: appState.isLoading,
+              progress: appState.loadingProgress,
+              notice: appState.currentNotice,
+              isOffline: appState.isOffline,
             ),
         ],
       ),
@@ -290,6 +322,9 @@ class _HomeScreenState extends State<HomeScreen> {
             station: s,
             onTap: () {
               _mapController.move(LatLng(s.lat, s.lng), 16.0);
+            },
+            onNavigate: () {
+              _showRoutePanel(s);
             },
           ),
         );
