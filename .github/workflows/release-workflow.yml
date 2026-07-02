@@ -56,7 +56,9 @@ jobs:
           cache: true
 
       - name: Install Dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          flutter gen-l10n
 
       - name: Build Release APK
         run: |
