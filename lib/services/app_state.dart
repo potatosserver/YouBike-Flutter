@@ -152,24 +152,48 @@ class AppState extends ChangeNotifier {
     hasObtainedRealLocation = false;
   }
 
-  // --- Station Logic (RESTORED & CORRECTED) ---
+  // --- Station Logic (DEEP MERGE IMPLEMENTATION) ---
   
   Future<void> refreshStations() async {
     addLog("Refreshing stations for $currentRegion...");
     try {
       final api = ApiService();
-      // CORRECTED METHOD NAME: fetchAllStations
-      final stations = await api.fetchAllStations();
-      allStations = stations;
       
+      // 1. Fetch Base Station Data (Name, Address, Lat/Lng)
+      final baseStations = await api.fetchAllStations();
+      
+      // 2. Fetch Real-time Vehicle Data (Bike counts)
+      final realtimeData = await api.fetchRealtimeVehicles();
+      
+      // 3. MERGE DATA (Mirrors web apiYoubike.js)
+      allStations = baseStations.map((s) {
+        final vehicleInfo = realtimeData[s.id];
+        if (vehicleInfo != null && vehicleInfo is Map) {
+          s.availableBikes = int.tryParse(vehicleInfo['available']?.toString() ?? '0') ?? 0;
+          s.availableElectricBikes = int.tryParse(vehicleInfo['available_e']?.toString() ?? '0') ?? 0;
+          s.emptySpaces = int.tryParse(vehicleInfo['empty']?.toString() ?? '0') ?? 0;
+          s.totalBikes = s.availableBikes + s.emptySpaces;
+        }
+        return s;
+      }).toList();
+      
+      // 4. Generate Markers (Now with guaranteed data)
       stationMarkers = allStations.map((s) => fm.Marker(
         point: LatLng(s.lat, s.lng),
-        width: 40,
-        height: 40,
-        child: const Icon(Icons.location_on, color: Colors.red),
+        width: 30,
+        height: 30,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.red,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+          ),
+          child: const Center(child: Icon(Icons.location_on, color: Colors.white, size: 20)),
+        ),
       )).toList();
       
-      addLog("Successfully loaded ${allStations.length} stations.");
+      addLog("Successfully loaded and merged ${allStations.length} stations.");
       notifyListeners();
     } catch (e) {
       addLog("refreshStations Error: $e");
@@ -183,7 +207,6 @@ class AppState extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    // CLIENT-SIDE SEARCH (since ApiService has no search endpoint)
     searchResults = allStations.where((s) {
       return s.nameTw.contains(query) || s.addressTw.contains(query);
     }).toList();

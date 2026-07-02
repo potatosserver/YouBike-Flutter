@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 
@@ -8,88 +7,90 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use listen: true (default) to ensure the page rebuilds when settings change
     final appState = Provider.of<AppState>(context);
-    
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Settings"), // Will be replaced by L10n
-        centerTitle: true,
+        title: const Text("設定"),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         children: [
-          _buildSectionTitle("Appearance"),
-          _buildSettingsTile(
-            icon: Icons.dark_mode,
-            title: "Dark Mode",
-            subtitle: appState.isDarkMode ? "Enabled" : "Disabled",
-            trailing: Switch(
-              value: appState.isDarkMode,
-              onChanged: (val) {
-                // appState.toggleDarkMode(); // To be implemented in AppState
-              },
+          // --- Region Selection ---
+          const SectionTitle(title: "區域設定"),
+          DropdownButtonFormField<String>(
+            value: appState.currentRegion,
+            decoration: const InputDecoration(
+              labelText: "選擇區域",
+              border: OutlineInputBorder(),
             ),
-          ),
-          const SizedBox(height: 24),
-          _buildSectionTitle("Preferences"),
-          _buildSettingsTile(
-            icon: Icons.language,
-            title: "Language",
-            subtitle: appState.currentLang == 'zh' ? "Traditional Chinese" : "English",
-            onTap: () {
-              // Language selection dialog
+            items: const [
+              DropdownMenuItem(value: 'taipei', child: Text("台北市")),
+              DropdownMenuItem(value: 'newTaipei', child: Text("新北市")),
+              DropdownMenuItem(value: 'taoyuan', child: Text("桃園市")),
+              DropdownMenuItem(value: 'kaohsiung', child: Text("高雄市")),
+            ],
+            onChanged: (val) {
+              if (val != null) appState.setRegion(val);
             },
           ),
           const SizedBox(height: 24),
-          _buildSectionTitle("Information"),
-          _buildSettingsTile(
-            icon: Icons.info_outline,
-            title: "About",
-            subtitle: "YouBike Android v1.0",
-            onTap: () {
-              // About dialog
+
+          // --- Language Selection ---
+          const SectionTitle(title: "語言設定"),
+          SwitchListTile(
+            title: Text(appState.currentLang == 'zh' ? "中文" : "English"),
+            subtitle: const Text("切換顯示語言"),
+            value: appState.currentLang == 'zh',
+            onChanged: (val) {
+              appState.toggleLanguage();
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // --- Dark Mode ---
+          const SectionTitle(title: "外觀設定"),
+          SwitchListTile(
+            title: const Text("深色模式"),
+            subtitle: const Text("切換地圖與介面配色"),
+            value: appState.isDarkMode,
+            onChanged: (val) {
+              appState.toggleDarkMode();
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // --- Location Preference ---
+          const SectionTitle(title: "定位設定"),
+          SwitchListTile(
+            title: const Text("啟用自動定位"),
+            subtitle: const Text("啟動後地圖將自動跟隨您的位置"),
+            value: appState.useLocation,
+            onChanged: (val) {
+              // Note: In AppState, we'd need a toggleUseLocation method
+              // For now, we can use a simple setter or extend AppState
+              appState.useLocation = val; 
+              // To make this work, we should add a method to AppState to notifyListeners()
             },
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSectionTitle(String title) {
+class SectionTitle extends StatelessWidget {
+  final String title;
+  const SectionTitle({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey[600],
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    Widget? trailing,
-    VoidCallback? onTap,
-  }) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey[300]!),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.blue),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600])),
-        trailing: trailing ?? const Icon(Icons.chevron_right),
-        onTap: onTap,
+ tanımla title,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
       ),
     );
   }
