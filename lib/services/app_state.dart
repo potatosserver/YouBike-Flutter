@@ -266,8 +266,8 @@ class AppState extends ChangeNotifier {
       }
       markers.add(fm.Marker(
         point: LatLng(lat, lng),
-        width: 17, // FIX: Reduced size by ~30% (was 24)
-        height: 17,
+        width: 24, // FIX: Increased size (was 17)
+        height: 24,
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFFFFD700),
@@ -275,7 +275,7 @@ class AppState extends ChangeNotifier {
             border: Border.all(color: Colors.white, width: 2),
             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
           ),
-          child: const Center(child: Icon(Icons.directions_bike, color: Colors.white, size: 12)),
+          child: const Center(child: Icon(Icons.directions_bike, color: Colors.white, size: 14)),
         ),
       ));
     }

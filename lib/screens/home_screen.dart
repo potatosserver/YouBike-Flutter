@@ -174,9 +174,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           
-          // Location Button
+          // Location Button - FIXED: Moved to TOP LEFT per request
           Positioned(
-            bottom: 100,
+            top: 110,
             left: 20,
             child: FloatingActionButton.small(
               heroTag: 'loc_btn',
@@ -186,6 +186,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icons.my_location,
                 color: appState.isFollowingUser ? const Color(0xFF007BFF) : Colors.black87,
               ),
+            ),
+          ),
+
+          // Settings Button - FIXED: Restored
+          Positioned(
+            top: 110,
+            right: 20,
+            child: FloatingActionButton.small(
+              heroTag: 'settings_btn',
+              onPressed: () => Navigator.pushNamed(context, '/settings'),
+              backgroundColor: const Color(0xFFFDCACB),
+              child: const Icon(Icons.settings, color: Color(0xFF333333)),
             ),
           ),
           
@@ -220,6 +232,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+            ),
+          ),
+
+          // Station Card Panel - FIXED: Restored at the bottom
+          Positioned(
+            bottom: 70,
+            left: 0,
+            right: 0,
+            child: Center(
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        child: appState.allStations.isEmpty 
+                            ? const SizedBox.shrink()
+                            : StationCard(
+                                station: appState.allStations.first, 
+                                onTap: () => _showStationDetails(appState.allStations.first),
+                                onShowElectric: () => _showStationDetails(appState.allStations.first),
+                                onNavigate: () => _showRoutePanel(appState.allStations.first),
+                              ),
+                      ),
             ),
           ),
           
