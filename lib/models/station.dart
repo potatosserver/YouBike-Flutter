@@ -12,8 +12,12 @@ class Station {
   int availableBikes = 0;
   int availableElectricBikes = 0;
   int emptySpaces = 0;
-  int totalBikes = 0; // Added to fix 'totalBikes' getter error
+  int totalBikes = 0; 
 
+  // Distance data (calculated dynamically)
+  String distance = "0";
+  String distanceUnit = "m";
+  
   Station({
     required this.id,
     required this.nameTw,
@@ -53,7 +57,6 @@ class Station {
           ? int.tryParse(json['total_spaces'].toString()) ?? 0 
           : 0;
     } catch (e) {
-      print("Error parsing Station: $e");
       return null;
     }
   }

@@ -24,7 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleLocationPress() async {
     final appState = Provider.of<AppState>(context, listen: false);
     await appState.requestPermission();
-    
     if (appState.isFollowingUser) {
       appState.toggleFollowing();
     } else {
@@ -63,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-
     return Scaffold(
       key: _scaffoldKey,
       body: Stack(
@@ -123,7 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             panel: _buildSearchAndRecentPanel(appState),
           ),
-          
           Positioned(
             top: 60,
             left: 20,
@@ -180,7 +177,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Icon(Icons.bug_report, color: Colors.white),
             ),
           ),
-          
           if (appState.isLoading)
             Container(
               color: Colors.black.withValues(alpha: 0.3),
@@ -250,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _mapController.move(LatLng(s.lat, s.lng), 16.0);
             },
           ),
-        ),
+        );
       },
     );
   }
