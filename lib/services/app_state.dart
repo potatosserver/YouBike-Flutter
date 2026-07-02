@@ -46,9 +46,14 @@ class AppState extends ChangeNotifier {
   Future<void> _init() async {
     addLog("Initializing AppState...");
     try {
+      // 1. 必須先載入設定，因為後續邏輯依賴 currentRegion 和 useLocation
       await loadSettings();
-      initializeLocation(); 
-      refreshStations();
+      
+      // 2. 併發執行位置初始化與站點獲取，不再阻塞
+      await Future.wait([
+        initializeLocation(),
+        refreshStations(),
+      ]);
     } catch (e) {
       addLog("Critical Init Error: $e");
     } finally {

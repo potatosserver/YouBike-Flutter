@@ -59,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 return const Text("目前無可用電輔車");
               }
               
-              // 按電量排序 (同步網頁版)
               bikes.sort((a, b) => (b['battery_power'] as num).compareTo(a['battery_power'] as num));
               
               return Column(
@@ -148,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                               _showStationDetails(station);
                             },
+                            child: m.child,
                           ),
                         )),
                         Marker(

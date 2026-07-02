@@ -13,17 +13,16 @@ class StationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mirroring web CSS variables
+    // 從 variables.css 抄來的精確參數
     const primaryColor = Color(0xFFE44D26); // --primary-color
-    const borderColor = Color(0xFFE0E0E0);    // --border-color (Approx Colors.grey.shade300)
+    const borderColor = Color(0xFFE0E0E0);    // --border-color
     const bgColor = Color(0xFFFFFFFF);       // --bg-color
-    const textColor = Color(0xFF333333);     // --text-color (Approx Colors.black87)
-    const secondaryTextColor = Color(0xFF757575); // (Approx Colors.grey.shade600)
+    const secondaryTextColor = Color(0xFF757575); // --secondary-text-color
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(12),
@@ -58,44 +57,35 @@ class StationCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 station.nameTw,
-                                style: TextStyle(
-                                  fontSize: 16,
+                                style: const TextStyle(
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: textColor,
+                                  color: primaryColor, // 站點名稱使用主色調
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            _buildBikeCountRow(station),
+                            _buildActionButtons(),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          station.addressTw,
-                          style: TextStyle(
-                            fontSize: 13,
+                          "距離: ${station.distance} ${station.distanceUnit}",
+                          style: const TextStyle(
+                            fontSize: 14,
                             color: secondaryTextColor,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "地址: ${station.addressTw}",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: secondaryTextColor,
+                          ),
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(Icons.location_on, size: 14, color: primaryColor),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                "距離您的位置 ${station.distance} ${station.distanceUnit}",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: secondaryTextColor,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+                        _buildBikeInfoRow(),
                       ],
                     ),
                   ),
@@ -108,49 +98,37 @@ class StationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBikeCountRow(Station station) {
+  Widget _buildActionButtons() {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildBikeCountItem("2.0", station.availableBikes),
-        const SizedBox(width: 8),
-        _buildBikeCountItem("2.0E", station.availableElectricBikes, isElectric: true),
-        const SizedBox(width: 8),
-        _buildBikeCountItem("空位", station.emptySpaces),
+        IconButton(
+          icon: const Icon(Icons.star_border, size: 20, color: Colors.grey),
+          onPressed: () {
+            // 收藏邏輯
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.navigation, size: 20, color: Colors.grey),
+          onPressed: () {
+            // 導航邏輯
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildBikeCountItem(String label, int count, {bool isElectric = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: isElectric ? const Color(0xFFFFF3E0) : const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: isElectric ? Colors.orange.shade800 : Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            "$count",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade800,
-            ),
-          ),
-        ],
-      ),
+  Widget _buildBikeInfoRow() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("YouBike 2.0: ${station.availableBikes}", 
+          style: const TextStyle(fontSize: 14, color: Colors.black87)),
+        Text("YouBike 2.0E: ${station.availableElectricBikes}", 
+          style: const TextStyle(fontSize: 14, color: Colors.black87)),
+        Text("可停空位數: ${station.emptySpaces}", 
+          style: const TextStyle(fontSize: 14, color: Colors.black87)),
+      ],
     );
   }
 }
