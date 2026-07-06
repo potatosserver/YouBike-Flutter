@@ -34,6 +34,7 @@ class AppState extends ChangeNotifier {
   }
   int loadingProgress = 0;
   String currentNotice = "正在啟動...";
+  String loadingNotice = "";
   List<String> logs = [];
   bool isFollowingUser = false;
   bool hasObtainedRealLocation = false;
@@ -143,7 +144,9 @@ class AppState extends ChangeNotifier {
   Future<void> _runOptimizedInit() async {
     isLoading = true;
     debugPrint("--- 🚀 App 啟動同步初始化 (Web-Aligned Pipeline) ---");
+    
     _simulateRandomNotices();
+    _simulatePercentage();
     
     try {
       currentNotice = "正在定位您的位置...";
@@ -263,15 +266,48 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> _simulatePercentage() async {
+    int progress = 0;
+    int? lockedProgress;
+    while (isLoading && progress < 100) {
+      if (progress < 85) {
+        progress++;
+      } else if (lockedProgress == null) {
+        lockedProgress = 85 + math.Random().nextInt(11);
+        progress = lockedProgress;
+      } else {
+        progress = lockedProgress;
+      }
+      loadingProgress = progress;
+      notifyListeners();
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
   Future<void> _simulateRandomNotices() async {
     final notices = currentLang.startsWith('en') 
-      ? ["❌Do not speed", "❌Do not use phone", "✔️Check lights"]
-      : ["❌勿超速", "❌勿使用手機", "✔️確認車燈"];
-    while (isLoading) {
-      currentNotice = notices[math.Random().nextInt(notices.length)];
-      notifyListeners();
-      await Future.delayed(const Duration(seconds: 2));
-    }
+      ? [
+          "❌Do not speed or ride in reverse",
+          "❌Do not change lanes arbitrarily on sidewalks",
+          "❌Do not use your phone while riding",
+          "❌Avoid harsh braking while riding",
+          "✔️Remember to adjust the seat to a proper height",
+          "✔️Ensure that both front and rear lights are working",
+          "✔️Remember to get bicycle accident insurance",
+          "✔️Take your belongings from the basket"
+        ]
+      : [
+          "❌勿超速或逆向騎乘",
+          "❌勿隨意變換車道在行人道上騎乘",
+          "❌勿在車輛行駛中使用手機",
+          "❌騎乘中勿緊急煞車",
+          "✔️記得調整座墊至適宜高度",
+          "✔️確認前後車燈功能正常",
+          "✔️記得投保公共自行車傷害險",
+          "✔️記得帶走置物籃內的隨身物品"
+        ];
+    loadingNotice = notices[math.Random().nextInt(notices.length)];
+    notifyListeners();
   }
 
   void setRegion(String regionId) {
