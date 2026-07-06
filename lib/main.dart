@@ -6,6 +6,9 @@ import 'package:youbike_android/services/language_service.dart';
 import 'package:youbike_android/services/theme_provider.dart';
 import 'package:youbike_android/screens/home_screen.dart';
 import 'package:youbike_android/screens/settings_screen.dart';
+import 'package:youbike_android/screens/theme_selection_screen.dart';
+import 'package:youbike_android/screens/region_selection_screen.dart';
+import 'package:youbike_android/screens/language_selection_screen.dart';
 import 'package:youbike_android/widgets/loading_overlay.dart';
 import 'package:youbike_android/l10n/app_localizations.dart';
 
@@ -47,11 +50,11 @@ class MyApp extends StatelessWidget {
                 useMaterial3: true,
                 brightness: Brightness.light,
                 scaffoldBackgroundColor: const Color(0xFFF4F4F4),
-                colorScheme: ColorScheme.light(
-                  primary: const Color(0xFF007BFF),
+                colorScheme: const ColorScheme.light(
+                  primary: Color(0xFF007BFF),
                   onPrimary: Colors.white,
                   surface: Colors.white,
-                  onSurface: const Color(0xFF333333),
+                  onSurface: Color(0xFF333333),
                 ),
                 appBarTheme: const AppBarTheme(
                   backgroundColor: Color(0xFF007BFF),
@@ -64,10 +67,10 @@ class MyApp extends StatelessWidget {
                 useMaterial3: true,
                 brightness: Brightness.dark,
                 scaffoldBackgroundColor: const Color(0xFF333333),
-                colorScheme: ColorScheme.dark(
-                  primary: const Color(0xFF90CAF9),
-                  onPrimary: const Color(0xFF121212),
-                  surface: const Color(0xFF222222),
+                colorScheme: const ColorScheme.dark(
+                  primary: Color(0xFF90CAF9),
+                  onPrimary: Color(0xFF121212),
+                  surface: Color(0xFF222222),
                   onSurface: Colors.white,
                 ),
                 appBarTheme: const AppBarTheme(
@@ -79,7 +82,7 @@ class MyApp extends StatelessWidget {
               
               locale: langService.appLocale,
               supportedLocales: AppLocalizations.supportedLocales,
-              localizationsDelegates: [
+              localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,
@@ -89,6 +92,9 @@ class MyApp extends StatelessWidget {
               home: const MainWrapper(),
               routes: {
                 '/settings': (context) => const SettingsScreen(),
+                '/theme-selection': (context) => const ThemeSelectionScreen(),
+                '/region-selection': (context) => const RegionSelectionScreen(),
+                '/language-selection': (context) => const LanguageSelectionScreen(),
               },
             );
           },

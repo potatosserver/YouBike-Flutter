@@ -60,7 +60,9 @@ class _HomeScreenState extends State<HomeScreen> {
         debugPrint("[MAP-MOVE] 📡 定位成功，精確移動至: $target");
         _mapController.move(target, 18.0);
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("[LOC-ERROR] $e");
+    }
   }
 
   void _showRoutePanel(Station station) async {
@@ -81,8 +83,11 @@ class _HomeScreenState extends State<HomeScreen> {
           steps: steps.map((s) => "${s.instruction} (${(s.distance / 1000).toStringAsFixed(2)} km)").toList(),
         ),
       );
-    } catch (_) {
-      if (mounted) NotificationService.instance.show(message: "導航服務不可用", type: NotificationType.error);
+    } catch (e) {
+      if (mounted) {
+        debugPrint("[ROUTE-ERROR] $e");
+        NotificationService.instance.show(message: "導航服務不可用", type: NotificationType.error);
+      }
     }
   }
 

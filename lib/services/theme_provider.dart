@@ -29,10 +29,17 @@ class ThemeProvider with ChangeNotifier {
     if (mode == _themeMode) return;
     _themeMode = mode;
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    String modeStr = 'system';
-    if (mode == ThemeMode.dark) modeStr = 'dark';
-    else if (mode == ThemeMode.light) modeStr = 'light';
-    await prefs.setString(_prefThemeMode, modeStr);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String modeStr = 'system';
+      if (mode == ThemeMode.dark) {
+        modeStr = 'dark';
+      } else if (mode == ThemeMode.light) {
+        modeStr = 'light';
+      }
+      await prefs.setString(_prefThemeMode, modeStr);
+    } catch (e) {
+      debugPrint("[THEME-STORAGE-ERROR] $e");
+    }
   }
 }
