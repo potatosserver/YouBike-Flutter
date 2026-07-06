@@ -1,30 +1,92 @@
 {
-  "appTitle": "YouBike 站點搜尋",
-  "searchPlaceholder": "搜尋站點名稱...",
-  "settings": "設定",
-  "location": "我的位置",
-  "refresh": "重新整理",
-  "debug": "偵錯",
-  "stationCount": "{count, plural, =0{找不到站牌} =1{找到 1 個站牌} other{找到 {count} 個站牌}}",
-  "recentStations": "最近站牌",
-  "darkMode": "深色模式",
-  "language": "語言",
-  "about": "關於",
-  "updatingIn": "更新於 {seconds}s",
-  "electricBikeDetailsTitle": "電輔車詳細資訊: {name}",
-  "gettingBikeData": "正在獲取車輛資料...",
-  "bikeNumber": "車號: {no}",
-  "pillarNumber": "車位: {no}",
-  "batteryPower": "電量: {power}%",
-  "noElectricBikes": "目前無可用電輔車",
-  "electricBikeError": "獲取電輔車資訊失敗: {error}",
-  "routeTo": "前往 {name} 的路線",
-  "calculatingRoute": "計算路線中...",
-  "routeNotFound": "找不到路線",
-  "distance": "距離: {dist}",
-  "estimatedTime": "預計時間: {time} 分鐘",
-  "retry": "重整",
+  "@@locale": "zh",
+  "searchPlaceholder": "搜尋站點名稱或地址...",
+  "@searchPlaceholder": {},
+  "updatingIn": "即時資料將在 {sec} 秒後更新",
+  "@updatingIn": {
+    "placeholders": {
+      "sec": {
+        "type": "Object"
+      }
+    }
+  },
+  "routeNotFound": "找不到前往該站點的路徑",
+  "@routeNotFound": {},
+  "electricBikeError": "取得電輔車資料失敗: {err}",
+  "@electricBikeError": {
+    "placeholders": {
+      "err": {
+        "type": "Object"
+      }
+    }
+  },
+  "noElectricBikes": "目前該站點沒有可用電輔車",
+  "@noElectricBikes": {},
+  "bikeNumber": "車號: ",
+  "@bikeNumber": {},
+  "pillarNumber": "車位: ",
+  "@pillarNumber": {},
   "ok": "確定",
-  "loading": "載入中：{progress}%",
-  "loadingNotice": "通知: {notice}"
+  "@ok": {},
+  "distance": "距離: ",
+  "@distance": {},
+  "address": "地址: ",
+  "@address": {},
+  "availableBikes": "YouBike 2.0: ",
+  "@availableBikes": {},
+  "availableElectricBikes": "YouBike 2.0E: ",
+  "@availableElectricBikes": {},
+  "emptySpaces": "可停空位數: ",
+  "@emptySpaces": {},
+  "settings": "設定",
+  "@settings": {},
+  "darkMode": "深色模式",
+  "@darkMode": {},
+  "language": "語言選擇",
+  "@language": {},
+  "autoRefresh": "自動刷新",
+  "@autoRefresh": {},
+  "loading": "正在載入 YouBike 資料...",
+  "@loading": {},
+  "param_settings": "參數設定",
+  "@param_settings": {},
+  "about": "關於",
+  "@about": {},
+  "app_reset": "重設 App",
+  "@app_reset": {},
+
+  "loading_prefix": "載入中：{progress}%",
+  "@loading_prefix": {
+    "placeholders": {
+      "progress": {
+        "type": "Object"
+      }
+    }
+  },
+  "init_success": "初始化完成",
+  "@init_success": {},
+  "init_error": "初始化過程出錯: {error}",
+  "@init_error": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "notice_no_speed": "❌勿超速或逆向騎乘",
+  "@notice_no_speed": {},
+  "notice_no_sidewalk": "❌勿隨意變換車道在行人道上騎乘",
+  "@notice_no_sidewalk": {},
+  "notice_no_phone": "❌勿在車輛行駛中使用手機",
+  "@notice_no_phone": {},
+  "notice_no_brake": "❌騎乘中勿緊急煞車",
+  "@notice_no_brake": {},
+  "notice_seat_height": "✔️記得調整座墊至適宜高度",
+  "@notice_seat_height": {},
+  "notice_lights_work": "✔️確認前後車燈功能正常",
+  "@notice_lights_work": {},
+  "notice_insurance": "✔️記得投保公共自行車傷害險",
+  "@notice_insurance": {},
+  "notice_take_belongings": "✔️記得帶走置物籃內的隨身物品",
+  "@notice_take_belongings": {}
 }

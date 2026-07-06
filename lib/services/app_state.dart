@@ -1,363 +1,414 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:latlong2/latlong.dart';
-import 'dart:math' as math;
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'dart:async';
+import 'dart:math' as math;
 import '../models/station.dart';
 import '../services/api_service.dart';
+import 'package:flutter_map/flutter_map.dart';
+
+class _VisualAnchor {
+  final double lat;
+  final double lon;
+  int count;
+  _VisualAnchor(this.lat, this.lon, {this.count = 0});
+}
 
 class AppState extends ChangeNotifier {
-  // --- Settings & Preferences ---
-  String currentRegion = 'kaohsiung';
-  String currentLang = 'zh'; 
-  bool isDarkMode = false;
-  bool useLocation = true;
+  LatLng center = const LatLng(22.631442, 120.301890);
   
-  // --- Loading State ---
-  bool isLoading = true;
-  int loadingProgress = 0;
-  String currentNotice = "";
-  bool isOffline = false;
-  int countdownRemaining = 60; 
+  // 【關鍵修復】區分 數據緩存 與 UI 顯示列表
+  List<Station> _fullStationList = []; // 存儲 9300+ 站點，絕不參與渲染
+  List<Station> allStations = [];     // 僅存儲篩選後的 10-50 個站點，用於渲染
   
-  // --- Pinned Stations ---
-  Set<String> pinnedStationIds = {};
+  Station? selectedStation;
   
-  // --- Location State ---
-  LatLng center = const LatLng(22.6273, 120.3014); 
-  LatLng? lastKnownLocation; 
-  bool isFollowingUser = false;
-  bool hasObtainedRealLocation = false;
+  bool _isLoading = true;
+  bool _isInitialLoadComplete = false;
   
-  // --- Data State ---
-  List<Station> allStations = [];
-  List<Station> searchResults = [];
-  List<fm.Marker> stationMarkers = [];
-  
-  // --- Log System ---
-  final List<String> logs = [];
-  
-  void addLog(String message) {
-    final timestamp = DateTime.now().toIso8601String();
-    logs.add('[$timestamp] $message');
-    if (logs.length > 500) logs.removeAt(0);
+  bool get isLoading => _isLoading;
+  set isLoading(bool value) {
+    if (_isInitialLoadComplete && value == true) return;
+    _isLoading = value;
     notifyListeners();
   }
+
+  int loadingProgress = 0;
+  String currentNotice = "正在啟動...";
+  List<String> logs = [];
   
-  AppState() {
-    _init();
-    _startGlobalCountdown();
+  bool isFollowingUser = false;
+  bool hasObtainedRealLocation = false;
+  LatLng? lastKnownLocation;
+  String currentLang = 'zh_TW';
+  bool isDarkMode = false;
+  int countdownRemaining = 60;
+  String selectedRegion = 'kaohsiung';
+  Set<String> pinnedStationIds = {};
+  SharedPreferences? _prefs;
+
+  final List<_VisualAnchor> _anchors = [];
+
+  final Map<String, Map<String, dynamic>> _regions = {
+    "taipei": {"name": "台北市", "lat": 25.047924, "lng": 121.517081},
+    "newTaipei": {"name": "新北市", "lat": 25.0215339197085, "lng": 121.4568090197085},
+    "taoyuan": {"name": "桃園市", "lat": 24.953671, "lng": 121.225783},
+    "hsinchuCounty": {"name": "新竹縣", "lat": 24.826917615712, "lng": 121.01290295049},
+    "hsinchuCity": {"name": "新竹市", "lat": 24.801815, "lng": 120.971459},
+    "sciencePark": {"name": "新竹科學園區", "lat": 24.781830, "lng": 121.005074},
+    "miaoli": {"name": "苗栗縣", "lat": 24.5648599, "lng": 120.8185503},
+    "taichung": {"name": "台中市", "lat": 24.154712, "lng": 120.664265},
+    "chiayi": {"name": "嘉義市", "lat": 23.4797837, "lng": 120.4397206},
+    "tainan": {"name": "臺南市", "lat": 22.99230083082, "lng": 120.18509419659},
+    "kaohsiung": {"name": "高雄市", "lat": 22.631442, "lng": 120.301890},
+    "pingtung": {"name": "屏東縣", "lat": 22.683036253664, "lng": 120.48790854724},
+    "taitung": {"name": "臺東縣", "lat": 22.755711056126138, "lng": 121.15035332587574},
+  };
+
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371000;
+    final double dLat = (lat2 - lat1) * math.pi / 180;
+    final double dLon = (lon2 - lon1) * math.pi / 180;
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180) * math.cos(lat2 * math.pi / 180) *
+        math.sin(dLon / 2) * math.sin(dLon / 2);
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
   }
-  
-  void _startGlobalCountdown() {
-    Future.delayed(Duration.zero, () async {
-      while (true) {
-        await Future.delayed(const Duration(seconds: 1));
-        countdownRemaining--;
-        if (countdownRemaining <= 0) {
-          countdownRemaining = 60;
-          await refreshStations();
-        }
-        notifyListeners();
+
+  List<Marker> get stationMarkers {
+    _anchors.clear();
+    // 現在 allStations 只有 10-50 個，渲染壓力極低
+    return allStations.map((s) {
+      final visualPos = _getVisualPosition(s.lat, s.lng);
+      return Marker(
+        point: visualPos,
+        width: 30,
+        height: 30,
+        child: Icon(
+          Icons.location_on,
+          color: pinnedStationIds.contains(s.id.trim()) ? Colors.amber : Colors.blue,
+          size: 30,
+        ),
+      );
+    }).toList();
+  }
+
+  LatLng _getVisualPosition(double lat, double lng) {
+    const double threshold = 0.00009;
+    for (var anchor in _anchors) {
+      final dLat = lat - anchor.lat;
+      final dLon = lng - anchor.lon;
+      final distSq = (dLat * dLat) + (dLon * dLon);
+      if (distSq < (threshold * threshold)) {
+        anchor.count++;
+        final angle = anchor.count * 2.399;
+        final radius = 0.00010 + (anchor.count * 0.00002);
+        return LatLng(anchor.lat + (radius * math.cos(angle)), anchor.lon + (radius * math.sin(angle)));
       }
-    });
+    }
+    _anchors.add(_VisualAnchor(lat, lng));
+    return LatLng(lat, lng);
   }
-  
-  Future<void> _init() async {
-    // FIX: Start isLoading immediately to prevent any white screen before the first build
-    isLoading = true; 
-    loadingProgress = 0;
+
+  Future<void> init() async {
+    _prefs = await SharedPreferences.getInstance();
+    isDarkMode = _prefs?.getBool('isDarkMode') ?? false;
+    currentLang = _prefs?.getString('currentLang') ?? 'zh_TW';
+    selectedRegion = _prefs?.getString('selectedRegion') ?? 'kaohsiung';
+    final pinnedList = _prefs?.getStringList('pinnedStations') ?? [];
+    pinnedStationIds = pinnedList.map((id) => id.trim()).toSet();
     
-    addLog("Initializing AppState...");
+    final cachedLat = _prefs?.getDouble('last_lat');
+    final cachedLng = _prefs?.getDouble('last_lng');
+    if (cachedLat != null && cachedLng != null) {
+      center = LatLng(cachedLat, cachedLng);
+      lastKnownLocation = center;
+    } else {
+      setRegion(selectedRegion);
+    }
+    await _runWebStyleInit();
+    startAutoRefreshCycle();
+    notifyListeners();
+  }
+
+  Future<void> _runWebStyleInit() async {
+    isLoading = true;
+    _simulateLoadingProgress();
+    _simulateRandomNotices();
+    
     try {
-      await loadSettings();
-      
-      // Start UI simulations immediately
-      _startLoadingSimulation();
-      
-      // Sequence: Location -> Data
-      await initializeLocation();
-      await refreshStations();
+      await _initializeCoreLogic().timeout(const Duration(seconds: 20));
     } catch (e) {
-      addLog("Critical Init Error: $e");
+      addLog("初始化超時或失敗: $e");
     } finally {
       isLoading = false;
-      addLog("Initial UI ready.");
+      _isInitialLoadComplete = true;
+      loadingProgress = 100;
+      currentNotice = "初始化完成";
       notifyListeners();
     }
   }
 
-  void _startLoadingSimulation() {
-    Future.delayed(Duration.zero, () async {
-      final notices = currentLang == 'en' 
-        ? ["❌Do not speed or ride in reverse", "❌Do not change lanes arbitrarily on sidewalks", "❌Do not use your phone while riding", "❌Avoid harsh braking while riding", "✔️Remember to adjust the seat to a proper height", "✔️Ensure that both front and rear lights are working", "✔️Remember to get bicycle accident insurance", "✔️Take your belongings from the basket"]
-        : ["❌勿超速或逆向騎乘", "❌勿隨意變換車道在行人道上騎乘", "❌勿在車輛行駛中使用手機", "❌騎乘中勿緊急煞車", "✔️記得調整座墊至適宜高度", "✔️確認前後車燈功能正常", "✔️記得投保公共自行車傷害險", "✔️記得帶走置物籃內的隨身物品"];
-      
-      int progress = 0;
-      while (isLoading) {
-        if (progress < 85) {
-          progress++;
-          loadingProgress = progress;
-        } else {
-          loadingProgress = 85 + math.Random().nextInt(11);
-        }
-        
-        // FIX: Update notice only every few ticks to prevent "crazy jumping"
-        if (math.Random().nextInt(20) == 0) {
-          currentNotice = notices[math.Random().nextInt(notices.length)];
-        }
-        
-        notifyListeners();
-        await Future.delayed(const Duration(milliseconds: 100));
+  Future<void> _initializeCoreLogic() async {
+    try {
+      await fetchBaseData();
+    } catch (e) {
+      addLog("警告：基礎數據獲取失敗");
+    }
+    
+    try {
+      final pos = await getCurrentPosition();
+      if (pos != null) {
+        lastKnownLocation = LatLng(pos.latitude, pos.longitude);
+        center = lastKnownLocation!;
+        _prefs?.setDouble('last_lat', lastKnownLocation!.latitude);
+        _prefs?.setDouble('last_lng', lastKnownLocation!.longitude);
+        hasObtainedRealLocation = true;
+      } else {
+        useDefaultLocation();
       }
-    });
+    } catch (e) {
+      useDefaultLocation();
+    }
+    
+    try {
+      await refreshStations(isInitial: false);
+    } catch (e) {
+      addLog("警告：即時數據刷新失敗");
+    }
   }
-  
-  Future<void> loadSettings() async {
-    addLog("Loading settings...");
-    final prefs = await SharedPreferences.getInstance();
-    currentRegion = prefs.getString('currentRegion') ?? 'kaohsiung';
-    currentLang = prefs.getString('currentLang') ?? 'zh';
-    isDarkMode = prefs.getBool('isDarkMode') ?? false;
-    useLocation = prefs.getBool('useLocation') ?? true;
-    final pinnedList = prefs.getStringList('pinnedStations') ?? [];
-    pinnedStationIds = pinnedList.toSet();
+
+  Future<void> fetchBaseData() async {
+    try {
+      final api = ApiService();
+      // 【關鍵修復】存入隱藏緩存，不直接更新 UI 列表
+      _fullStationList = await api.fetchAllStations();
+      // 不要在這裡調用 notifyListeners()，防止 9000 個站點觸發地圖重繪
+    } catch (e) {
+      addLog("基礎數據獲取失敗: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> _simulateLoadingProgress() async {
+    int progress = 0;
+    int lockedProgress = 85 + math.Random().nextInt(11);
+    while (isLoading && progress < lockedProgress) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      if (progress < 85) {
+        progress++;
+      } else {
+        if (math.Random().nextInt(5) == 0) progress++;
+      }
+      loadingProgress = progress;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _simulateRandomNotices() async {
+    final notices = currentLang.startsWith('en') 
+      ? [
+          "❌Do not speed or ride in reverse",
+          "❌Do not change lanes arbitrarily on sidewalks",
+          "❌Do not use your phone while riding",
+          "❌Avoid harsh braking while riding",
+          "✔️Remember to adjust the seat to a proper height",
+          "✔️Ensure that both front and rear lights are working",
+          "✔️Remember to get bicycle accident insurance",
+          "✔️Take your belongings from the basket"
+        ]
+      : [
+          "❌勿超速或逆向騎乘",
+          "❌勿隨意變換車道在行人道上騎乘",
+          "❌勿在車輛行駛中使用手機",
+          "❌騎乘中勿緊急煞車",
+          "✔️記得調整座墊至適宜高度",
+          "✔️確認前後車燈功能正常",
+          "✔️記得投保公共自行車傷害險",
+          "✔️記得帶走置物籃內的隨身物品"
+        ];
+    while (isLoading) {
+      currentNotice = notices[math.Random().nextInt(notices.length)];
+      notifyListeners();
+      await Future.delayed(const Duration(seconds: 2));
+    }
+  }
+
+  void addLog(String msg) {
+    logs.add("[${DateTime.now().toString().split('.').first}] $msg");
+    if (logs.length > 100) logs.removeAt(0);
     notifyListeners();
   }
-  
-  Future<void> saveSetting(String key, dynamic value) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (value is String) {
-      await prefs.setString(key, value);
-    } else if (value is bool) {
-      await prefs.setBool(key, value);
-    }
-    addLog("Setting saved: $key = $value");
+
+  void setRegion(String regionId) {
+    if (!_regions.containsKey(regionId)) return;
+    selectedRegion = regionId;
+    final region = _regions[regionId]!;
+    center = LatLng(region['lat'] as double, region['lng'] as double);
+    _prefs?.setString('selectedRegion', regionId);
+    addLog("切換區域至: ${region['name']}");
+    notifyListeners();
   }
-  
-  Future<bool> requestPermission() async {
-    addLog("Requesting location permission...");
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    return permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+
+  void setSelectedStation(Station s) {
+    selectedStation = s;
+    notifyListeners();
   }
-  
+
+  void toggleDarkMode() {
+    isDarkMode = !isDarkMode;
+    _prefs?.setBool('isDarkMode', isDarkMode);
+    notifyListeners();
+  }
+
+  void setLanguage(String lang) {
+    currentLang = lang;
+    _prefs?.setString('currentLang', lang);
+    notifyListeners();
+  }
+
+  void toggleFollowing() {
+    isFollowingUser = !isFollowingUser;
+    notifyListeners();
+  }
+
+  void togglePinStation(String id) {
+    final tid = id.trim();
+    if (pinnedStationIds.contains(tid)) {
+      pinnedStationIds.remove(tid);
+    } else {
+      pinnedStationIds.add(tid);
+    }
+    _prefs?.setStringList('pinnedStations', pinnedStationIds.toList());
+    notifyListeners();
+  }
+
+  String getDistanceLabel(double distance) {
+    if (distance < 100) return "${distance.toStringAsFixed(0)}m";
+    if (distance < 1000) return "${(distance / 100).toStringAsFixed(1)}km";
+    return "${(distance / 1000).toStringAsFixed(2)}km";
+  }
+
   Future<Position?> getCurrentPosition() async {
-    addLog("Fetching current position...");
     try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return null;
+      }
+      if (permission == LocationPermission.deniedForever) return null;
+
       return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 5),
-      );
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 10),
+      ).timeout(const Duration(seconds: 11)); 
     } catch (e) {
-      addLog("getCurrentPosition error: $e");
       return null;
     }
   }
-  
-  Future<void> initializeLocation() async {
-    addLog("Initializing location services...");
-    if (!useLocation) {
-      _useDefaultLocation();
-      return;
-    }
-    try {
-      bool hasPermission = await requestPermission();
-      if (!hasPermission) {
-        addLog("Location permission denied.");
-        _useDefaultLocation();
-        return;
-      }
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 5),
-      );
-      center = LatLng(position.latitude, position.longitude);
-      lastKnownLocation = center;
-      hasObtainedRealLocation = true;
-      isFollowingUser = true;
-      addLog("Location fixed: ${center.latitude}, ${center.longitude}");
-      
-      Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 50),
-      ).listen((Position pos) => _handleLocationUpdate(pos));
-    } catch (e) {
-      addLog("Location init error: $e");
-      _useDefaultLocation();
-    }
-  }
-  
-  void _handleLocationUpdate(Position pos) {
-    final newCenter = LatLng(pos.latitude, pos.longitude);
-    if (isFollowingUser) {
-      center = newCenter;
-      notifyListeners();
-    }
-  }
-  
-  void _useDefaultLocation() {
-    final regions = {
-      'taipei': const LatLng(25.0330, 121.5654),
-      'newTaipei': const LatLng(25.0333, 121.5654),
-      'taoyuan': const LatLng(24.8333, 121.3000),
-      'kaohsiung': const LatLng(22.6273, 120.3014),
-    };
-    center = regions[currentRegion] ?? const LatLng(22.6273, 120.3014);
+
+  void useDefaultLocation() {
+    final region = _regions[selectedRegion]!;
+    center = LatLng(region['lat'] as double, region['lng'] as double);
     lastKnownLocation = center;
     isFollowingUser = false;
     hasObtainedRealLocation = false;
+    addLog("使用預設地區位置: ${region['name']}");
   }
-  
-  Future<void> refreshStations() async {
-    addLog("Refreshing stations for $currentRegion...");
+
+  Future<void> requestPermission() async {
+    await Geolocator.requestPermission();
+  }
+
+  Future<void> refreshStations({bool isInitial = false}) async {
+    isLoading = true;
     try {
       final api = ApiService();
-      final baseStations = await api.fetchAllStations();
-      
-      // FIX: Strictly limit real-time data to first 10 stations to mimic web's logic and avoid API failure
-      List<String> idsToQuery = baseStations.take(10).map((s) => s.id).toList();
-      final realtimeData = await api.fetchRealtimeVehicles(idsToQuery);
-      
-      allStations = baseStations.map((s) {
-        final vehicleInfo = realtimeData[s.id];
-        if (vehicleInfo != null && vehicleInfo is Map) {
-          s.availableBikes = vehicleInfo['available_2_0'] ?? 0;
-          s.availableElectricBikes = vehicleInfo['available_e'] ?? 0;
-          s.emptySpaces = vehicleInfo['empty_spaces'] ?? 0;
-          s.totalBikes = s.availableBikes + s.emptySpaces;
-        } else {
-          s.availableBikes = 0;
-          s.availableElectricBikes = 0;
-          s.emptySpaces = 0;
-        }
-        return s;
-      }).toList();
-      
-      stationMarkers = _generateVisualMarkers(allStations);
-      addLog("Successfully loaded and merged ${allStations.length} stations.");
-      notifyListeners();
-    } catch (e) {
-      addLog("refreshStations Error: $e");
-    }
-  }
-  
-  List<fm.Marker> _generateVisualMarkers(List<Station> stations) {
-    final Map<String, int> anchors = {};
-    final List<fm.Marker> markers = [];
-    for (var s in stations) {
-      double lat = s.lat;
-      double lng = s.lng;
-      final key = "${lat.toStringAsFixed(5)},${lng.toStringAsFixed(5)}";
-      if (anchors.containsKey(key)) {
-        int count = anchors[key]!;
-        anchors[key] = count + 1;
-        const double angleStep = 2.399; 
-        const double baseRadius = 0.00010;
-        final angle = count * angleStep;
-        final radius = baseRadius + (count * 0.00002);
-        lat += radius * (math.cos(angle));
-        lng += radius * (math.sin(angle));
-      } else {
-        anchors[key] = 1;
+      if (_fullStationList.isEmpty) {
+        _fullStationList = await api.fetchAllStations();
       }
-      markers.add(fm.Marker(
-        point: LatLng(lat, lng),
-        width: 24, // FIX: Increased size (was 17)
-        height: 24,
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFD700),
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-          ),
-          child: const Center(child: Icon(Icons.directions_bike, color: Colors.white, size: 14)),
-        ),
-      ));
-    }
-    return markers;
-  }
-  
-  void searchStations(String query) {
-    addLog("Searching for: $query");
-    if (query.isEmpty) {
-      searchResults = [];
+      
+      final pos = await getCurrentPosition();
+      final LatLng referencePoint = pos != null 
+          ? LatLng(pos.latitude, pos.longitude) 
+          : center;
+          
+      if (pos != null) {
+        lastKnownLocation = referencePoint;
+        hasObtainedRealLocation = true;
+      }
+      
+      // 排序邏輯：對全量數據進行計算，但結果只取 10 個
+      final sorted = List<Station>.from(_fullStationList);
+      sorted.sort((a, b) {
+        final distA = _calculateDistance(referencePoint.latitude, referencePoint.longitude, a.lat, a.lng);
+        final distB = _calculateDistance(referencePoint.latitude, referencePoint.longitude, b.lat, b.lng);
+        return distA.compareTo(distB);
+      });
+      
+      final pinned = sorted.where((s) => pinnedStationIds.contains(s.id.trim())).toList();
+      final unpinned = sorted.where((s) => !pinnedStationIds.contains(s.id.trim())).toList();
+      
+      // 【關鍵修復】只將極小量數據賦值給 allStations，保證地圖渲染絕對流暢
+      allStations = [...pinned, ...unpinned].take(10).toList();
+      
+      final vehicleData = await api.fetchRealtimeVehicles(allStations.map((s) => s.id).toList());
+      for (var s in allStations) {
+        if (vehicleData.containsKey(s.id)) {
+          final data = vehicleData[s.id] as Map<String, dynamic>;
+          s.availableBikes = data['available_2_0'] ?? 0;
+          s.availableElectricBikes = data['available_e'] ?? 0;
+          s.emptySpaces = data['empty_spaces'] ?? 0;
+        }
+      }
+    } catch (e) {
+      addLog("刷新出錯: $e");
+    } finally {
+      isLoading = false;
+      countdownRemaining = 60;
       notifyListeners();
-      return;
     }
-    searchResults = allStations.where((s) {
-      return s.nameTw.contains(query) || s.addressTw.contains(query);
-    }).toList();
-    addLog("Search found ${searchResults.length} results.");
-    notifyListeners();
   }
-  
-  List<Station> getSortedStations(List<Station> stations, LatLng userPos) {
-    if (stations.isEmpty) return [];
-    List<Station> sorted = List.from(stations);
-    sorted.sort((a, b) {
-      bool aPinned = pinnedStationIds.contains(a.id);
-      bool bPinned = pinnedStationIds.contains(b.id);
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      double distA = Geolocator.distanceBetween(userPos.latitude, userPos.longitude, a.lat, a.lng);
-      double distB = Geolocator.distanceBetween(userPos.latitude, userPos.longitude, b.lat, b.lng);
-      return distA.compareTo(distB);
+
+  void startAutoRefreshCycle() {
+    Future.delayed(const Duration(seconds: 1), () {
+      if (countdownRemaining > 0) {
+        countdownRemaining--;
+        notifyListeners();
+        startAutoRefreshCycle();
+      } else {
+        refreshStations(isInitial: false).then((_) => startAutoRefreshCycle());
+      }
     });
-    return sorted;
   }
-  
-  void togglePinStation(String stationId) async {
-    if (pinnedStationIds.contains(stationId)) {
-      pinnedStationIds.remove(stationId);
-    } else {
-      pinnedStationIds.add(stationId);
+
+  Future<void> searchStations(String query) async {
+    try {
+      final api = ApiService();
+      if (_fullStationList.isEmpty) {
+        _fullStationList = await api.fetchAllStations();
+      }
+      
+      final filtered = _fullStationList.where((s) => 
+        s.nameTw.contains(query) || 
+        s.addressTw.contains(query) || 
+        s.nameEn.toLowerCase().contains(query.toLowerCase()) || 
+        s.addressEn.toLowerCase().contains(query.toLowerCase())
+      ).toList();
+      
+      final LatLng referencePoint = lastKnownLocation ?? center;
+      filtered.sort((a, b) => 
+        _calculateDistance(referencePoint.latitude, referencePoint.longitude, a.lat, a.lng)
+        .compareTo(_calculateDistance(referencePoint.latitude, referencePoint.longitude, b.lat, b.lng))
+      );
+      
+      final limit = query.isEmpty ? 10 : 50;
+      final pinned = filtered.where((s) => pinnedStationIds.contains(s.id.trim())).toList();
+      final unpinned = filtered.where((s) => !pinnedStationIds.contains(s.id.trim())).toList();
+      allStations = [...pinned, ...unpinned].take(limit).toList();
+    } catch (e) {
     }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('pinnedStations', pinnedStationIds.toList());
-    addLog("Toggled pin: $stationId");
-    notifyListeners();
-  }
-  
-  void toggleFollowing() {
-    isFollowingUser = !isFollowingUser;
-    addLog("Following user: $isFollowingUser");
-    notifyListeners();
-  }
-  
-  void toggleDarkMode() {
-    isDarkMode = !isDarkMode;
-    saveSetting('isDarkMode', isDarkMode);
-    addLog("Dark mode toggle: $isDarkMode");
-    notifyListeners();
-  }
-  
-  void toggleLanguage() {
-    currentLang = currentLang == 'zh' ? 'en' : 'zh';
-    saveSetting('currentLang', currentLang);
-    addLog("Language toggle: $currentLang");
-    notifyListeners();
-  }
-  
-  void setRegion(String region) {
-    currentRegion = region;
-    saveSetting('currentRegion', region);
-    _useDefaultLocation();
-    refreshStations();
-    addLog("Region set to: $region");
-    notifyListeners();
-  }
-  
-  String getDistanceLabel(Station s) {
-    if (!hasObtainedRealLocation) return "N/A";
-    double dist = Geolocator.distanceBetween(
-      center.latitude, center.longitude, s.lat, s.lng);
-    if (dist < 100) return "${(dist).round()}m";
-    if (dist < 1000) return "${(dist / 100).toStringAsFixed(1)}km";
-    return "${(dist / 1000).toStringAsFixed(1)}km";
   }
 }

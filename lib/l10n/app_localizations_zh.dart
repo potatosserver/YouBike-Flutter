@@ -9,117 +9,106 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => 'YouBike 站點搜尋';
+  String get searchPlaceholder => '搜尋站點名稱或地址...';
 
   @override
-  String get searchPlaceholder => '搜尋站點名稱...';
-
-  @override
-  String get settings => '設定';
-
-  @override
-  String get location => '我的位置';
-
-  @override
-  String get refresh => '重新整理';
-
-  @override
-  String get debug => '偵錯';
-
-  @override
-  String stationCount(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '找到 $count 個站牌',
-      one: '找到 1 個站牌',
-      zero: '找不到站牌',
-    );
-    return '$_temp0';
+  String updatingIn(Object sec) {
+    return '即時資料將在 $sec 秒後更新';
   }
 
   @override
-  String get recentStations => '最近站牌';
+  String get routeNotFound => '找不到前往該站點的路徑';
 
   @override
-  String get darkMode => '深色模式';
-
-  @override
-  String get language => '語言';
-
-  @override
-  String get about => '關於';
-
-  @override
-  String updatingIn(Object seconds) {
-    return '更新於 ${seconds}s';
+  String electricBikeError(Object err) {
+    return '取得電輔車資料失敗: $err';
   }
 
   @override
-  String electricBikeDetailsTitle(Object name) {
-    return '電輔車詳細資訊: $name';
-  }
+  String get noElectricBikes => '目前該站點沒有可用電輔車';
 
   @override
-  String get gettingBikeData => '正在獲取車輛資料...';
+  String get bikeNumber => '車號: ';
 
   @override
-  String bikeNumber(Object no) {
-    return '車號: $no';
-  }
-
-  @override
-  String pillarNumber(Object no) {
-    return '車位: $no';
-  }
-
-  @override
-  String batteryPower(Object power) {
-    return '電量: $power%';
-  }
-
-  @override
-  String get noElectricBikes => '目前無可用電輔車';
-
-  @override
-  String electricBikeError(Object error) {
-    return '獲取電輔車資訊失敗: $error';
-  }
-
-  @override
-  String routeTo(Object name) {
-    return '前往 $name 的路線';
-  }
-
-  @override
-  String get calculatingRoute => '計算路線中...';
-
-  @override
-  String get routeNotFound => '找不到路線';
-
-  @override
-  String distance(Object dist) {
-    return '距離: $dist';
-  }
-
-  @override
-  String estimatedTime(Object time) {
-    return '預計時間: $time 分鐘';
-  }
-
-  @override
-  String get retry => '重整';
+  String get pillarNumber => '車位: ';
 
   @override
   String get ok => '確定';
 
   @override
-  String loading(Object progress) {
+  String get distance => '距離: ';
+
+  @override
+  String get address => '地址: ';
+
+  @override
+  String get availableBikes => 'YouBike 2.0: ';
+
+  @override
+  String get availableElectricBikes => 'YouBike 2.0E: ';
+
+  @override
+  String get emptySpaces => '可停空位數: ';
+
+  @override
+  String get settings => '設定';
+
+  @override
+  String get darkMode => '深色模式';
+
+  @override
+  String get language => '語言選擇';
+
+  @override
+  String get autoRefresh => '自動刷新';
+
+  @override
+  String get loading => '正在載入 YouBike 資料...';
+
+  @override
+  String get param_settings => '參數設定';
+
+  @override
+  String get about => '關於';
+
+  @override
+  String get app_reset => '重設 App';
+
+  @override
+  String loading_prefix(Object progress) {
     return '載入中：$progress%';
   }
 
   @override
-  String loadingNotice(Object notice) {
-    return '通知: $notice';
+  String get init_success => '初始化完成';
+
+  @override
+  String init_error(Object error) {
+    return '初始化過程出錯: $error';
   }
+
+  @override
+  String get notice_no_speed => '❌勿超速或逆向騎乘';
+
+  @override
+  String get notice_no_sidewalk => '❌勿隨意變換車道在行人道上騎乘';
+
+  @override
+  String get notice_no_phone => '❌勿在車輛行駛中使用手機';
+
+  @override
+  String get notice_no_brake => '❌騎乘中勿緊急煞車';
+
+  @override
+  String get notice_seat_height => '✔️記得調整座墊至適宜高度';
+
+  @override
+  String get notice_lights_work => '✔️確認前後車燈功能正常';
+
+  @override
+  String get notice_insurance => '✔️記得投保公共自行車傷害險';
+
+  @override
+  String get notice_take_belongings => '✔️記得帶走置物籃內的隨身物品';
 }

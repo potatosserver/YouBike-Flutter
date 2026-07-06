@@ -9,37 +9,50 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'YouBike Finder';
+  String get searchPlaceholder => 'Search station name or address...';
 
   @override
-  String get searchPlaceholder => 'Search for stations...';
-
-  @override
-  String get settings => 'Settings';
-
-  @override
-  String get location => 'My Location';
-
-  @override
-  String get refresh => 'Refresh';
-
-  @override
-  String get debug => 'Debug';
-
-  @override
-  String stationCount(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count stations found',
-      one: '1 station found',
-      zero: 'No stations found',
-    );
-    return '$_temp0';
+  String updatingIn(Object sec) {
+    return 'Updating in $sec seconds';
   }
 
   @override
-  String get recentStations => 'Recent Stations';
+  String get routeNotFound => 'Route not found';
+
+  @override
+  String electricBikeError(Object err) {
+    return 'Failed to get electric bike data: $err';
+  }
+
+  @override
+  String get noElectricBikes => 'No electric bikes available at this station';
+
+  @override
+  String get bikeNumber => 'Bike No: ';
+
+  @override
+  String get pillarNumber => 'Pillar No: ';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get distance => 'Distance: ';
+
+  @override
+  String get address => 'Address: ';
+
+  @override
+  String get availableBikes => 'YouBike 2.0: ';
+
+  @override
+  String get availableElectricBikes => 'YouBike 2.0E: ';
+
+  @override
+  String get emptySpaces => 'Empty Slots: ';
+
+  @override
+  String get settings => 'Settings';
 
   @override
   String get darkMode => 'Dark Mode';
@@ -48,78 +61,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get language => 'Language';
 
   @override
+  String get autoRefresh => 'Auto Refresh';
+
+  @override
+  String get loading => 'Loading YouBike data...';
+
+  @override
+  String get param_settings => 'Parameter Settings';
+
+  @override
   String get about => 'About';
 
   @override
-  String updatingIn(Object seconds) {
-    return 'Updating in ${seconds}s';
-  }
+  String get app_reset => 'App Reset';
 
   @override
-  String electricBikeDetailsTitle(Object name) {
-    return 'Electric Bike Details: $name';
-  }
-
-  @override
-  String get gettingBikeData => 'Fetching bike data...';
-
-  @override
-  String bikeNumber(Object no) {
-    return 'Bike No: $no';
-  }
-
-  @override
-  String pillarNumber(Object no) {
-    return 'Pillar No: $no';
-  }
-
-  @override
-  String batteryPower(Object power) {
-    return 'Battery: $power%';
-  }
-
-  @override
-  String get noElectricBikes => 'No electric bikes available';
-
-  @override
-  String electricBikeError(Object error) {
-    return 'Failed to get electric bike info: $error';
-  }
-
-  @override
-  String routeTo(Object name) {
-    return 'Route to $name';
-  }
-
-  @override
-  String get calculatingRoute => 'Calculating route...';
-
-  @override
-  String get routeNotFound => 'Route not found';
-
-  @override
-  String distance(Object dist) {
-    return 'Distance: $dist';
-  }
-
-  @override
-  String estimatedTime(Object time) {
-    return 'Estimated Time: $time minutes';
-  }
-
-  @override
-  String get retry => 'Retry';
-
-  @override
-  String get ok => 'OK';
-
-  @override
-  String loading(Object progress) {
+  String loading_prefix(Object progress) {
     return 'Loading: $progress%';
   }
 
   @override
-  String loadingNotice(Object notice) {
-    return 'Notice: $notice';
+  String get init_success => 'Initialization complete';
+
+  @override
+  String init_error(Object error) {
+    return 'Initialization error: $error';
   }
+
+  @override
+  String get notice_no_speed => '❌Do not speed or ride in reverse';
+
+  @override
+  String get notice_no_sidewalk =>
+      '❌Do not change lanes arbitrarily on sidewalks';
+
+  @override
+  String get notice_no_phone => '❌Do not use your phone while riding';
+
+  @override
+  String get notice_no_brake => '❌Avoid harsh braking while riding';
+
+  @override
+  String get notice_seat_height =>
+      '✔️Remember to adjust the seat to a proper height';
+
+  @override
+  String get notice_lights_work =>
+      '✔️Ensure that both front and rear lights are working';
+
+  @override
+  String get notice_insurance => '✔️Remember to get bicycle accident insurance';
+
+  @override
+  String get notice_take_belongings => '✔️Take your belongings from the basket';
 }

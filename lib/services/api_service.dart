@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../models/station.dart';
 
@@ -11,23 +12,29 @@ class ApiService {
 
   http.Client get _client => client ?? http.Client();
 
-  // 翻譯自 apiYoubike.js: fetchBaseStationData
+  // 全局 API 超時設定
+  static const Duration defaultTimeout = Duration(seconds: 10);
+  // 基礎數據量大 (4MB+)，給予更寬裕的超時
+  static const Duration baseDataTimeout = Duration(seconds: 30);
+
   Future<List<Station>> fetchAllStations() async {
-    final response = await _client.get(Uri.parse(stationsUrl));
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      
-      // 使用容錯解析：過濾掉所有返回 null 的無效站牌
-      return data
-          .map((json) => Station.fromJson(json as Map<String, dynamic>))
-          .whereType<Station>() 
-          .toList();
-    } else {
-      throw Exception('Failed to load station base data: ${response.statusCode}');
+    try {
+      // 使用更長的超時時間以應對大文件下載
+      final response = await _client.get(Uri.parse(stationsUrl)).timeout(baseDataTimeout);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data
+            .map((json) => Station.fromJson(json as Map<String, dynamic>))
+            .whereType<Station>() 
+            .toList();
+      } else {
+        throw Exception('Failed to load station base data: ${response.statusCode}');
+      }
+    } on TimeoutException catch (_) {
+      throw TimeoutException('API Request timed out while fetching stations (30s limit)');
     }
   }
 
-  // 翻譯自 apiYoubike.js: queryVehicleData
   Future<Map<String, dynamic>> fetchRealtimeVehicles(List<String> stationIds) async {
     if (stationIds.isEmpty) return {};
     
@@ -50,7 +57,7 @@ class ApiService {
           url,
           headers: headers,
           body: jsonEncode({'station_no': batch}),
-        );
+        ).timeout(defaultTimeout);
 
         if (response.statusCode == 200) {
           final result = jsonDecode(response.body);
@@ -68,14 +75,12 @@ class ApiService {
           }
         }
       } catch (e) {
-        // Using a comment instead of print to avoid lint warning
-        // Log: Error fetching batch: $e
+        // Log error silently to avoid blocking the rest of the batches
       }
     }
     return allVehicleData;
   }
 
-  // 翻譯自 apiElectric.js: showElectricBikeDetailsModal
   Future<List<Map<String, dynamic>>> fetchElectricBikeDetails(String stationId) async {
     final url = Uri.parse('https://apis.youbike.com.tw/api/front/bike/lists?station_no=$stationId');
     final headers = {
@@ -86,7 +91,7 @@ class ApiService {
     };
 
     try {
-      final response = await _client.get(url, headers: headers);
+      final response = await _client.get(url, headers: headers).timeout(defaultTimeout);
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
         if (result['retCode'] == 1 && result['retVal'] != null) {
@@ -94,7 +99,7 @@ class ApiService {
         }
       }
     } catch (e) {
-      // Log: Error fetching electric bike details: $e
+      // Log error
     }
     return [];
   }

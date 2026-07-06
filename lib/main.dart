@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:youbike_android/services/app_state.dart';
+import 'package:youbike_android/services/language_service.dart';
+import 'package:youbike_android/widgets/app_theme.dart';
+import 'package:youbike_android/screens/home_screen.dart';
+import 'package:youbike_android/screens/settings_screen.dart';
+import 'package:youbike_android/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'services/app_state.dart';
-import 'widgets/app_theme.dart';
-import 'screens/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppState(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppState()..init()),
+        ChangeNotifierProvider(create: (_) => LanguageService()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
       child: const YouBikeApp(),
     ),
   );
@@ -21,32 +27,39 @@ class YouBikeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    
-    return MaterialApp(
-      title: 'YouBike Android',
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: AppColors.primary,
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: AppColors.bgLight,
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: AppColors.primary,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.bgDark,
-      ),
-      themeMode: appState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: const HomeScreen(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Consumer<LanguageService>(
+          builder: (context, languageService, child) {
+            return MaterialApp(
+              title: 'YouBike',
+              theme: ThemeData(
+                useMaterial3: true,
+                colorSchemeSeed: Colors.blue,
+                brightness: Brightness.light,
+              ),
+              darkTheme: ThemeData(
+                useMaterial3: true,
+                colorSchemeSeed: Colors.blue,
+                brightness: Brightness.dark,
+              ),
+              themeMode: themeProvider.themeMode,
+              locale: languageService.appLocale,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const HomeScreen(),
+              routes: {
+                '/settings': (context) => const SettingsScreen(),
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

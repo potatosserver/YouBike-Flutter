@@ -1,26 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppColors {
-  // Based on variables.css and web implementation
-  static const Color primary = Color(0xFF007BFF); // Web Primary Blue
-  static const Color primaryDark = Color(0xFF0056B3);
-  static const Color accent = Color(0xFFFFA000);
+  static const Color primary = Colors.blue;
+  static const Color accent = Colors.blueAccent;
+  static const Color backgroundLight = Color(0xFFF5F5F5);
+  static const Color backgroundDark = Color(0xFF121212);
+  static const Color surfaceLight = Colors.white;
+  static const Color surfaceDark = Color(0xFF1E1E1E);
+  static const Color error = Colors.redAccent;
+  static const Color success = Colors.greenAccent;
+  static const Color warning = Colors.orangeAccent;
+  static const Color textPrimaryLight = Color(0xFF212121);
+  static const Color textPrimaryDark = Color(0xFFEEEEEE);
   
-  // Theme constants
-  static const Color primaryBlue = Color(0xFF007BFF);
-  static const Color peachBg = Color(0xFFFDCACB);
-  static const Color stationCardBg = Color(0xFFFFF2EC); // Web: .station { background-color: #fff2ec }
-  static const Color searchBg = Color(0xFFFFE8D6); // Web: #searchContainer { background-color: #ffe8d6 }
-  static const Color cardLightBg = Color(0xFFFFFFFF);
-  static const Color mainBgLight = Color(0xFFF4F4F4);
+  // Specific colors needed by widgets
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardDark = Color(0xFF2C2C2C);
+  static const Color stationCardBg = Color(0xFFF8F9FA);
+}
 
-  // Light Mode
-  static const Color bgLight = mainBgLight;
-  static const Color cardLight = cardLightBg;
-  static const Color textLight = Color(0xFF333333);
-  
-  // Dark Mode
-  static const Color bgDark = Color(0xFF121212);
-  static const Color cardDark = Color(0xFF1E1E1E);
-  static const Color textDark = Color(0xFFE0E0E0);
+class ThemeProvider with ChangeNotifier {
+  static const String _themeModeKey = 'themeMode';
+
+  ThemeMode _themeMode = ThemeMode.system;
+
+  ThemeMode get themeMode => _themeMode;
+
+  ThemeProvider() {
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final modeString = prefs.getString(_themeModeKey);
+    if (modeString == 'light') {
+      _themeMode = ThemeMode.light;
+    } else if (modeString == 'dark') {
+      _themeMode = ThemeMode.dark;
+    } else {
+      _themeMode = ThemeMode.system;
+    }
+    notifyListeners();
+  }
+
+  void setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModeKey, mode.name);
+    notifyListeners();
+  }
 }

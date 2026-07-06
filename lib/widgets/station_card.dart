@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/station.dart';
 import '../services/app_state.dart';
-import '../widgets/app_theme.dart';
 
 class StationCard extends StatelessWidget {
   final Station station;
@@ -22,21 +21,24 @@ class StationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final isPinned = appState.pinnedStationIds.contains(station.id);
-    final isEn = appState.currentLang == 'en';
+    final hasElectric = station.availableElectricBikes > 0;
+
+    // Safely parse distance string back to double for formatting
+    final double distValue = double.tryParse(station.distance) ?? 0.0;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.stationCardBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+          color: const Color(0xFFFDF5E6),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 8,
-              offset: const Offset(0, 2),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -48,11 +50,11 @@ class StationCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    isEn ? station.nameEn : station.nameTw,
+                    appState.currentLang == 'en' ? station.nameEn : station.nameTw,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: Color(0xFF4A90E2),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -60,65 +62,53 @@ class StationCard extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    // Electric bikes button - Added to the left of the star as requested
-                    IconButton(
-                      icon: const Icon(Icons.electric_bike, color: Colors.green, size: 22),
-                      onPressed: onShowElectric,
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: Icon(
+                    if (hasElectric)
+                      const Icon(Icons.electric_bolt, color: Colors.green, size: 22),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () => appState.togglePinStation(station.id),
+                      child: Icon(
                         isPinned ? Icons.star : Icons.star_border,
-                        color: isPinned ? Colors.amber : AppColors.primary,
+                        color: isPinned ? Colors.amber : Colors.grey[600],
+                        size: 22,
                       ),
-                      onPressed: () => appState.togglePinStation(station.id),
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.navigation, color: AppColors.primary),
-                      onPressed: onNavigate,
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: onNavigate,
+                      child: const Icon(Icons.navigation, color: Color(0xFF4A90E2), size: 22),
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            // Strict vertical layout mirroring the web's detailed list
-            _buildTextRow(isEn ? "Distance" : "距離", appState.getDistanceLabel(station)),
-            _buildTextRow(isEn ? "Address" : "地址", isEn ? station.addressEn : station.addressTw),
-            _buildTextRow(isEn ? "YouBike 2.0" : "YouBike 2.0", "${station.availableBikes}"),
-            _buildTextRow(isEn ? "YouBike 2.0E" : "YouBike 2.0E", "${station.availableElectricBikes}"),
-            _buildTextRow(isEn ? "Empty Spaces" : "可停空位數", "${station.emptySpaces}"),
+            const SizedBox(height: 12),
+            Text(
+              "距離： ${appState.getDistanceLabel(distValue)}",
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "地址: ${appState.currentLang == 'en' ? station.addressEn : station.addressTw}",
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "YouBike 2.0: ${station.availableBikes}",
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "YouBike 2.0E: ${station.availableElectricBikes}",
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "可停空位數: ${station.emptySpaces}",
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Text(
-            "$label : ",
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 13, color: Colors.black87),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
       ),
     );
   }

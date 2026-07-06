@@ -1,39 +1,62 @@
-class LanguageService {
-  // 翻譯自 language.js
-  static const Map<String, Map<String, String>> _texts = {
-    'zh': {
-      'title': 'YouBike 站牌搜尋',
-      'search_placeholder': '請輸入站牌名稱、地址',
-      'settings_title': '系統設定',
-      'region_select': '地區選擇',
-      'location_service': '位置服務',
-      'dark_mode': '深色模式',
-      'lang_toggle': '中英文切換',
-      'update_countdown': '秒後更新',
-      'address': '地址',
-      'slots': '可停空位數',
-      'route_info': '路徑資訊',
-      'no_results': '查無符合結果',
-      'loading': '進入中',
-    },
-    'en': {
-      'title': 'YouBike Site Search',
-      'search_placeholder': 'Enter station name or address',
-      'settings_title': 'System Settings',
-      'region_select': 'Region Selection',
-      'location_service': 'Location Service',
-      'dark_mode': 'Dark Mode',
-      'lang_toggle': 'Language Toggle',
-      'update_countdown': 's until update',
-      'address': 'Address',
-      'slots': 'Available Slots',
-      'route_info': 'Route Information',
-      'no_results': 'No results found',
-      'loading': 'Loading...',
-    },
-  };
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 
-  static String getText(String key, String lang) {
-    return _texts[lang]?[key] ?? _texts['en']![key] ?? key;
+class LanguageService with ChangeNotifier {
+  static const String _languageCodeKey = 'languageCode';
+
+  Locale? _selectedLocale;
+  final Locale _systemLocale = PlatformDispatcher.instance.locale;
+
+  /// The locale explicitly selected by the user. This is `null` if the user wants to use the system default.
+  Locale? get selectedLocale => _selectedLocale;
+
+  /// The actual locale the app should use. It falls back to the system locale and then to the first supported locale.
+  Locale get appLocale {
+    final localeToUse = _selectedLocale ?? _systemLocale;
+
+    // Check if a supported locale's language code matches the determined locale's language code.
+    for (var supportedLocale in AppLocalizations.supportedLocales) {
+      if (supportedLocale.languageCode == localeToUse.languageCode) {
+        return supportedLocale; // Return the supported locale (e.g., 'zh' instead of 'zh_CN')
+      }
+    }
+
+    // If no match is found, fall back to the first supported locale (usually English).
+    return AppLocalizations.supportedLocales.first;
+  }
+
+  LanguageService() {
+    loadLocale();
+  }
+
+  /// Loads the saved language preference from storage.
+  Future<void> loadLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString(_languageCodeKey);
+    if (languageCode != null && languageCode.isNotEmpty) {
+      _selectedLocale = Locale(languageCode);
+    } else {
+      _selectedLocale = null;
+    }
+    notifyListeners();
+  }
+
+  /// Saves a new language preference.
+  Future<void> setLocale(Locale locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Only store the language code, not the country code.
+    _selectedLocale = Locale(locale.languageCode);
+    await prefs.setString(_languageCodeKey, locale.languageCode);
+    notifyListeners();
+  }
+
+  /// Clears the saved language preference, reverting to the system default.
+  Future<void> clearLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_languageCodeKey);
+    _selectedLocale = null;
+    notifyListeners();
   }
 }
