@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
@@ -28,25 +29,41 @@ class RouteStep {
 class RouteService {
   // 使用 GraphHopper API (同步網頁版)
   static const String baseUrl = "https://graphhopper.com/api/1/route";
-  static const String apiKey = "7cb46967-7111-4d41-8836-5209c820139c"; // From web config.js
+  static const String apiKey = "7cb4eb19-e0f4-40a3-a5e0-f2c039366f32"; // Synchronized from Web production
 
   Future<List<RouteStep>> getRoute(LatLng start, LatLng end, String lang) async {
     final locale = lang == 'en' ? 'en' : 'zh-TW';
     const profile = 'foot';
     
-    final url = "${RouteService.baseUrl}?profile=$profile&locale=$locale&key=${RouteService.apiKey}&elevation=false&instructions=true&point=${start.longitude},${start.latitude}&point=${end.longitude},${end.latitude}";
+    final url = "${RouteService.baseUrl}?profile=$profile&locale=$locale&key=${RouteService.apiKey}&elevation=false&instructions=true&point=${start.latitude},${start.longitude}&point=${end.latitude},${end.longitude}";
     
+    debugPrint("[Route] 📡 發送導航請求...");
+    debugPrint("[Route] 🚀 URL: $url");
+    debugPrint("[Route] 📍 起點: ${start.latitude}, ${start.longitude}");
+    debugPrint("[Route] 🎯 終點: ${end.latitude}, ${end.longitude}");
+
     try {
       final response = await http.get(Uri.parse(url));
+      debugPrint("[Route] 📨 Response Code: ${response.statusCode}");
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['paths'] != null && (data['paths'] as List).isNotEmpty) {
           final steps = data['paths'][0]['instructions'] as List;
+          debugPrint("[Route] ✅ 成功找到 ${steps.length} 個導航步驟");
           return steps.map((s) => RouteStep.fromJson(s)).toList();
+        } else {
+          debugPrint("[Route] ⚠️ API 返回成功但路徑為空 (Paths is empty)");
         }
+      } else if (response.statusCode == 401) {
+        debugPrint("[Route] ❌ 認證失敗 (401): API Key 已失效");
+        throw Exception("ROUTE_AUTH_FAILED");
+      } else {
+        debugPrint("[Route] ❌ API 錯誤回應: ${response.body}");
+        throw Exception("ROUTE_API_ERROR");
       }
     } catch (e) {
-      // Log: GraphHopper Route error: $e
+      debugPrint("[Route] 💥 網路或解析異常: $e");
     }
     return [];
   }

@@ -82,23 +82,36 @@ class _HomeScreenState extends State<HomeScreen> {
         const SnackBar(content: Text("使用預設位置進行導航")),
       );
     }
-    final steps = await routeService.getRoute(startPoint, LatLng(station.lat, station.lng), appState.currentLang);
-    if (!mounted) return;
-    if (steps.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("找不到路線")),
+    try {
+      final steps = await routeService.getRoute(startPoint, LatLng(station.lat, station.lng), appState.currentLang);
+      if (!mounted) return;
+      if (steps.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("找不到路線")),
+        );
+        return;
+      }
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        builder: (context) => RouteDetailPanel(
+          destination: station.nameTw,
+          steps: steps.map((s) => "${s.instruction} (${(s.distance / 1000).toStringAsFixed(2)} km)").toList(),
+        ),
       );
-      return;
+    } catch (e) {
+      if (!mounted) return;
+      String errorMsg = "導航服務暫時不可用";
+      if (e.toString().contains("ROUTE_AUTH_FAILED")) {
+        errorMsg = "導航認證失效 (API Key 失效)";
+      } else if (e.toString().contains("ROUTE_API_ERROR")) {
+        errorMsg = "導航 API 請求錯誤";
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMsg)),
+      );
     }
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => RouteDetailPanel(
-        destination: station.nameTw,
-        steps: steps.map((s) => "${s.instruction} (${(s.distance / 1000).toStringAsFixed(2)} km)").toList(),
-      ),
-    );
   }
 
   @override
