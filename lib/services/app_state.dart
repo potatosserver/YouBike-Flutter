@@ -8,9 +8,19 @@ import 'dart:convert';
 import 'dart:math' as math;
 import '../models/station.dart';
 import '../services/api_service.dart';
+import 'notification_service.dart';
 
 class AppState extends ChangeNotifier {
-  LatLng center = const LatLng(22.631442, 120.301890);
+  LatLng? _center;
+  LatLng? get center => _center;
+  set center(LatLng? value) {
+    if (_center == value) return;
+    debugPrint("[STATE] 📍 center 變更: $_center -> $value");
+    _center = value;
+    notifyListeners();
+  }
+
+  LatLng? initialSnapPoint;
   List<Station> _fullStationList = []; 
   List<Station> allStations = [];     
   bool _isLoading = true;
@@ -19,6 +29,7 @@ class AppState extends ChangeNotifier {
   set isLoading(bool value) {
     if (_isInitialLoadComplete && value == true) return;
     _isLoading = value;
+    debugPrint("[STATE] ⏳ isLoading = $value");
     notifyListeners();
   }
   int loadingProgress = 0;
@@ -64,6 +75,7 @@ class AppState extends ChangeNotifier {
 
   LatLng getEffectiveLocation() {
     if (lastKnownLocation != null) return lastKnownLocation!;
+    if (center != null) return center!;
     final region = _regions[selectedRegion]!;
     return LatLng(region['lat'] as double, region['lng'] as double);
   }
@@ -83,11 +95,15 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       }
       for (var s in allStations) {
-        final d = _calculateDistance(center.latitude, center.longitude, s.lat, s.lng);
+        final d = _calculateDistance(center!.latitude, center!.longitude, s.lat, s.lng);
         s.distance = d;
       }
       notifyListeners();
     });
+    NotificationService.instance.show(
+      message: "已開啟位置追蹤功能", 
+      type: NotificationType.success
+    );
   }
 
   void stopTracking() {
@@ -108,7 +124,6 @@ class AppState extends ChangeNotifier {
     if (cachedStationsJson != null) {
       final List<dynamic> decoded = jsonDecode(cachedStationsJson);
       _fullStationList = decoded.map((item) => Station.fromJson(item)).whereType<Station>().toList();
-      debugPrint("[Cache] 📦 載入快取站點數據: ${_fullStationList.length} 個");
     }
 
     final cachedLat = _prefs?.getDouble('last_lat');
@@ -116,39 +131,36 @@ class AppState extends ChangeNotifier {
     if (cachedLat != null && cachedLng != null) {
       center = LatLng(cachedLat, cachedLng);
       lastKnownLocation = center;
-    } else {
-      setRegion(selectedRegion);
     }
 
-    _runOptimizedInit();
+    await _runOptimizedInit();
     startAutoRefreshCycle();
+    
+    isLoading = false;
     notifyListeners();
   }
 
   Future<void> _runOptimizedInit() async {
     isLoading = true;
-    debugPrint("--- 🚀 App 啟動初始化 (Optimized Pipeline) ---");
-    _simulateLoadingProgress();
+    debugPrint("--- 🚀 App 啟動同步初始化 (Web-Aligned Pipeline) ---");
     _simulateRandomNotices();
     
     try {
-      debugPrint("[Init 1/4] 📦 更新基礎站點數據...");
-      await fetchBaseData();
-      debugPrint("[Init 1/4] ✅ 基礎數據更新完成");
-
-      debugPrint("[Init 2/4] 🛰️ 初始化 GPS 位置...");
+      currentNotice = "正在定位您的位置...";
+      notifyListeners();
       await _initializeLocation();
-      debugPrint("[Init 2/4] ✅ GPS 位置初始化完成");
-
-      debugPrint("[Init 3/4] 🔄 執行漸進式刷新...");
+      
+      currentNotice = "正在同步站點數據...";
+      notifyListeners();
+      await fetchBaseData();
+      
+      currentNotice = "正在更新實時數量...";
+      notifyListeners();
       await refreshStations(isInitial: true);
-      debugPrint("[Init 3/4] ✅ 漸進式刷新完成");
 
     } catch (e) {
-      addLog("初始化失敗: $e");
+      addLog("初始化失敗: $e", isError: true);
     } finally {
-      debugPrint("[Init 4/4] 🏁 所有初始化流程結束");
-      isLoading = false;
       _isInitialLoadComplete = true;
       loadingProgress = 100;
       currentNotice = "初始化完成";
@@ -157,39 +169,49 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _initializeLocation() async {
-    final sw = Stopwatch()..start();
     try {
       final pos = await getCurrentPosition();
       if (pos != null) {
         lastKnownLocation = LatLng(pos.latitude, pos.longitude);
         center = lastKnownLocation!;
+        initialSnapPoint = center;
         _prefs?.setDouble('last_lat', lastKnownLocation!.latitude);
         _prefs?.setDouble('last_lng', lastKnownLocation!.longitude);
         hasObtainedRealLocation = true;
+      } else if (lastKnownLocation != null) {
+        center = lastKnownLocation!;
+        initialSnapPoint = center;
       } else {
-        useDefaultLocation();
+        final region = _regions[selectedRegion]!;
+        center = LatLng(region['lat'] as double, region['lng'] as double);
+        lastKnownLocation = center;
+        initialSnapPoint = center;
       }
     } catch (e) {
-      useDefaultLocation();
+      if (lastKnownLocation != null) {
+        center = lastKnownLocation!;
+        initialSnapPoint = center;
+      } else {
+        final region = _regions[selectedRegion]!;
+        center = LatLng(region['lat'] as double, region['lng'] as double);
+        lastKnownLocation = center;
+        initialSnapPoint = center;
+      }
     }
-    debugPrint("[Detail] _initializeLocation 耗時: ${sw.elapsedMilliseconds}ms");
   }
 
   Future<void> fetchBaseData() async {
-    final sw = Stopwatch()..start();
     try {
       final api = ApiService();
       _fullStationList = await api.fetchAllStations();
       final cacheData = jsonEncode(_fullStationList.map((s) => s.toJson()).toList());
       await _prefs?.setString('cached_stations', cacheData);
     } catch (e) {
-      addLog("基礎數據獲取失敗: $e");
+      addLog("基礎數據獲取失敗: $e", isError: true);
     }
-    debugPrint("[Detail] fetchBaseData 耗時: ${sw.elapsedMilliseconds}ms");
   }
 
   Future<void> refreshStations({bool isInitial = false}) async {
-    final sw = Stopwatch()..start();
     try {
       final api = ApiService();
       if (_fullStationList.isEmpty) {
@@ -217,7 +239,6 @@ class AppState extends ChangeNotifier {
       }
       
       notifyListeners(); 
-      debugPrint("[Progressive] 📍 站點已排序並顯示，開始請求實時數據...");
 
       final vehicleData = await api.fetchRealtimeVehicles(allStations.map((s) => s.id).toList());
       for (var s in allStations) {
@@ -227,35 +248,18 @@ class AppState extends ChangeNotifier {
           s.availableElectricBikes = data['available_e'] ?? 0;
           s.emptySpaces = data['empty_spaces'] ?? 0;
         }
-      }
+        }
       
       notifyListeners();
-      debugPrint("[Progressive] ✅ 實時數據已填入");
 
     } catch (e) {
-      addLog("刷新出錯: $e");
+      addLog("刷新出錯: $e", isError: true);
     } finally {
-      debugPrint("[Detail] refreshStations 耗時: ${sw.elapsedMilliseconds}ms");
       if (!isInitial) {
         isLoading = false;
         countdownRemaining = 60;
         notifyListeners();
       }
-    }
-  }
-
-  Future<void> _simulateLoadingProgress() async {
-    int progress = 0;
-    int lockedProgress = 85 + math.Random().nextInt(11);
-    while (isLoading && progress < lockedProgress) {
-      await Future.delayed(const Duration(milliseconds: 50));
-      if (progress < 85) {
-        progress++;
-      } else {
-        if (math.Random().nextInt(5) == 0) progress++;
-      }
-      loadingProgress = progress;
-      notifyListeners();
     }
   }
 
@@ -292,6 +296,21 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setFollowing(bool value) {
+    if (isFollowingUser == value) return;
+    isFollowingUser = value;
+    if (value) {
+      startTracking();
+    } else {
+      stopTracking();
+      NotificationService.instance.show(
+        message: "已停止自動跟隨", 
+        type: NotificationType.info
+      );
+    }
+    notifyListeners();
+  }
+
   void toggleFollowing() {
     isFollowingUser = !isFollowingUser;
     if (isFollowingUser) {
@@ -321,8 +340,6 @@ class AppState extends ChangeNotifier {
   }
 
   Future<Position?> getCurrentPosition() async {
-    final sw = Stopwatch()..start();
-    debugPrint("[LOC] 📡 發送定位請求中...");
     try {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -331,13 +348,13 @@ class AppState extends ChangeNotifier {
       }
       if (permission == LocationPermission.deniedForever) return null;
       
-      final pos = await Geolocator.getCurrentPosition(
+      debugPrint("[GPS] 📡 請求精確座標...");
+      return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.low,
-        timeLimit: const Duration(seconds: 5),
-      ).timeout(const Duration(seconds: 6)); 
-      debugPrint("[LOC] ✅ 定位成功! 花費時間: ${sw.elapsedMilliseconds}ms");
-      return pos;
+        timeLimit: const Duration(seconds: 10),
+      ).timeout(const Duration(seconds: 11)); 
     } catch (e) {
+      debugPrint("[GPS] ❌ 獲取失敗: $e");
       return null;
     }
   }
@@ -352,7 +369,6 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> requestPermission() async {
-    debugPrint("[LOC] 🛡️ 請求定位權限...");
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       await Geolocator.requestPermission();
@@ -400,9 +416,15 @@ class AppState extends ChangeNotifier {
     } catch (e) {}
   }
 
-  void addLog(String msg) {
+  void addLog(String msg, {bool isError = false}) {
     logs.add("[${DateTime.now().toString().split('.').first}] $msg");
     if (logs.length > 100) logs.removeAt(0);
+    if (isError) {
+      NotificationService.instance.show(
+        message: msg, 
+        type: NotificationType.error
+      );
+    }
     notifyListeners();
   }
 }
