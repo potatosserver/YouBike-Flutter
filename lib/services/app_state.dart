@@ -26,8 +26,21 @@ class AppState extends ChangeNotifier {
   List<Station> allStations = [];     
   bool _isLoading = true;
   bool _isInitialLoadComplete = false;
+  DateTime? _initStartTime; // 記錄啟動開始時間
   bool get isLoading => _isLoading;
   set isLoading(bool value) {
+    // 如果是嘗試關閉載入狀態，檢查是否滿足保底時間 (1.5秒)
+    if (value == false && _initStartTime != null) {
+      final elapsed = DateTime.now().difference(_initStartTime!).inMilliseconds;
+      if (elapsed < 1500) {
+        // 如果時間不夠，延遲關閉，確保載入畫面不會一閃而過
+        Future.delayed(Duration(milliseconds: 1500 - elapsed), () {
+          _isLoading = false;
+          notifyListeners();
+        });
+        return;
+      }
+    }
     if (_isInitialLoadComplete && value == true) return;
     _isLoading = value;
     debugPrint("[STATE] ⏳ isLoading = $value");
@@ -150,6 +163,19 @@ class AppState extends ChangeNotifier {
     useLocation = _prefs?.getBool('useLocation') ?? true;
     final pinnedList = _prefs?.getStringList('pinnedStations') ?? [];
     pinnedStationIds = pinnedList.map((id) => id.trim()).toSet();
+    
+    // 1. 立即初始化地圖中心 (消除轉圈)
+    // 優先順序：快取位置 -> 預設區域位置
+    final cachedLat = _prefs?.getDouble('last_lat');
+    final cachedLng = _prefs?.getDouble('last_lng');
+    if (cachedLat != null && cachedLng != null) {
+      center = LatLng(cachedLat, cachedLng);
+      lastKnownLocation = center;
+    } else {
+      center = getEffectiveLocation();
+      lastKnownLocation = center;
+    }
+
     final cachedStationsJson = _prefs?.getString('cached_stations');
     if (cachedStationsJson != null) {
       try {
@@ -157,12 +183,7 @@ class AppState extends ChangeNotifier {
         _fullStationList = decoded.map((item) => Station.fromJson(item as Map<String, dynamic>)).whereType<Station>().toList();
       } catch(e) { debugPrint("Cache load error: $e"); }
     }
-    final cachedLat = _prefs?.getDouble('last_lat');
-    final cachedLng = _prefs?.getDouble('last_lng');
-    if (cachedLat != null && cachedLng != null) {
-      center = LatLng(cachedLat, cachedLng);
-      lastKnownLocation = center;
-    }
+    
     _monitorConnectivity();
     await _runOptimizedInit();
     startAutoRefreshCycle();
@@ -171,25 +192,69 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _runOptimizedInit() async {
+    _initStartTime = DateTime.now(); // 記錄啟動開始時間
+    final startTime = DateTime.now().millisecondsSinceEpoch;
+    debugPrint("[BOOT-TIMELINE] 🚀 App Start: $startTime");
+    
     isLoading = true;
     _simulateRandomNotices();
     _simulatePercentage();
+    
     try {
-      currentNotice = "init_locating";
-      notifyListeners();
-      await _initializeLocation();
+      // 1. 背景異步獲取精確定位 (完全不阻塞)
+      _initializeLocation().then((_) {
+        debugPrint("[BOOT-TIMELINE] 🎯 Precision GPS Acquired: ${DateTime.now().millisecondsSinceEpoch}");
+        refreshStations(isInitial: false);
+      });
+
+      // 2. 快取優先檢查
+      final cachedStationsJson = _prefs?.getString('cached_stations');
+      if (cachedStationsJson != null) {
+        debugPrint("[BOOT-TIMELINE] 📦 Cache Found. Loading from cache...");
+        try {
+          final List<dynamic> decoded = jsonDecode(cachedStationsJson);
+          _fullStationList = decoded.map((item) => Station.fromJson(item as Map<String, dynamic>)).whereType<Station>().toList();
+          
+          currentNotice = "init_updating";
+          notifyListeners();
+          
+          // 注意：這裡不再使用 await，直接觸發背景刷新，讓 UI 立即渲染
+          refreshStations(isInitial: true);
+          
+          debugPrint("[BOOT-TIMELINE] 🖼️ UI Rendered (From Cache): ${DateTime.now().millisecondsSinceEpoch}");
+          isLoading = false;
+          _isInitialLoadComplete = true;
+          loadingProgress = 100;
+          currentNotice = "init_success";
+          notifyListeners();
+
+          return; 
+        } catch (e) {
+          debugPrint("Cache load error: $e. Falling back to network.");
+        }
+      }
+
+      // 3. 無快取回退流程 (Cold Start)
+      debugPrint("[BOOT-TIMELINE] ❄️ Cold Start. Fetching base data from network...");
       currentNotice = "init_syncing";
       notifyListeners();
       await fetchBaseData();
+      debugPrint("[BOOT-TIMELINE] 🌐 Base Data Fetched: ${DateTime.now().millisecondsSinceEpoch}");
+
       currentNotice = "init_updating";
       notifyListeners();
       await refreshStations(isInitial: true);
+      
     } catch (e) {
       addLog("init_error $e", isError: true);
     } finally {
       _isInitialLoadComplete = true;
       loadingProgress = 100;
       currentNotice = "init_success";
+      if (isLoading) {
+        isLoading = false;
+        debugPrint("[BOOT-TIMELINE] 🖼️ UI Rendered (From Network): ${DateTime.now().millisecondsSinceEpoch}");
+      }
       notifyListeners();
     }
   }
@@ -459,8 +524,8 @@ class AppState extends ChangeNotifier {
       debugPrint("[GPS] 📡 請求精確座標...");
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.low,
-        timeLimit: const Duration(seconds: 10),
-      ).timeout(const Duration(seconds: 11)); 
+        timeLimit: const Duration(seconds: 5),
+      ).timeout(const Duration(seconds: 6)); 
     } catch (e) {
       debugPrint("[GPS] ❌ 獲取失敗: $e");
       return null;

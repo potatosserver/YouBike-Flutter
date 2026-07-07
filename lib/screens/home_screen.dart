@@ -209,11 +209,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
                     l10n.noStationsFound,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.grey, fontSize: 16),
                   ),
                 ],
