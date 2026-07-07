@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/route_service.dart';
 import '../widgets/app_theme.dart';
-import '../l10n/l10n_helper.dart';
+import '../l10n/app_localizations.dart';
 
 class RouteDetailPanel extends StatefulWidget {
   final String destination;
@@ -56,7 +56,8 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = L10n.t(context, 'navigationUnavailable');
+          final l10n = AppLocalizations.of(context)!;
+          _errorMessage = l10n.navigationUnavailable;
           _isLoading = false;
         });
       }

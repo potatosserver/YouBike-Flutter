@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/station.dart';
 import '../services/app_state.dart';
-import '../l10n/l10n_helper.dart';
+import '../l10n/app_localizations.dart';
 
 class StationCard extends StatelessWidget {
   final Station station;
@@ -22,6 +22,7 @@ class StationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final isPinned = appState.pinnedStationIds.contains(station.id);
     final hasElectric = station.availableElectricBikes > 0;
     final double distValue = station.distance;
@@ -91,27 +92,27 @@ class StationCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              "${L10n.t(context, 'distance')} ${appState.getDistanceLabel(distValue)}",
+              "${l10n.distance} ${appState.getDistanceLabel(distValue)}",
               style: TextStyle(fontSize: 15, color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(height: 4),
             Text(
-              "${L10n.t(context, 'address')} ${appState.currentLang == 'en' ? station.addressEn : station.addressTw}",
+              "${l10n.address} ${appState.currentLang == 'en' ? station.addressEn : station.addressTw}",
               style: TextStyle(fontSize: 15, color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(height: 4),
             Text(
-              "${L10n.t(context, 'availableBikes')} ${station.availableBikes}",
+              "${l10n.availableBikes} ${station.availableBikes}",
               style: TextStyle(fontSize: 15, color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(height: 4),
             Text(
-              "${L10n.t(context, 'availableElectricBikes')} ${station.availableElectricBikes}",
+              "${l10n.availableElectricBikes} ${station.availableElectricBikes}",
               style: TextStyle(fontSize: 15, color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(height: 4),
             Text(
-              "${L10n.t(context, 'emptySpaces')} ${station.emptySpaces}",
+              "${l10n.emptySpaces} ${station.emptySpaces}",
               style: TextStyle(fontSize: 15, color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
             ),
           ],

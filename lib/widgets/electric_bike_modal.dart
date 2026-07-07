@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../l10n/l10n_helper.dart';
+import '../l10n/app_localizations.dart';
 
 class ElectricBikeDetailsModal extends StatelessWidget {
   final String stationId;
@@ -24,6 +24,7 @@ class ElectricBikeDetailsModal extends StatelessWidget {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _fetchBikes(),
       builder: (context, snapshot) {
+        final l10n = AppLocalizations.of(context)!;
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -46,7 +47,7 @@ class ElectricBikeDetailsModal extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                "${L10n.t(context, 'electricBikeDetailsTitle')} $stationName",
+                "${l10n.electric_bike_details_title} $stationName",
                 style: TextStyle(
                   fontSize: 20, 
                   fontWeight: FontWeight.bold,
@@ -64,7 +65,7 @@ class ElectricBikeDetailsModal extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        L10n.t(context, 'loading'),
+                        l10n.getting_bike_data,
                         style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
                     ],
@@ -73,7 +74,7 @@ class ElectricBikeDetailsModal extends StatelessWidget {
               else if (snapshot.hasError)
                 Center(
                   child: Text(
-                    "${L10n.t(context, 'electricBikeError')} ${snapshot.error}",
+                    "${l10n.electricBikeError} ${snapshot.error}",
                     style: const TextStyle(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
@@ -81,7 +82,7 @@ class ElectricBikeDetailsModal extends StatelessWidget {
               else if (!snapshot.hasData || snapshot.data!.isEmpty)
                 Center(
                   child: Text(
-                    L10n.t(context, 'noElectricBikes'),
+                    l10n.no_electric_bikes,
                     style: TextStyle(
                       fontSize: 16,
                       color: theme.colorScheme.onSurface,
@@ -101,13 +102,13 @@ class ElectricBikeDetailsModal extends StatelessWidget {
                       child: ListTile(
                         leading: const Icon(Icons.electric_bike, color: Colors.green),
                         title: Text(
-                          "${L10n.t(context, 'bikeNumber')} ${bike['bike_no']}",
+                          "${l10n.bike_number_label} ${bike['bike_no']}",
                           style: TextStyle(
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
                         subtitle: Text(
-                          "${L10n.t(context, 'pillarNumber')} ${bike['pillar_no']}",
+                          "${l10n.pillar_number_label} ${bike['pillar_no']}",
                           style: TextStyle(
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),

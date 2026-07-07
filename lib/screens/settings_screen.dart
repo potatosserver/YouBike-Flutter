@@ -15,7 +15,7 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text(l10n.settings),
+        title: Text(l10n.settings_title),
         backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
         foregroundColor: theme.brightness == Brightness.dark ? Colors.white : Colors.black,
         elevation: 0,

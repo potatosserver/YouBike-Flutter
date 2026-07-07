@@ -1,92 +1,157 @@
 {
-  "@@locale": "zh",
-  "searchPlaceholder": "搜尋站點名稱或地址...",
-  "@searchPlaceholder": {},
-  "updatingIn": "即時資料將在 {sec} 秒後更新",
-  "@updatingIn": {
-    "placeholders": {
-      "sec": {
-        "type": "Object"
-      }
-    }
-  },
-  "routeNotFound": "找不到前往該站點的路徑",
-  "@routeNotFound": {},
-  "electricBikeError": "取得電輔車資料失敗: {err}",
-  "@electricBikeError": {
-    "placeholders": {
-      "err": {
-        "type": "Object"
-      }
-    }
-  },
-  "noElectricBikes": "目前該站點沒有可用電輔車",
-  "@noElectricBikes": {},
-  "bikeNumber": "車號: ",
-  "@bikeNumber": {},
-  "pillarNumber": "車位: ",
-  "@pillarNumber": {},
-  "ok": "確定",
-  "@ok": {},
-  "distance": "距離: ",
-  "@distance": {},
-  "address": "地址: ",
-  "@address": {},
-  "availableBikes": "YouBike 2.0: ",
-  "@availableBikes": {},
-  "availableElectricBikes": "YouBike 2.0E: ",
-  "@availableElectricBikes": {},
-  "emptySpaces": "可停空位數: ",
-  "@emptySpaces": {},
-  "settings": "設定",
-  "@settings": {},
-  "darkMode": "深色模式",
-  "@darkMode": {},
-  "language": "語言選擇",
-  "@language": {},
-  "autoRefresh": "自動刷新",
-  "@autoRefresh": {},
-  "loading": "正在載入 YouBike 資料...",
-  "@loading": {},
-  "param_settings": "參數設定",
-  "@param_settings": {},
-  "about": "關於",
-  "@about": {},
-  "app_reset": "重設 App",
-  "@app_reset": {},
-
-  "loading_prefix": "載入中：{progress}%",
-  "@loading_prefix": {
-    "placeholders": {
-      "progress": {
-        "type": "Object"
-      }
-    }
-  },
-  "init_success": "初始化完成",
-  "@init_success": {},
-  "init_error": "初始化過程出錯: {error}",
-  "@init_error": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
-  "notice_no_speed": "❌勿超速或逆向騎乘",
-  "@notice_no_speed": {},
-  "notice_no_sidewalk": "❌勿隨意變換車道在行人道上騎乘",
-  "@notice_no_sidewalk": {},
-  "notice_no_phone": "❌勿在車輛行駛中使用手機",
-  "@notice_no_phone": {},
-  "notice_no_brake": "❌騎乘中勿緊急煞車",
-  "@notice_no_brake": {},
-  "notice_seat_height": "✔️記得調整座墊至適宜高度",
-  "@notice_seat_height": {},
-  "notice_lights_work": "✔️確認前後車燈功能正常",
-  "@notice_lights_work": {},
-  "notice_insurance": "✔️記得投保公共自行車傷害險",
-  "@notice_insurance": {},
-  "notice_take_belongings": "✔️記得帶走置物籃內的隨身物品",
-  "@notice_take_belongings": {}
+    "@@locale": "zh",
+    "app_title": "YouBike 站點搜尋",
+    "@app_title": {},
+    "app_full_title": "YouBike 站點搜尋 : 一個簡單、美觀、低流量的YouBike站點搜尋器",
+    "@app_full_title": {},
+    "use_location": "使用定位",
+    "@use_location": {},
+    "input_placeholder": "請輸入站點名稱、地址",
+    "@input_placeholder": {},
+    "countdown_suffix": "秒後更新",
+    "@countdown_suffix": {},
+    "settings_title": "系統設定",
+    "@settings_title": {},
+    "settings_basic": "基本設定",
+    "@settings_basic": {},
+    "settings_github": "GitHub 儲存庫",
+    "@settings_github": {},
+    "settings_location": "位置服務",
+    "@settings_location": {},
+    "settings_dark_mode": "深色模式",
+    "@settings_dark_mode": {},
+    "settings_language": "中文/English",
+    "@settings_language": {},
+    "settings_language_title": "語言設定",
+    "@settings_language_title": {},
+    "settings_theme": "主題模式",
+    "@settings_theme": {},
+    "settings_debug": "系統偵錯日誌",
+    "@settings_debug": {},
+    "log_copied": "日誌已複製到剪貼簿",
+    "@log_copied": {},
+    "settings_region": "地區選擇",
+    "@settings_region": {},
+    "electric_bike_details_title": "電輔車列表 - ",
+    "@electric_bike_details_title": {},
+    "bike_number_label": "車輛編號：",
+    "@bike_number_label": {},
+    "pillar_number_label": "停車柱編號：",
+    "@pillar_number_label": {},
+    "battery_power_label": "電量：",
+    "@battery_power_label": {},
+    "no_electric_bikes": "此站點目前沒有可用的電輔車。",
+    "@no_electric_bikes": {},
+    "failed_to_get_bike_data": "無法取得電輔車資料。",
+    "@failed_to_get_bike_data": {},
+    "getting_bike_data": "取得電輔車資料中...",
+    "@getting_bike_data": {},
+    "region_taipei": "台北市",
+    "@region_taipei": {},
+    "region_new_taipei": "新北市",
+    "@region_new_taipei": {},
+    "region_taoyuan": "桃園市",
+    "@region_taoyuan": {},
+    "region_hsinchu_county": "新竹縣",
+    "@region_hsinchu_county": {},
+    "region_hsinchu_city": "新竹市",
+    "@region_hsinchu_city": {},
+    "region_science_park": "新竹科學園區",
+    "@region_science_park": {},
+    "region_miaoli": "苗栗縣",
+    "@region_miaoli": {},
+    "region_taichung": "台中市",
+    "@region_taichung": {},
+    "region_chiayi": "嘉義市",
+    "@region_chiayi": {},
+    "region_tainan": "臺南市",
+    "@region_tainan": {},
+    "region_kaohsiung": "高雄市",
+    "@region_kaohsiung": {},
+    "region_pingtung": "屏東縣",
+    "@region_pingtung": {},
+    "region_taitung": "臺東縣",
+    "@region_taitung": {},
+    "routeNotFound": "找不到前往該站點的路徑",
+    "@routeNotFound": {},
+    "ok": "確定",
+    "@ok": {},
+    "distance": "距離: ",
+    "@distance": {},
+    "address": "地址: ",
+    "@address": {},
+    "availableBikes": "YouBike 2.0: ",
+    "@availableBikes": {},
+    "availableElectricBikes": "YouBike 2.0E: ",
+    "@availableElectricBikes": {},
+    "emptySpaces": "可停空位數: ",
+    "@emptySpaces": {},
+    "autoRefresh": "自動刷新",
+    "@autoRefresh": {},
+    "param_settings": "參數設定",
+    "@param_settings": {},
+    "about": "關於",
+    "@about": {},
+    "app_reset": "重設 App",
+    "@app_reset": {},
+    "init_success": "初始化完成",
+    "@init_success": {},
+    "notice_no_speed": "❌勿超速或逆向騎乘",
+    "@notice_no_speed": {},
+    "notice_no_sidewalk": "❌勿隨意變換車道在行人道上騎乘",
+    "@notice_no_sidewalk": {},
+    "notice_no_phone": "❌勿在車輛行駛中使用手機",
+    "@notice_no_phone": {},
+    "notice_no_brake": "❌騎乘中勿緊急煞車",
+    "@notice_no_brake": {},
+    "notice_seat_height": "✔️記得調整座墊至適宜高度",
+    "@notice_seat_height": {},
+    "notice_lights_work": "✔️確認前後車燈功能正常",
+    "@notice_lights_work": {},
+    "notice_insurance": "✔️記得投保公共自行車傷害險",
+    "@notice_insurance": {},
+    "notice_take_belongings": "✔️記得帶走置物籃內的隨身物品",
+    "@notice_take_belongings": {},
+    "updatingIn": "即時資料將在 {sec} 秒後更新",
+    "@updatingIn": {
+        "placeholders": {
+            "sec": {
+                "type": "String"
+            }
+        }
+    },
+    "electricBikeError": "取得電輔車資料失敗: {err}",
+    "@electricBikeError": {
+        "placeholders": {
+            "err": {
+                "type": "String"
+            }
+        }
+    },
+    "loading_prefix": "載入中：{progress}%",
+    "@loading_prefix": {
+        "placeholders": {
+            "progress": {
+                "type": "String"
+            }
+        }
+    },
+    "init_error": "初始化過程出錯: {error}",
+    "@init_error": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "locationTrackingEnabled": "位置追蹤已開啟",
+    "@locationTrackingEnabled": {},
+    "noStationsFound": "找不到符合的站點",
+    "@noStationsFound": {},
+    "navigationUnavailable": "導航服務不可用",
+    "@navigationUnavailable": {},
+    "updating": "更新中...",
+    "@updating": {},
+    "sec": "秒",
+    "@sec": {}
 }

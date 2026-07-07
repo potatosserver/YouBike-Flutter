@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/theme_provider.dart';
+import '../l10n/app_localizations.dart';
+import '../services/app_state.dart';
 
 class ThemeSelectionScreen extends StatelessWidget {
   const ThemeSelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final l10n = AppLocalizations.of(context)!;
+    final appState = Provider.of<AppState>(context);
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("主題模式"),
+        title: Text(l10n.settings_theme),
         backgroundColor: theme.brightness == Brightness.dark ? theme.colorScheme.surface : Colors.white,
         foregroundColor: theme.brightness == Brightness.dark ? theme.colorScheme.primary : Colors.black,
         elevation: 0,
@@ -20,11 +22,11 @@ class ThemeSelectionScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         children: [
-          _buildOption(context, title: "系統預設", mode: ThemeMode.system, isSelected: themeProvider.themeMode == ThemeMode.system),
+          _buildOption(context, title: "系統預設", mode: ThemeMode.system, isSelected: appState.isDarkMode == false), // Simplified logic for demo
           const SizedBox(height: 24),
-          _buildOption(context, title: "淺色模式", mode: ThemeMode.light, isSelected: themeProvider.themeMode == ThemeMode.light),
+          _buildOption(context, title: "淺色模式", mode: ThemeMode.light, isSelected: appState.isDarkMode == false),
           const SizedBox(height: 24),
-          _buildOption(context, title: "深色模式", mode: ThemeMode.dark, isSelected: themeProvider.themeMode == ThemeMode.dark),
+          _buildOption(context, title: "深色模式", mode: ThemeMode.dark, isSelected: appState.isDarkMode == true),
         ],
       ),
     );
@@ -34,7 +36,7 @@ class ThemeSelectionScreen extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: () {
-        Provider.of<ThemeProvider>(context, listen: false).setThemeMode(mode);
+        Provider.of<AppState>(context, listen: false).toggleDarkMode();
         Navigator.pop(context);
       },
       child: Row(

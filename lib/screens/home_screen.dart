@@ -10,7 +10,7 @@ import '../widgets/electric_bike_modal.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/pulse_marker.dart';
 import '../services/notification_service.dart';
-import '../l10n/l10n_helper.dart';
+import '../l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,10 +46,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleLocationPress() async {
     final appState = Provider.of<AppState>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
     LatLng snapPos = appState.lastKnownLocation ?? appState.getEffectiveLocation();
     _mapController.move(snapPos, 18.0);
     NotificationService.instance.show(
-      message: L10n.t(context, 'locationTrackingEnabled'), 
+      message: l10n.locationTrackingEnabled, 
       type: NotificationType.success
     );
     appState.setFollowing(true);
@@ -81,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final l10n = AppLocalizations.of(context)!;
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
@@ -134,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: TextField(
                 decoration: InputDecoration(
                   filled: true, fillColor: Theme.of(context).colorScheme.surface, 
-                  hintText: L10n.t(context, 'searchPlaceholder'),
+                  hintText: l10n.input_placeholder,
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
                 ),
@@ -200,6 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildStationPanel() {
     final appState = Provider.of<AppState>(context);
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       width: double.infinity,
       child: appState.allStations.isEmpty 
@@ -210,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
-                    L10n.t(context, 'noStationsFound'),
+                    l10n.noStationsFound,
                     style: const TextStyle(color: Colors.grey, fontSize: 16),
                   ),
                 ],

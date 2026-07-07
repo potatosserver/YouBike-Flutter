@@ -53,19 +53,19 @@ class AppState extends ChangeNotifier {
 
   Map<String, Map<String, dynamic>> get regions => _regions;
   final Map<String, Map<String, dynamic>> _regions = {
-    "taipei": {"name": "台北市", "lat": 25.047924, "lng": 121.517081},
-    "newTaipei": {"name": "新北市", "lat": 25.0215339197085, "lng": 121.4568090197085},
-    "taoyuan": {"name": "桃園市", "lat": 24.953671, "lng": 121.225783},
-    "hsinchuCounty": {"name": "新竹縣", "lat": 24.826917615712, "lng": 121.01290295049},
-    "hsinchuCity": {"name": "新竹市", "lat": 24.801815, "lng": 120.971459},
-    "sciencePark": {"name": "新竹科學園區", "lat": 24.781830, "lng": 121.005074},
-    "miaoli": {"name": "苗栗縣", "lat": 24.5648599, "lng": 120.8185503},
-    "taichung": {"name": "台中市", "lat": 24.154712, "lng": 120.664265},
-    "chiayi": {"name": "嘉義市", "lat": 23.4797837, "lng": 120.4397206},
-    "tainan": {"name": "臺南市", "lat": 22.99230083082, "lng": 120.18509419659},
-    "kaohsiung": {"name": "高雄市", "lat": 22.631442, "lng": 120.301890},
-    "pingtung": {"name": "屏東縣", "lat": 22.683036253664, "lng": 120.48790854724},
-    "taitung": {"name": "臺東縣", "lat": 22.755711056126138, "lng": 121.15035332587574},
+    "taipei": {"name": "region_taipei", "lat": 25.047924, "lng": 121.517081},
+    "newTaipei": {"name": "region_new_taipei", "lat": 25.0215339197085, "lng": 121.4568090197085},
+    "taoyuan": {"name": "region_taoyuan", "lat": 24.953671, "lng": 121.225783},
+    "hsinchuCounty": {"name": "region_hsinchu_county", "lat": 24.826917615712, "lng": 121.01290295049},
+    "hsinchuCity": {"name": "region_hsinchu_city", "lat": 24.801815, "lng": 120.971459},
+    "sciencePark": {"name": "region_science_park", "lat": 24.781830, "lng": 121.005074},
+    "miaoli": {"name": "region_miaoli", "lat": 24.5648599, "lng": 120.8185503},
+    "taichung": {"name": "region_taichung", "lat": 24.154712, "lng": 120.664265},
+    "chiayi": {"name": "region_chiayi", "lat": 23.4797837, "lng": 120.4397206},
+    "tainan": {"name": "region_tainan", "lat": 22.99230083082, "lng": 120.18509419659},
+    "kaohsiung": {"name": "region_kaohsiung", "lat": 22.631442, "lng": 120.301890},
+    "pingtung": {"name": "region_pingtung", "lat": 22.683036253664, "lng": 120.48790854724},
+    "taitung": {"name": "region_taitung", "lat": 22.755711056126138, "lng": 121.15035332587574},
   };
 
   final Map<String, int> _anchorCounts = {};
@@ -133,7 +133,7 @@ class AppState extends ChangeNotifier {
       }
       notifyListeners();
     });
-    NotificationService.instance.show(message: "已開啟位置追蹤功能", type: NotificationType.success);
+    NotificationService.instance.show(message: "tracking_enabled", type: NotificationType.success);
   }
 
   void stopTracking() {
@@ -174,21 +174,21 @@ class AppState extends ChangeNotifier {
     _simulateRandomNotices();
     _simulatePercentage();
     try {
-      currentNotice = "正在定位您的位置...";
+      currentNotice = "init_locating";
       notifyListeners();
       await _initializeLocation();
-      currentNotice = "正在同步站點數據...";
+      currentNotice = "init_syncing";
       notifyListeners();
       await fetchBaseData();
-      currentNotice = "正在更新實時數量...";
+      currentNotice = "init_updating";
       notifyListeners();
       await refreshStations(isInitial: true);
     } catch (e) {
-      addLog("初始化失敗: $e", isError: true);
+      addLog("init_error $e", isError: true);
     } finally {
       _isInitialLoadComplete = true;
       loadingProgress = 100;
-      currentNotice = "初始化完成";
+      currentNotice = "init_success";
       notifyListeners();
     }
   }
@@ -272,7 +272,7 @@ class AppState extends ChangeNotifier {
           debugPrint("[REFRESH-LOG] 🕒 背景定位更新完成: ${DateTime.now().millisecondsSinceEpoch - startTime}ms");
         }
       });
-
+      
       final sorted = List<Station>.from(_fullStationList);
       sorted.sort((a, b) {
         final distA = _calculateDistance(referencePoint.latitude, referencePoint.longitude, a.lat, a.lng);
@@ -305,9 +305,9 @@ class AppState extends ChangeNotifier {
       
       notifyListeners(); 
       debugPrint("[REFRESH-LOG] 🕒 API 數據更新完成: ${DateTime.now().millisecondsSinceEpoch - startTime}ms");
-
+      
     } catch (e) {
-      addLog("刷新出錯: $e", isError: true);
+      addLog("refresh_error $e", isError: true);
     } finally {
       isUpdating = false;
       notifyListeners();
@@ -333,27 +333,27 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> _simulateRandomNotices() async {
+  void _simulateRandomNotices() async {
     final notices = currentLang.startsWith('en') 
       ? [
-        "❌Do not speed or ride in reverse",
-        "❌Do not change lanes arbitrarily on sidewalks",
-        "❌Do not use your phone while riding",
-        "❌Avoid harsh braking while riding",
-        "✔️Remember to adjust the seat to a proper height",
-        "✔️Ensure that both front and rear lights are working",
-        "✔️Remember to get bicycle accident insurance",
-        "✔️Take your belongings from the basket"
+        "notice_no_speed",
+        "notice_no_sidewalk",
+        "notice_no_phone",
+        "notice_no_brake",
+        "notice_seat_height",
+        "notice_lights_work",
+        "notice_insurance",
+        "notice_take_belongings"
       ]
       : [
-        "❌勿超速或逆向騎乘",
-        "❌勿隨意變換車道在行人道上騎乘",
-        "❌勿在車輛行駛中使用手機",
-        "❌騎乘中勿緊急煞車",
-        "✔️記得調整座墊至適宜高度",
-        "✔️確認前後車燈功能正常",
-        "✔️記得投保公共自行車傷害險",
-        "✔️記得帶走置物籃內的隨身物品"
+        "notice_no_speed",
+        "notice_no_sidewalk",
+        "notice_no_phone",
+        "notice_no_brake",
+        "notice_seat_height",
+        "notice_lights_work",
+        "notice_insurance",
+        "notice_take_belongings"
       ];
     loadingNotice = notices[math.Random().nextInt(notices.length)];
     notifyListeners();
@@ -411,7 +411,7 @@ class AppState extends ChangeNotifier {
     } else {
       stopTracking();
       NotificationService.instance.show(
-        message: "已停止自動跟隨", 
+        message: "stop_following", 
         type: NotificationType.info
       );
     }
