@@ -4,7 +4,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/station.dart';
 import '../services/app_state.dart';
-import '../services/route_service.dart';
 import '../widgets/station_card.dart';
 import '../widgets/route_detail_panel.dart';
 import '../widgets/electric_bike_modal.dart';
@@ -66,29 +65,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _showRoutePanel(Station station) async {
-    final appState = Provider.of<AppState>(context, listen: false);
-    final routeService = RouteService();
-    LatLng startPoint = (await appState.getCurrentPosition()) != null 
-        ? LatLng((await appState.getCurrentPosition())!.latitude, (await appState.getCurrentPosition())!.longitude)
-        : appState.getEffectiveLocation();
-    try {
-      final steps = await routeService.getRoute(startPoint, LatLng(station.lat, station.lng), appState.currentLang);
-      if (!mounted || steps.isEmpty) return;
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-        builder: (context) => RouteDetailPanel(
-          destination: station.nameTw,
-          steps: steps.map((s) => "${s.instruction} (${(s.distance / 1000).toStringAsFixed(2)} km)").toList(),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        NotificationService.instance.show(message: L10n.t(context, 'navigationUnavailable'), type: NotificationType.error);
-      }
-    }
+  void _showRoutePanel(Station station) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => RouteDetailPanel(
+        destination: station.nameTw,
+        destLat: station.lat,
+        destLng: station.lng,
+      ),
+    );
   }
 
   @override
@@ -274,6 +261,7 @@ class HomeUpdateButton extends StatefulWidget {
 
 class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  bool _wasUpdating = false;
 
   @override
   void initState() {
@@ -291,45 +279,56 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
   }
 
   @override
+  void didUpdateWidget(covariant HomeUpdateButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Note: AppState is accessed via Provider in build, 
+    // so we handle animation state changes in build or via a listener.
+  }
+
+  @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final theme = Theme.of(context);
 
+    // 模擬網頁版行為：更新時旋轉一圈後停止，而非持續旋轉
     if (appState.isUpdating) {
-      _controller.repeat();
+      if (!_wasUpdating) {
+        _controller.forward(from: 0.0); // 僅旋轉一圈 (0.0 -> 1.0)
+        _wasUpdating = true;
+      }
     } else {
-      _controller.stop();
-      _controller.reset();
+      if (_wasUpdating) {
+        _controller.stop();
+        _controller.reset();
+        _wasUpdating = false;
+      }
     }
 
     return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.brightness == Brightness.dark ? const Color(0xFF4A4A4A) : const Color(0xFFFDCACB),
-          borderRadius: BorderRadius.circular(50),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              appState.isUpdating 
-                  ? L10n.t(context, 'updating') 
-                  : "${L10n.t(context, 'autoRefresh')} ${appState.countdownRemaining} ${L10n.t(context, 'sec')}",
-              style: TextStyle(
-                color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
+      child: GestureDetector(
+        onTap: appState.isUpdating ? null : () {
+          appState.refreshStations();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.brightness == Brightness.dark ? const Color(0xFF4A4A4A) : const Color(0xFFFDCACB),
+            borderRadius: BorderRadius.circular(50),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "${appState.countdownRemaining}秒後更新",
+                style: TextStyle(
+                  color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: appState.isUpdating ? null : () {
-                appState.countdownRemaining = 60;
-                appState.refreshStations();
-              },
-              child: RotationTransition(
+              const SizedBox(width: 8),
+              RotationTransition(
                 turns: _controller,
                 child: Icon(
                   appState.isUpdating ? Icons.sync : Icons.refresh, 
@@ -337,8 +336,8 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
                   color: appState.isUpdating ? Colors.grey : (theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -10,12 +10,13 @@ class L10n {
     switch (key) {
       case 'searchPlaceholder': return l10n.searchPlaceholder;
       case 'updating': return '更新中...';
-      case 'autoRefresh': return '自動更新';
+      case 'autoRefresh': return '後更新';
       case 'sec': return '秒';
       case 'updatingIn': return l10n.updatingIn(args?['sec'] ?? '0');
       case 'routeNotFound': return l10n.routeNotFound;
       case 'electricBikeError': return l10n.electricBikeError(args?['err'] ?? 'Error');
       case 'noElectricBikes': return l10n.noElectricBikes;
+      case 'electricBikeDetailsTitle': return '電輔車詳情';
       case 'bikeNumber': return l10n.bikeNumber;
       case 'pillarNumber': return l10n.pillarNumber;
       case 'ok': return l10n.ok;
