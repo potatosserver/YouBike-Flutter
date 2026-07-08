@@ -146,39 +146,50 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           else
             const Center(child: CircularProgressIndicator()),
-
-          // --- Layer 2: Search & Control Overlays ---
+          // --- Layer 2: Control Overlays (M3 Square Style) ---
+          
+          // Settings Button: Top-Right, pure white circular button with refined size
           Positioned(
-            top: 50, left: 20, right: 20,
-            child: Container(
-              decoration: const BoxDecoration(boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)]),
-              child: TextField(
-                decoration: InputDecoration(
-                  filled: true, fillColor: theme.colorScheme.surface, 
-                  hintText: l10n.input_placeholder,
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
+            top: 40, 
+            right: 15,
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/settings'),
+              child: Container(
+                width: 32, // Increased from 24 for better visibility
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
                 ),
-                onSubmitted: (val) => appState.searchStations(val),
+                child: Center(
+                  child: Icon(
+                    Icons.settings, 
+                    size: 22, // Increased from 18 to match the larger white area
+                    color: theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : Colors.black87
+                  ),
+                ),
               ),
             ),
           ),
+
+          // Location Button: Bottom-Right of Map, restored to original Settings-style color
           Positioned(
-            top: 110, left: 20,
-            child: FloatingActionButton.small(
-              heroTag: 'loc_btn',
-              onPressed: _handleLocationPress,
-              backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF222222) : theme.scaffoldBackgroundColor,
-              child: Icon(Icons.my_location, color: appState.isFollowingUser ? const Color(0xFF007BFF) : (theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : Colors.black87)),
-            ),
-          ),
-          Positioned(
-            top: 110, right: 20,
-            child: FloatingActionButton.small(
-              heroTag: 'settings_btn',
-              onPressed: () => Navigator.pushNamed(context, '/settings'),
-              backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF222222) : const Color(0xFFFDCACB),
-              child: Icon(Icons.settings, color: theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : const Color(0xFF333333)),
+            right: 20,
+            bottom: (_panelHeight ?? screenHeight * 0.35) + 20, 
+            child: Container(
+              decoration: BoxDecoration(
+                color: theme.brightness == Brightness.dark ? const Color(0xFF222222) : const Color(0xFFFDCACB), // Original color palette
+                borderRadius: BorderRadius.circular(12), 
+                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+              ),
+              child: IconButton(
+                icon: Icon(
+                  Icons.my_location, 
+                  size: 22, 
+                  color: theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : Colors.black87, // Original icon color
+                ),
+                onPressed: _handleLocationPress,
+              ),
             ),
           ),
 
@@ -190,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
             height: _panelHeight,
             child: Column(
               children: [
-                // Bridge-Style Drag Handle: Ultra-compact symmetry (High-fidelity web spec)
+                // Bridge-Style Drag Handle: Precision compact symmetry (Balanced for visibility)
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onVerticalDragUpdate: (details) {
@@ -201,15 +212,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   child: Container(
                     width: double.infinity,
-                    height: 16, // Total height reduced to shrink the gap significantly
-                    padding: const EdgeInsets.symmetric(vertical: 6), // (16-4)/2 = 6px symmetric gap
+                    height: 24, // Restored to a more comfortable height for visual balance
+                    padding: const EdgeInsets.symmetric(vertical: 9), // (24-6)/2 = 9px symmetric gap
                     child: Center(
                       child: Container(
                         width: MediaQuery.of(context).size.width * 0.4, 
-                        height: 4, // Thinner handle for a more refined look
+                        height: 6, 
                         decoration: BoxDecoration(
                           color: theme.brightness == Brightness.dark ? Colors.white38 : const Color(0xFFBBBBBB), 
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(3),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.1),
@@ -223,8 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 
-                // 2. THE GAP: Removed the separate SizedBox to achieve absolute symmetry
-                // The Gap is now provided by the bottom padding of the handle container
+                // 2. THE GAP: Provided by the bottom padding of the handle container
                 
                 // 3. THE PANEL: The rounded container holding the content
                 Expanded(
@@ -240,7 +250,30 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       ],
                     ),
-                    child: _buildStationPanel(),
+                    child: Column(
+                      children: [
+                        // Search Bar integrated into the panel top (Tighter padding to save room for cards)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                          child: TextField(
+                            decoration: InputDecoration(
+                              filled: true, 
+                              fillColor: theme.brightness == Brightness.dark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF),
+                              hintText: l10n.input_placeholder,
+                              prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15), 
+                                borderSide: BorderSide.none
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                            ),
+                            onSubmitted: (val) => appState.searchStations(val),
+                            style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
+                          ),
+                        ),
+                        Expanded(child: _buildStationPanel()),
+                      ],
+                    ),
                   ),
                 ),
               ],
