@@ -18,7 +18,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Generate High-Res Base Map
+      - name: Generate High-Res Base Map (Zoom 16)
         run: |
           # 下載 Planetiler
           wget https://github.com/onthegomap/planetiler/releases/latest/download/planetiler.jar
@@ -26,16 +26,15 @@ jobs:
           # 下載全台 OSM 資料
           wget https://download.geofabrik.de/asia/taiwan-latest.osm.pbf
           
-          # 執行精簡化打包
-          # 僅保留：transportation (道路), transportation_name (路名), 
-          # building (建築), landuse (公園/綠地), water (水系)
+          # 執行打包
+          # maxzoom=16 符合 OpenMapTiles 標準，並可透過 App 原生放大至 18
           java -Xmx12g -jar planetiler.jar \
             --osm-path=taiwan-latest.osm.pbf \
             --output=taiwan_base.pmtiles \
             --only-layers=transportation,transportation_name,building,landuse,water \
             --download \
             --force \
-            --maxzoom=18
+            --maxzoom=16
           
           ls -lh taiwan_base.pmtiles
 
