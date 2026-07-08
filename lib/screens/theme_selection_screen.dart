@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
-import '../services/app_state.dart';
 import '../services/theme_provider.dart';
 
 class ThemeSelectionScreen extends StatelessWidget {

@@ -20,7 +20,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final MapController _mapController = MapController();
-  double _panelHeight = 0.15;
 
   @override
   void initState() {
@@ -84,58 +83,108 @@ class _HomeScreenState extends State<HomeScreen> {
     final appState = Provider.of<AppState>(context);
     final l10n = AppLocalizations.of(context)!;
     final screenHeight = MediaQuery.of(context).size.height;
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
       body: Stack(
         children: [
-          if (appState.center != null)
-            FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: appState.center!,
-                initialZoom: 18.0,
-                onPositionChanged: (pos, hasMoved) {
-                  if (appState.isFollowingUser && pos.center != null && appState.center != null) {
-                    if ((pos.center!.latitude - appState.center!.latitude).abs() + (pos.center!.longitude - appState.center!.longitude).abs() > 0.0001) {
-                      appState.setFollowing(false);
-                    }
-                  }
-                },
+          Column(
+            children: [
+              // --- Top Section: Map ---
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                  child: appState.center != null 
+                    ? FlutterMap(
+                        mapController: _mapController,
+                        options: MapOptions(
+                          initialCenter: appState.center!,
+                          initialZoom: 18.0,
+                          onPositionChanged: (pos, hasMoved) {
+                            if (appState.isFollowingUser && pos.center != null && appState.center != null) {
+                              if ((pos.center!.latitude - appState.center!.latitude).abs() + (pos.center!.longitude - appState.center!.longitude).abs() > 0.0001) {
+                                appState.setFollowing(false);
+                              }
+                            }
+                          },
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: theme.brightness == Brightness.dark 
+                                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png' 
+                                : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', 
+                            userAgentPackageName: 'com.youbike.android',
+                          ),
+                          MarkerLayer(
+                            markers: appState.allStations.map((s) => Marker(
+                              point: s.visualPosition ?? LatLng(s.lat, s.lng),
+                              width: 40, height: 50,
+                              child: _buildRoadSignPin(appState.pinnedStationIds.contains(s.id.trim())),
+                            )).toList(),
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                  point: appState.center!,
+                                  width: 40, height: 40,
+                                  child: PulseMarker(latitude: appState.center!.latitude, longitude: appState.center!.longitude),
+                                ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : const Center(child: CircularProgressIndicator()),
+                ),
               ),
-              children: [
-                TileLayer(
-                  urlTemplate: Theme.of(context).brightness == Brightness.dark 
-                      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png' 
-                      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', 
-                  userAgentPackageName: 'com.youbike.android',
-                ),
-                MarkerLayer(
-                  markers: appState.allStations.map((s) => Marker(
-                    point: s.visualPosition ?? LatLng(s.lat, s.lng),
-                    width: 40, height: 50,
-                    child: _buildRoadSignPin(appState.pinnedStationIds.contains(s.id.trim())),
-                  )).toList(),
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                        point: appState.center!,
-                        width: 40, height: 40,
-                        child: PulseMarker(latitude: appState.center!.latitude, longitude: appState.center!.longitude),
-                      ),
+              
+              // --- Bottom Section: Station Panel (The "Separated" Look) ---
+              Container(
+                height: screenHeight * 0.35,
+                margin: const EdgeInsets.only(top: 8), // The critical physical gap
+                decoration: BoxDecoration(
+                  color: theme.brightness == Brightness.dark ? const Color(0xFF1E1E1E) : const Color(0xFFFFF5F0),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1), 
+                      blurRadius: 15, 
+                      offset: const Offset(0, -5)
+                    )
                   ],
                 ),
-              ],
-            )
-          else
-            const Center(child: CircularProgressIndicator()),
+                child: Column(
+                  children: [
+                    // Drag Handle: Simplified and anchored to top
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 12, bottom: 8),
+                      child: Center(
+                        child: Container(
+                          width: MediaQuery.of(context).size.width * 0.4, 
+                          height: 4, 
+                          decoration: BoxDecoration(
+                            color: theme.brightness == Brightness.dark ? Colors.white24 : const Color(0xFFBBBBBB), 
+                            borderRadius: BorderRadius.circular(2)
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(child: _buildStationPanel()),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          // --- Overlays (Floating above the Column) ---
           Positioned(
             top: 50, left: 20, right: 20,
             child: Container(
               decoration: const BoxDecoration(boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)]),
               child: TextField(
                 decoration: InputDecoration(
-                  filled: true, fillColor: Theme.of(context).colorScheme.surface, 
+                  filled: true, fillColor: theme.colorScheme.surface, 
                   hintText: l10n.input_placeholder,
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
@@ -149,8 +198,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: FloatingActionButton.small(
               heroTag: 'loc_btn',
               onPressed: _handleLocationPress,
-              backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF222222) : Theme.of(context).scaffoldBackgroundColor,
-              child: Icon(Icons.my_location, color: appState.isFollowingUser ? const Color(0xFF007BFF) : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF90CAF9) : Colors.black87)),
+              backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF222222) : theme.scaffoldBackgroundColor,
+              child: Icon(Icons.my_location, color: appState.isFollowingUser ? const Color(0xFF007BFF) : (theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : Colors.black87)),
             ),
           ),
           Positioned(
@@ -158,41 +207,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: FloatingActionButton.small(
               heroTag: 'settings_btn',
               onPressed: () => Navigator.pushNamed(context, '/settings'),
-              backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF222222) : const Color(0xFFFDCACB),
-              child: Icon(Icons.settings, color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF90CAF9) : const Color(0xFF333333)),
+              backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF222222) : const Color(0xFFFDCACB),
+              child: Icon(Icons.settings, color: theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : const Color(0xFF333333)),
             ),
           ),
           Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: Container(
-              height: screenHeight * _panelHeight,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 15, offset: const Offset(0, -5))],
-              ),
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onVerticalDragUpdate: (details) {
-                      setState(() {
-                        _panelHeight = (_panelHeight - details.delta.dy / screenHeight).clamp(0.1, 0.7);
-                      });
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.only(top: 12, bottom: 8),
-                      child: Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
-                    ),
-                  ),
-                  Expanded(child: _buildStationPanel()),
-                ],
-              ),
-            ),
-          ),
-          const Positioned(
             bottom: 30, left: 0, right: 0,
-            child: HomeUpdateButton(),
+            child: const HomeUpdateButton(),
           ),
           if (appState.isLoading) const LoadingOverlay(),
         ],
@@ -277,10 +298,8 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
       upperBound: 0.5,
     );
     
-    // 將動畫觸發邏輯從 build 移至監聽器，確保動畫穩定
     final appState = Provider.of<AppState>(context, listen: false);
     appState.addListener(_handleUpdateAnimation);
-    // 初始化狀態
     _wasUpdating = appState.isUpdating;
   }
 
@@ -306,13 +325,6 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
     appState.removeListener(_handleUpdateAnimation);
     _controller.dispose();
     super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(covariant HomeUpdateButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Note: AppState is accessed via Provider in build, 
-    // so we handle animation state changes in build or via a listener.
   }
 
   @override
