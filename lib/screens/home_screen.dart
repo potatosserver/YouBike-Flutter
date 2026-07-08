@@ -95,13 +95,13 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
       body: Stack(
         children: [
-          // --- Layer 1: Map with Bottom Rounding (Positioned to create physical gap) ---
+          // --- Layer 1: Map with Bottom Rounding (Positioned to end exactly at the top of the panel) ---
           if (appState.center != null)
             Positioned(
               top: 0,
               left: 0,
               right: 0,
-              bottom: (_panelHeight ?? screenHeight * 0.35) + 8, // Map ends exactly 8px above the panel
+              bottom: (_panelHeight ?? screenHeight * 0.35), // Map ends exactly where the handle starts
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
                 child: FlutterMap(
@@ -190,44 +190,57 @@ class _HomeScreenState extends State<HomeScreen> {
             height: _panelHeight,
             child: Column(
               children: [
-                // The physical separation gap (8px)
-                const SizedBox(height: 8),
+                // Bridge-Style Drag Handle: Ultra-compact symmetry (High-fidelity web spec)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragUpdate: (details) {
+                    setState(() {
+                      _panelHeight = (_panelHeight ?? screenHeight * 0.35) - details.delta.dy;
+                      _panelHeight = _panelHeight!.clamp(screenHeight * 0.2, screenHeight * 0.8);
+                    });
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 16, // Total height reduced to shrink the gap significantly
+                    padding: const EdgeInsets.symmetric(vertical: 6), // (16-4)/2 = 6px symmetric gap
+                    child: Center(
+                      child: Container(
+                        width: MediaQuery.of(context).size.width * 0.4, 
+                        height: 4, // Thinner handle for a more refined look
+                        decoration: BoxDecoration(
+                          color: theme.brightness == Brightness.dark ? Colors.white38 : const Color(0xFFBBBBBB), 
+                          borderRadius: BorderRadius.circular(2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 3,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // 2. THE GAP: Removed the separate SizedBox to achieve absolute symmetry
+                // The Gap is now provided by the bottom padding of the handle container
+                
+                // 3. THE PANEL: The rounded container holding the content
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark ? const Color(0xFF1E1E1E) : const Color(0xFFFFF5F0),
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 15, offset: const Offset(0, -5))],
-                    ),
-                    child: Column(
-                      children: [
-                        // Drag Handle: Large touch area, visually shifted upwards for better balance
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onVerticalDragUpdate: (details) {
-                            setState(() {
-                              _panelHeight = (_panelHeight ?? screenHeight * 0.35) - details.delta.dy;
-                              _panelHeight = _panelHeight!.clamp(screenHeight * 0.2, screenHeight * 0.8);
-                            });
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            height: 40, 
-                            alignment: Alignment.topCenter, // Anchor to top
-                            padding: const EdgeInsets.only(top: 10), // Precise distance from top edge
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * 0.4, 
-                              height: 4, 
-                              decoration: BoxDecoration(
-                                color: theme.brightness == Brightness.dark ? Colors.white24 : const Color(0xFFBBBBBB), 
-                                borderRadius: BorderRadius.circular(2)
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(child: _buildStationPanel()),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1), 
+                          blurRadius: 15, 
+                          offset: const Offset(0, -5)
+                        )
                       ],
                     ),
+                    child: _buildStationPanel(),
                   ),
                 ),
               ],
