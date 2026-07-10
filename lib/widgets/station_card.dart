@@ -37,7 +37,7 @@ class StationCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: theme.brightness == Brightness.dark ? const Color(0xFF444444) : const Color(0xFFFDF5E6),
+          color: theme.brightness == Brightness.dark ? const Color(0xFF3A362F) : const Color(0xFFFFFFFF),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -96,7 +96,7 @@ class StationCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              "${l10n.distance} ${appState.getDistanceLabel(distValue).replaceAll('dist_m', l10n.dist_m).replaceAll('dist_km', l10n.dist_km)}",
+              "${l10n.distance} ${appState.getDistanceLabel(distValue)}",
               style: TextStyle(fontSize: 15, color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(height: 4),

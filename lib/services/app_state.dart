@@ -9,6 +9,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/station.dart';
 import '../services/api_service.dart';
 import 'notification_service.dart';
+import 'location_service.dart';
 
 class AppState extends ChangeNotifier {
   // --- State Properties ---
@@ -26,14 +27,12 @@ class AppState extends ChangeNotifier {
   List<Station> allStations = [];     
   bool _isLoading = true;
   bool _isInitialLoadComplete = false;
-  DateTime? _initStartTime; // 記錄啟動開始時間
+  DateTime? _initStartTime; 
   bool get isLoading => _isLoading;
   set isLoading(bool value) {
-    // 如果是嘗試關閉載入狀態，檢查是否滿足保底時間 (1.5秒)
     if (value == false && _initStartTime != null) {
       final elapsed = DateTime.now().difference(_initStartTime!).inMilliseconds;
       if (elapsed < 1500) {
-        // 如果時間不夠，延遲關閉，確保載入畫面不會一閃而過
         Future.delayed(Duration(milliseconds: 1500 - elapsed), () {
           _isLoading = false;
           notifyListeners();
@@ -63,6 +62,29 @@ class AppState extends ChangeNotifier {
   StreamSubscription<Position>? _locationSubscription;
   SharedPreferences? _prefs;
   final ValueNotifier<double> panelHeightNotifier = ValueNotifier(300.0);
+
+  // --- Location Helpers (Delegate to LocationService) ---
+  Future<LocationPermissionStatus> requestPermission() async {
+    return await LocationService().requestPermission();
+  }
+
+  Future<Position?> getCurrentPosition() async {
+    return await LocationService().getCurrentPosition();
+  }
+
+  String getDistanceLabel(double distance) {
+    if (distance < 1000) {
+      return "${distance.toStringAsFixed(0)}m";
+    } else {
+      return "${(distance / 1000).toStringAsFixed(1)}km";
+    }
+  }
+
+  // --- API Request Management ---
+  Future<void>? _refreshFuture; 
+  Timer? _debounceTimer; 
+  Timer? _autoRefreshTimer; 
+  DateTime? _lastRefreshTime;
 
   Map<String, Map<String, dynamic>> get regions => _regions;
   final Map<String, Map<String, dynamic>> _regions = {
@@ -156,16 +178,12 @@ class AppState extends ChangeNotifier {
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    // Note: themeMode is now managed by ThemeProvider, we just read it for consistency if needed
-    // final themeIndex = _prefs?.getInt('themeMode') ?? 0;
     currentLang = _prefs?.getString('currentLang') ?? 'zh_TW';
     selectedRegion = _prefs?.getString('selectedRegion') ?? 'kaohsiung';
     useLocation = _prefs?.getBool('useLocation') ?? true;
     final pinnedList = _prefs?.getStringList('pinnedStations') ?? [];
     pinnedStationIds = pinnedList.map((id) => id.trim()).toSet();
     
-    // 1. 立即初始化地圖中心 (消除轉圈)
-    // 優先順序：快取位置 -> 預設區域位置
     final cachedLat = _prefs?.getDouble('last_lat');
     final cachedLng = _prefs?.getDouble('last_lng');
     if (cachedLat != null && cachedLng != null) {
@@ -192,58 +210,42 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _runOptimizedInit() async {
-    _initStartTime = DateTime.now(); // 記錄啟動開始時間
-    final startTime = DateTime.now().millisecondsSinceEpoch;
-    debugPrint("[BOOT-TIMELINE] 🚀 App Start: $startTime");
-    
+    _initStartTime = DateTime.now();
     isLoading = true;
     _simulateRandomNotices();
     _simulatePercentage();
     
     try {
-      // 1. 背景異步獲取精確定位 (完全不阻塞)
       _initializeLocation().then((_) {
-        debugPrint("[BOOT-TIMELINE] 🎯 Precision GPS Acquired: ${DateTime.now().millisecondsSinceEpoch}");
-        refreshStations(isInitial: false);
+        refreshStations(isInitial: false, reason: "INIT_GPS");
       });
 
-      // 2. 快取優先檢查
       final cachedStationsJson = _prefs?.getString('cached_stations');
       if (cachedStationsJson != null) {
-        debugPrint("[BOOT-TIMELINE] 📦 Cache Found. Loading from cache...");
         try {
           final List<dynamic> decoded = jsonDecode(cachedStationsJson);
           _fullStationList = decoded.map((item) => Station.fromJson(item as Map<String, dynamic>)).whereType<Station>().toList();
-          
           currentNotice = "init_updating";
           notifyListeners();
-          
-          // 注意：這裡不再使用 await，直接觸發背景刷新，讓 UI 立即渲染
-          refreshStations(isInitial: true);
-          
-          debugPrint("[BOOT-TIMELINE] 🖼️ UI Rendered (From Cache): ${DateTime.now().millisecondsSinceEpoch}");
+          refreshStations(isInitial: true, reason: "INIT_CACHE");
           isLoading = false;
           _isInitialLoadComplete = true;
           loadingProgress = 100;
           currentNotice = "init_success";
           notifyListeners();
-
           return; 
         } catch (e) {
           debugPrint("Cache load error: $e. Falling back to network.");
         }
       }
 
-      // 3. 無快取回退流程 (Cold Start)
-      debugPrint("[BOOT-TIMELINE] ❄️ Cold Start. Fetching base data from network...");
       currentNotice = "init_syncing";
       notifyListeners();
       await fetchBaseData();
-      debugPrint("[BOOT-TIMELINE] 🌐 Base Data Fetched: ${DateTime.now().millisecondsSinceEpoch}");
 
       currentNotice = "init_updating";
       notifyListeners();
-      await refreshStations(isInitial: true);
+      await refreshStations(isInitial: true, reason: "INIT_NETWORK");
       
     } catch (e) {
       addLog("init_error $e", isError: true);
@@ -253,7 +255,6 @@ class AppState extends ChangeNotifier {
       currentNotice = "init_success";
       if (isLoading) {
         isLoading = false;
-        debugPrint("[BOOT-TIMELINE] 🖼️ UI Rendered (From Network): ${DateTime.now().millisecondsSinceEpoch}");
       }
       notifyListeners();
     }
@@ -299,23 +300,47 @@ class AppState extends ChangeNotifier {
         _fullStationList = freshData;
         final cacheData = jsonEncode(_fullStationList.map((s) => s.toJson()).toList());
         await _prefs?.setString('cached_stations', cacheData);
-      } else {
-        addLog("API 返回空數據，保留快取", isError: false);
       }
     } catch (e) {
       addLog("基礎數據獲取失敗: $e", isError: true);
     }
   }
 
-  Future<void> refreshStations({bool isInitial = false}) async {
-    final startTime = DateTime.now().millisecondsSinceEpoch;
-    debugPrint("[REFRESH-LOG] 🕒 流程開始: $startTime");
+  String _getTimestamp() {
+    final now = DateTime.now();
+    return "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}.${now.millisecond.toString().padLeft(3, '0')}";
+  }
 
+  Future<void> refreshStations({bool isInitial = false, String reason = "UNKNOWN"}) async {
+    if (_refreshFuture != null) {
+      debugPrint("[${_getTimestamp()}] [API-TRACE] 🔒 鎖定攔截 -> 原因: $reason");
+      return _refreshFuture;
+    }
+
+    if (!isInitial && _lastRefreshTime != null) {
+      final diff = DateTime.now().difference(_lastRefreshTime!).inSeconds;
+      if (diff < 2) {
+        debugPrint("[${_getTimestamp()}] [API-TRACE] 🧊 冷卻攔截 (間隔 ${diff}s) -> 原因: $reason");
+        return;
+      }
+    }
+
+    debugPrint("[${_getTimestamp()}] [API-TRACE] 🚀 請求進入 -> 原因: $reason | 關鍵字: '$searchKeyword' | 初始狀態: $isInitial");
+
+    _refreshFuture = _performRefresh(isInitial, reason);
+    try {
+      await _refreshFuture;
+    } finally {
+      _refreshFuture = null;
+    }
+  }
+
+  Future<void> _performRefresh(bool isInitial, String reason) async {
+    final startTime = DateTime.now().millisecondsSinceEpoch;
     if (!isInitial) {
       isUpdating = true;
-      countdownRemaining = 60; // 立即重置倒數，提供即時反饋
+      countdownRemaining = 60;
       notifyListeners();
-      debugPrint("[REFRESH-LOG] 🕒 isUpdating=true & countdown=60: ${DateTime.now().millisecondsSinceEpoch - startTime}ms");
     }
 
     try {
@@ -326,11 +351,8 @@ class AppState extends ChangeNotifier {
       
       LatLng referencePoint = lastKnownLocation ?? getEffectiveLocation();
       
-      // 定位請求保持非阻塞背景任務
       await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       ).then((pos) {
         lastKnownLocation = LatLng(pos.latitude, pos.longitude);
         hasObtainedRealLocation = true;
@@ -338,7 +360,6 @@ class AppState extends ChangeNotifier {
           s.distance = _calculateDistance(lastKnownLocation!.latitude, lastKnownLocation!.longitude, s.lat, s.lng);
         }
         notifyListeners();
-        debugPrint("[REFRESH-LOG] 🕒 背景定位更新完成: ${DateTime.now().millisecondsSinceEpoch - startTime}ms");
       });
       
       final sorted = List<Station>.from(_fullStationList);
@@ -358,9 +379,6 @@ class AppState extends ChangeNotifier {
         s.visualPosition = _getVisualPosition(LatLng(s.lat, s.lng));
       }
       
-      debugPrint("[REFRESH-LOG] 🕒 站點清單排序完成: ${DateTime.now().millisecondsSinceEpoch - startTime}ms");
-      
-      debugPrint("[REFRESH-LOG] 🕒 開始請求實時數量 API...");
       final vehicleData = await api.fetchRealtimeVehicles(allStations.map((s) => s.id).toList());
       for (var s in allStations) {
         if (vehicleData.containsKey(s.id)) {
@@ -371,16 +389,41 @@ class AppState extends ChangeNotifier {
         }
       }
       
+      _lastRefreshTime = DateTime.now();
       notifyListeners(); 
-      debugPrint("[REFRESH-LOG] 🕒 API 數據更新完成: ${DateTime.now().millisecondsSinceEpoch - startTime}ms");
+      debugPrint("[${_getTimestamp()}] [API-TRACE] ✅ 請求完成 -> 原因: $reason | 耗時: ${DateTime.now().millisecondsSinceEpoch - startTime}ms");
       
     } catch (e) {
       addLog("refresh_error $e", isError: true);
     } finally {
       isUpdating = false;
       notifyListeners();
-      debugPrint("[REFRESH-LOG] 🕒 流程結束 (isUpdating=false): ${DateTime.now().millisecondsSinceEpoch - startTime}ms");
+      debugPrint("[${_getTimestamp()}] [API-TRACE] 🏁 流程結束 -> 原因: $reason");
     }
+  }
+
+  void searchStations(String keyword) {
+    searchKeyword = keyword;
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      refreshStations(reason: "SEARCH_DEBOUNCE");
+    });
+    notifyListeners();
+  }
+
+  String searchKeyword = "";
+
+  void startAutoRefreshCycle() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (countdownRemaining > 0) {
+        countdownRemaining--;
+        notifyListeners();
+      } else {
+        countdownRemaining = 60;
+        refreshStations(reason: "AUTO_CYCLE");
+      }
+    });
   }
 
   Future<void> _simulatePercentage() async {
@@ -403,26 +446,8 @@ class AppState extends ChangeNotifier {
 
   void _simulateRandomNotices() async {
     final notices = currentLang.startsWith('en') 
-      ? [
-        "notice_no_speed",
-        "notice_no_sidewalk",
-        "notice_no_phone",
-        "notice_no_brake",
-        "notice_seat_height",
-        "notice_lights_work",
-        "notice_insurance",
-        "notice_take_belongings"
-      ]
-      : [
-        "notice_no_speed",
-        "notice_no_sidewalk",
-        "notice_no_phone",
-        "notice_no_brake",
-        "notice_seat_height",
-        "notice_lights_work",
-        "notice_insurance",
-        "notice_take_belongings"
-      ];
+      ? ["notice_no_speed", "notice_no_sidewalk", "notice_no_phone", "notice_no_brake", "notice_seat_height", "notice_lights_work", "notice_insurance", "notice_take_belongings"]
+      : ["notice_no_speed", "notice_no_sidewalk", "notice_no_phone", "notice_no_brake", "notice_seat_height", "notice_lights_work", "notice_insurance", "notice_take_belongings"];
     loadingNotice = notices[math.Random().nextInt(notices.length)];
     notifyListeners();
   }
@@ -433,10 +458,7 @@ class AppState extends ChangeNotifier {
       if (isOffline != !isConnected) {
         isOffline = !isConnected;
         if (isOffline) {
-          NotificationService.instance.show(
-            message: "網路連線已中斷", 
-            type: NotificationType.info,
-          );
+          NotificationService.instance.show(message: "網路連線已中斷", type: NotificationType.info);
         }
         notifyListeners();
       }
@@ -449,11 +471,10 @@ class AppState extends ChangeNotifier {
     final region = _regions[regionId]!;
     center = LatLng(region['lat'] as double, region['lng'] as double);
     _prefs?.setString('selectedRegion', regionId);
-    addLog("切切換區域至: ${region['name']}");
+    addLog("切換區域至: ${region['name']}");
     notifyListeners();
   }
 
-  // Removed setThemeMode as it is now handled by ThemeProvider
   void setLanguage(String lang) {
     currentLang = lang;
     _prefs?.setString('currentLang', lang);
@@ -473,10 +494,7 @@ class AppState extends ChangeNotifier {
       startTracking();
     } else {
       stopTracking();
-      NotificationService.instance.show(
-        message: "stop_following", 
-        type: NotificationType.info
-      );
+      NotificationService.instance.show(message: "stop_following", type: NotificationType.info);
     }
     notifyListeners();
   }
@@ -498,101 +516,14 @@ class AppState extends ChangeNotifier {
     } else {
       pinnedStationIds.add(tid);
     }
-    _prefs?.setStringList('pinnedStations', pinnedStationIds.toList());
     notifyListeners();
   }
 
-  String getDistanceLabel(double distance) {
-    if (distance < 1000) {
-      return "${distance.toStringAsFixed(0)} dist_m";
-    }
-    return "${(distance / 1000).toStringAsFixed(2)} dist_km";
-  }
-
-  Future<Position?> getCurrentPosition() async {
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return null;
-      }
-      if (permission == LocationPermission.deniedForever) return null;
-      
-      debugPrint("[GPS] 📡 請求精確座標...");
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.low,
-        ),
-      ).timeout(const Duration(seconds: 6)); 
-    } catch (e) {
-      debugPrint("[GPS] ❌ 獲取失敗: $e");
-      return null;
-    }
-  }
-
-  Future<void> requestPermission() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      await Geolocator.requestPermission();
-    }
-  }
-
-  void startAutoRefreshCycle() {
-    Future.delayed(const Duration(seconds: 1), () {
-      if (countdownRemaining > 0) {
-        countdownRemaining--;
-        notifyListeners();
-        startAutoRefreshCycle();
-      } else {
-        refreshStations(isInitial: false); 
-        startAutoRefreshCycle();
-      }
-    });
-  }
-
-  void searchStations(String query) async {
-    try {
-      final api = ApiService();
-      if (_fullStationList.isEmpty) {
-        _fullStationList = await api.fetchAllStations();
-      }
-      final filtered = _fullStationList.where((s) => 
-        s.nameTw.contains(query) || 
-        s.addressTw.contains(query) || 
-        s.nameEn.toLowerCase().contains(query.toLowerCase()) || 
-        s.addressEn.toLowerCase().contains(query.toLowerCase())
-      ).toList();
-      final LatLng referencePoint = getEffectiveLocation();
-      filtered.sort((a, b) => 
-        _calculateDistance(referencePoint.latitude, referencePoint.longitude, a.lat, a.lng)
-        .compareTo(_calculateDistance(referencePoint.latitude, referencePoint.longitude, b.lat, b.lng))
-      );
-      final limit = query.isEmpty ? 10 : 50;
-      final pinned = filtered.where((s) => pinnedStationIds.contains(s.id.trim())).toList();
-      final unpinned = filtered.where((s) => !pinnedStationIds.contains(s.id.trim())).toList();
-      allStations = [...pinned, ...unpinned].take(limit).toList();
-      for (var s in allStations) {
-        final d = _calculateDistance(referencePoint.latitude, referencePoint.longitude, s.lat, s.lng);
-        s.distance = d;
-        _anchorPositions.clear();
-        _anchorCounts.clear();
-        s.visualPosition = _getVisualPosition(LatLng(s.lat, s.lng));
-      }
-      notifyListeners();
-    } catch (e) {
-      debugPrint("[SEARCH-ERROR] $e");
-    }
-  }
-
   void addLog(String msg, {bool isError = false}) {
-    logs.add("[${DateTime.now().toString().split('.').first}] $msg");
-    if (logs.length > 100) logs.removeAt(0);
-    if (isError) {
-      NotificationService.instance.show(
-        message: msg, 
-        type: NotificationType.error
-      );
-    }
+    final timestamp = _getTimestamp();
+    final formatted = isError ? "❌ [$timestamp] $msg" : "ℹ️ [$timestamp] $msg";
+    logs.insert(0, formatted);
+    if (logs.length > 100) logs.removeLast();
     notifyListeners();
   }
 }
