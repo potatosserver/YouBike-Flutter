@@ -37,13 +37,13 @@ class StationCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: theme.brightness == Brightness.dark ? const Color(0xFF3A362F) : const Color(0xFFFFFFFF),
+          color: theme.brightness == Brightness.dark ? const Color(0xFF444444) : const Color(0xFFFFF2EC),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 2),
             ),
           ],
         ),

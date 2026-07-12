@@ -23,8 +23,14 @@ class AppState extends ChangeNotifier {
   }
 
   LatLng? initialSnapPoint;
-  List<Station> _fullStationList = []; 
-  List<Station> allStations = [];     
+  
+  // 核心修正：分離全量數據與過濾數據
+  List<Station> _fullStationList = []; // 用於地圖圖釘，僅在初始化/刷新時更新
+  List<Station> get fullStations => _fullStationList; 
+
+  List<Station> _filteredStations = []; // 用於面板列表，隨搜尋即時更新
+  List<Station> get filteredStations => _filteredStations;
+
   bool _isLoading = true;
   bool _isInitialLoadComplete = false;
   DateTime? _initStartTime; 
@@ -73,7 +79,7 @@ class AppState extends ChangeNotifier {
   }
 
   String getDistanceLabel(double distance) {
-    if (distance < 1000) {
+    if (distance < 100) {
       return "${distance.toStringAsFixed(0)}m";
     } else {
       return "${(distance / 1000).toStringAsFixed(1)}km";
@@ -94,7 +100,7 @@ class AppState extends ChangeNotifier {
     "hsinchuCounty": {"name": "region_hsinchu_county", "lat": 24.826917615712, "lng": 121.01290295049},
     "hsinchuCity": {"name": "region_hsinchu_city", "lat": 24.801815, "lng": 120.971459},
     "sciencePark": {"name": "region_science_park", "lat": 24.781830, "lng": 121.005074},
-    "miaoli": {"name": "region_miaoli", "lat": 24.5648599, "lng": 120.8185503},
+    "miaoli": {"name": "region_miaoli", "lat": 24.5648599, "lng": 120.8155003},
     "taichung": {"name": "region_taichung", "lat": 24.154712, "lng": 120.664265},
     "chiayi": {"name": "region_chiayi", "lat": 23.4797837, "lng": 120.4397206},
     "tainan": {"name": "region_tainan", "lat": 22.99230083082, "lng": 120.18509419659},
@@ -102,33 +108,6 @@ class AppState extends ChangeNotifier {
     "pingtung": {"name": "region_pingtung", "lat": 22.683036253664, "lng": 120.48790854724},
     "taitung": {"name": "region_taitung", "lat": 22.755711056126138, "lng": 121.15035332587574},
   };
-
-  final Map<String, int> _anchorCounts = {};
-  final Map<String, LatLng> _anchorPositions = {};
-
-  LatLng _getVisualPosition(LatLng original) {
-    const double threshold = 0.00009; 
-    for (var entry in _anchorPositions.entries) {
-      final anchorPos = entry.value;
-      final distSq = math.pow(original.latitude - anchorPos.latitude, 2) + 
-                     math.pow(original.longitude - anchorPos.longitude, 2);
-      if (distSq < (threshold * threshold)) {
-        final id = entry.key;
-        final count = (_anchorCounts[id] ?? 0) + 1;
-        _anchorCounts[id] = count;
-        final angle = count * 2.399; 
-        final radius = 0.00010 + (count * 0.00002);
-        return LatLng(
-          original.latitude + (radius * math.cos(angle)),
-          original.longitude + (radius * math.sin(angle)),
-        );
-      }
-    }
-    final anchorId = "${original.latitude},${original.longitude}";
-    _anchorPositions[anchorId] = original;
-    _anchorCounts[anchorId] = 0;
-    return original;
-  }
 
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371000;
@@ -162,9 +141,14 @@ class AppState extends ChangeNotifier {
       if (isFollowingUser) {
         notifyListeners();
       }
-      for (var s in allStations) {
+      for (var s in _fullStationList) {
         final d = _calculateDistance(center!.latitude, center!.longitude, s.lat, s.lng);
         s.distance = d;
+        s.visualPosition = LatLng(s.lat, s.lng); 
+      }
+      // 重新計算過濾列表的距離
+      for (var s in _filteredStations) {
+        s.distance = _calculateDistance(center!.latitude, center!.longitude, s.lat, s.lng);
       }
       notifyListeners();
     });
@@ -199,6 +183,7 @@ class AppState extends ChangeNotifier {
       try {
         final List<dynamic> decoded = jsonDecode(cachedStationsJson);
         _fullStationList = decoded.map((item) => Station.fromJson(item as Map<String, dynamic>)).whereType<Station>().toList();
+        _filteredStations = List.from(_fullStationList);
       } catch(e) { debugPrint("Cache load error: $e"); }
     }
     
@@ -225,6 +210,7 @@ class AppState extends ChangeNotifier {
         try {
           final List<dynamic> decoded = jsonDecode(cachedStationsJson);
           _fullStationList = decoded.map((item) => Station.fromJson(item as Map<String, dynamic>)).whereType<Station>().toList();
+          _filteredStations = List.from(_fullStationList);
           currentNotice = "init_updating";
           notifyListeners();
           refreshStations(isInitial: true, reason: "INIT_CACHE");
@@ -298,6 +284,7 @@ class AppState extends ChangeNotifier {
       final freshData = await api.fetchAllStations();
       if (freshData.isNotEmpty) {
         _fullStationList = freshData;
+        _filteredStations = List.from(_fullStationList);
         final cacheData = jsonEncode(_fullStationList.map((s) => s.toJson()).toList());
         await _prefs?.setString('cached_stations', cacheData);
       }
@@ -320,7 +307,7 @@ class AppState extends ChangeNotifier {
     if (!isInitial && _lastRefreshTime != null) {
       final diff = DateTime.now().difference(_lastRefreshTime!).inSeconds;
       if (diff < 2) {
-        debugPrint("[${_getTimestamp()}] [API-TRACE] 🧊 冷卻攔截 (間隔 ${diff}s) -> 原因: $reason");
+        debugPrint("[${_getTimestamp()}] [API-TRACE] 🧊 冷卻攔 intercepted (間隔 ${diff}s) -> 原因: $reason");
         return;
       }
     }
@@ -347,6 +334,7 @@ class AppState extends ChangeNotifier {
       final api = ApiService();
       if (_fullStationList.isEmpty) {
         _fullStationList = await api.fetchAllStations();
+        _filteredStations = List.from(_fullStationList);
       }
       
       LatLng referencePoint = lastKnownLocation ?? getEffectiveLocation();
@@ -356,7 +344,7 @@ class AppState extends ChangeNotifier {
       ).then((pos) {
         lastKnownLocation = LatLng(pos.latitude, pos.longitude);
         hasObtainedRealLocation = true;
-        for (var s in allStations) {
+        for (var s in _fullStationList) {
           s.distance = _calculateDistance(lastKnownLocation!.latitude, lastKnownLocation!.longitude, s.lat, s.lng);
         }
         notifyListeners();
@@ -369,23 +357,31 @@ class AppState extends ChangeNotifier {
         return distA.compareTo(distB);
       });
       
-      _anchorPositions.clear();
-      _anchorCounts.clear();
-      
-      allStations = [...sorted.where((s) => pinnedStationIds.contains(s.id.trim())), ...sorted.where((s) => !pinnedStationIds.contains(s.id.trim()))].take(10).toList();
-      for (var s in allStations) {
+      // 更新 fullStations (地圖用)
+      _fullStationList = [
+        ...sorted.where((s) => pinnedStationIds.contains(s.id.trim())), 
+        ...sorted.where((s) => !pinnedStationIds.contains(s.id.trim()))
+      ];
+      for (var s in _fullStationList) {
         final d = _calculateDistance(referencePoint.latitude, referencePoint.longitude, s.lat, s.lng);
         s.distance = d;
-        s.visualPosition = _getVisualPosition(LatLng(s.lat, s.lng));
+        s.visualPosition = LatLng(s.lat, s.lng); 
       }
+
+      // 根據關鍵字更新 filteredStations (面板用)
+      _applySearchFilter(_fullStationList);
       
-      final vehicleData = await api.fetchRealtimeVehicles(allStations.map((s) => s.id).toList());
-      for (var s in allStations) {
-        if (vehicleData.containsKey(s.id)) {
-          final data = vehicleData[s.id] as Map<String, dynamic>;
-          s.availableBikes = data['available_2_0'] ?? 0;
-          s.availableElectricBikes = data['available_e'] ?? 0;
-          s.emptySpaces = data['empty_spaces'] ?? 0;
+      // 僅針對面板前 10 筆請求實時數據，減少 API 壓力
+      final targetIds = _filteredStations.take(10).map((s) => s.id).toList();
+      if (targetIds.isNotEmpty) {
+        final vehicleData = await api.fetchRealtimeVehicles(targetIds);
+        for (var s in _filteredStations) {
+          if (vehicleData.containsKey(s.id)) {
+            final data = vehicleData[s.id] as Map<String, dynamic>;
+            s.availableBikes = data['available_2_0'] ?? 0;
+            s.availableElectricBikes = data['available_e'] ?? 0;
+            s.emptySpaces = data['empty_spaces'] ?? 0;
+          }
         }
       }
       
@@ -402,11 +398,24 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  void _applySearchFilter(List<Station> source) {
+    if (searchKeyword.isEmpty) {
+      _filteredStations = List.from(source);
+    } else {
+      _filteredStations = source.where((s) {
+        final name = s.nameTw.toLowerCase();
+        final keyword = searchKeyword.toLowerCase();
+        return name.contains(keyword);
+      }).toList();
+    }
+  }
+
   void searchStations(String keyword) {
     searchKeyword = keyword;
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      refreshStations(reason: "SEARCH_DEBOUNCE");
+      _applySearchFilter(_fullStationList);
+      notifyListeners();
     });
     notifyListeners();
   }
@@ -499,31 +508,58 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleFollowing() {
-    isFollowingUser = !isFollowingUser;
-    if (isFollowingUser) {
-      startTracking();
+  void togglePinStation(String stationId) {
+    final id = stationId.trim();
+    if (pinnedStationIds.contains(id)) {
+      pinnedStationIds.remove(id);
     } else {
-      stopTracking();
+      pinnedStationIds.add(id);
     }
+    _prefs?.setStringList('pinnedStations', pinnedStationIds.toList());
+    // 重新排序 fullStationList 使圖釘優先顯示
+    final sorted = List<Station>.from(_fullStationList);
+    sorted.sort((a, b) {
+      final distA = _calculateDistance(center!.latitude, center!.longitude, a.lat, a.lng);
+      final distB = _calculateDistance(center!.latitude, center!.longitude, b.lat, b.lng);
+      return distA.compareTo(distB);
+    });
+    _fullStationList = [
+      ...sorted.where((s) => pinnedStationIds.contains(s.id.trim())), 
+      ...sorted.where((s) => !pinnedStationIds.contains(s.id.trim()))
+    ];
     notifyListeners();
   }
 
-  void togglePinStation(String id) {
-    final tid = id.trim();
-    if (pinnedStationIds.contains(tid)) {
-      pinnedStationIds.remove(tid);
-    } else {
-      pinnedStationIds.add(tid);
+  Future<void> updateVisibleStationsData() async {
+    if (_filteredStations.isEmpty || isUpdating) return;
+    
+    try {
+      isUpdating = true;
+      notifyListeners();
+      
+      final api = ApiService();
+      final targetStations = _filteredStations.take(10).toList();
+      final vehicleData = await api.fetchRealtimeVehicles(targetStations.map((s) => s.id).toList());
+      
+      for (var s in targetStations) {
+        if (vehicleData.containsKey(s.id)) {
+          final data = vehicleData[s.id] as Map<String, dynamic>;
+          s.availableBikes = data['available_2_0'] ?? 0;
+          s.availableElectricBikes = data['available_e'] ?? 0;
+          s.emptySpaces = data['empty_spaces'] ?? 0;
+        }
+      }
+    } catch (e) {
+      debugPrint("updateVisibleStationsData error: $e");
+    } finally {
+      isUpdating = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   void addLog(String msg, {bool isError = false}) {
-    final timestamp = _getTimestamp();
-    final formatted = isError ? "❌ [$timestamp] $msg" : "ℹ️ [$timestamp] $msg";
-    logs.insert(0, formatted);
-    if (logs.length > 100) logs.removeLast();
+    logs.add("[${_getTimestamp()}] ${isError ? '❌' : 'ℹ️'} $msg");
+    if (logs.length > 100) logs.removeAt(0);
     notifyListeners();
   }
 }

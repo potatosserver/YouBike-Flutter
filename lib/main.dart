@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:youbike_android/services/app_state.dart';
 import 'package:youbike_android/services/language_service.dart';
-import 'package:youbike_android/services/theme_provider.dart';
 import 'package:youbike_android/screens/home_screen.dart';
 import 'package:youbike_android/screens/settings_screen.dart';
 import 'package:youbike_android/screens/theme_selection_screen.dart';
@@ -15,17 +14,14 @@ import 'package:youbike_android/l10n/app_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize instances but DO NOT await init() here.
-  // We let MainWrapper handle init() to ensure LoadingOverlay is visible.
   final appState = AppState();
   final langService = LanguageService();
   
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider<AppState>.value(value: appState),
-        ChangeNotifierProvider<LanguageService>.value(value: langService),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => appState),
+        ChangeNotifierProvider(create: (_) => langService),
       ],
       child: const MyApp(),
     ),
@@ -37,68 +33,37 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Consumer<LanguageService>(
-          builder: (context, langService, child) {
-            return MaterialApp(
-              title: 'YouBike Android',
-              debugShowCheckedModeBanner: false,
-              themeMode: themeProvider.themeMode,
-              
-              theme: ThemeData(
-                useMaterial3: true,
-                brightness: Brightness.light,
-                scaffoldBackgroundColor: const Color(0xFFF4F4F4),
-                colorScheme: const ColorScheme.light(
-                  primary: Color(0xFF007BFF),
-                  onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: Color(0xFF333333),
-                ),
-                appBarTheme: const AppBarTheme(
-                  backgroundColor: Color(0xFF007BFF),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                ),
-              ),
-              
-              darkTheme: ThemeData(
-                useMaterial3: true,
-                brightness: Brightness.dark,
-                scaffoldBackgroundColor: const Color(0xFF333333),
-                colorScheme: const ColorScheme.dark(
-                  primary: Color(0xFF90CAF9),
-                  onPrimary: Color(0xFF121212),
-                  surface: Color(0xFF222222),
-                  onSurface: Colors.white,
-                ),
-                appBarTheme: const AppBarTheme(
-                  backgroundColor: Color(0xFF222222),
-                  foregroundColor: Color(0xFF90CAF9),
-                  elevation: 0,
-                ),
-              ),
-              
-              locale: langService.appLocale,
-              supportedLocales: AppLocalizations.supportedLocales,
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              
-              home: const MainWrapper(),
-              routes: {
-                '/settings': (context) => const SettingsScreen(),
-                '/theme-selection': (context) => const ThemeSelectionScreen(),
-                '/region-selection': (context) => const RegionSelectionScreen(),
-                '/language-selection': (context) => const LanguageSelectionScreen(),
-              },
-            );
-          },
-        );
+    return MaterialApp(
+      title: 'YouBike',
+      themeMode: ThemeMode.system,
+      theme: ThemeData(
+        brightness: Brightness.light,
+        primaryColor: const Color(0xFF007BFF),
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: const Color(0xFF90CAF9),
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        useMaterial3: true,
+      ),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('zh', 'TW'),
+        Locale('en', 'US'),
+      ],
+      home: const MainWrapper(),
+      routes: {
+        '/settings': (context) => const SettingsScreen(),
+        '/theme-selection': (context) => const ThemeSelectionScreen(),
+        '/region-selection': (context) => const RegionSelectionScreen(),
+        '/language-selection': (context) => const LanguageSelectionScreen(),
       },
     );
   }

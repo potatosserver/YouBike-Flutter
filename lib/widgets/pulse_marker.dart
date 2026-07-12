@@ -12,43 +12,46 @@ class PulseMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Outer soft pulse (Solid fill, not a ring)
-        const PulseAnimation(
-          color: Color(0xFF4285F4),
-          targetSize: 60,
-        ),
-        // Inner soft pulse (Solid fill, not a ring)
-        const PulseAnimation(
-          color: Color(0xFF4285F4),
-          targetSize: 60,
-          delay: Duration(milliseconds: 500),
-        ),
-        // Center Dot: Web-standard 20px core with crisp white halo
-        Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    // 使用 RepaintBoundary 將動畫隔離在獨立圖層，防止縮放地圖時觸發全標記重繪
+    return RepaintBoundary(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Outer soft pulse
+          const PulseAnimation(
+            color: Color(0xFF4285F4),
+            targetSize: 60,
           ),
-          child: Container(
+          // Inner soft pulse
+          const PulseAnimation(
+            color: Color(0xFF4285F4),
+            targetSize: 60,
+            delay: Duration(milliseconds: 500),
+          ),
+          // Center Dot
+          Container(
+            width: 20,
+            height: 20,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              color: const Color(0xFF4285F4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                color: const Color(0xFF4285F4),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -78,7 +81,14 @@ class _PulseAnimationState extends State<PulseAnimation> with SingleTickerProvid
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat();
+    );
+    
+    // 處理延遲啟動，避免所有點同步跳動導致的視覺壓力
+    Future.delayed(widget.delay, () {
+      if (mounted) {
+        _controller.repeat();
+      }
+    });
   }
 
   @override
@@ -93,7 +103,6 @@ class _PulseAnimationState extends State<PulseAnimation> with SingleTickerProvid
       animation: _controller,
       builder: (context, child) {
         final progress = _controller.value;
-        // Expand from core dot (20px) to targetSize (60px)
         final currentSize = 20.0 + (widget.targetSize - 20.0) * progress;
         return Container(
           width: currentSize,
