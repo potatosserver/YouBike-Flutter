@@ -26,7 +26,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 800), () => _appState.bakeMarkers());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() {

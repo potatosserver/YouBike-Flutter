@@ -1,20 +1,37 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 class RoadSignMarker extends StatelessWidget {
-  final ui.Image? image;
-  const RoadSignMarker({super.key, this.image});
+  const RoadSignMarker({super.key});
 
   @override
   Widget build(BuildContext context) {
-    if (image == null) return Container(width: 40, height: 40, decoration: BoxDecoration(color: Colors.amber, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 4)));
-
-    return RawImage(
-      image: image,
-      width: 40,
-      height: 40,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.medium,
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // 1. Main Body & Border (Gold Standard #FFD700 + 4px White Border)
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFD700),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 4.0),
+            boxShadow: const [
+              BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+            ],
+          ),
+        ),
+        // 2. Bike Icon (Direct Asset Rendering - 100% Reliable)
+        Image.asset(
+          'assets/icons/bike_icon.png',
+          width: 22,
+          height: 22,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.directions_bike, size: 22, color: Colors.black87);
+          },
+        ),
+      ],
     );
   }
 }

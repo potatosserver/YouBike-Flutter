@@ -130,16 +130,13 @@ class _StationMarkerLayerState extends State<StationMarkerLayer> {
     final stopwatch = Stopwatch()..start();
     _lastProcessedCount = widget.stations.length;
 
-    final appState = Provider.of<AppState>(context, listen: false);
-    final normalImg = appState.markerImageNormal;
-
     _cachedMarkers = widget.stations.map((s) {
       return Marker(
         key: ValueKey("st_${s.id}"),
         point: LatLng(s.lat, s.lng),
         width: 40, height: 40,
         alignment: Alignment.bottomCenter,
-        child: RoadSignMarker(image: normalImg),
+        child: const RoadSignMarker(),
       );
     }).toList();
 

@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -12,53 +11,7 @@ import '../services/api_service.dart';
 import 'notification_service.dart';
 import 'location_service.dart';
 
-class RoadSignPainter extends CustomPainter {
-  final bool isPinned;
-  RoadSignPainter({required this.isPinned});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    const mainRadius = 20.0; // Diameter 40px
-
-    // 1. Draw Main Body (Gold Standard Yellow #FFD700)
-    final bodyPaint = Paint()
-      ..color = const Color(0xFFFFD700)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, mainRadius, bodyPaint);
-
-    // 2. Draw Thick White Border
-    final borderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0;
-    canvas.drawCircle(center, mainRadius - 2.0, borderPaint);
-
-    // 3. Draw Bike Icon
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: String.fromCharCode(Icons.directions_bike.codePoint),
-        style: TextStyle(
-          fontSize: 22,
-          fontFamily: Icons.directions_bike.fontFamily,
-          package: Icons.directions_bike.fontPackage,
-          color: Colors.black87,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    final iconOffset = Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2);
-    textPainter.paint(canvas, iconOffset);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 class AppState extends ChangeNotifier {
-  ui.Image? markerImageNormal;
-  ui.Image? markerImagePinned;
-
   LatLng? center;
   LatLng? lastKnownLocation;
   bool isFollowing = false;
@@ -104,34 +57,8 @@ class AppState extends ChangeNotifier {
   bool hasObtainedRealLocation = false;
   final ValueNotifier<double> panelHeightNotifier = ValueNotifier(300.0);
 
-  void _log(String tag, String message) {
-    final now = DateTime.now();
-    final timestamp = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}.${now.millisecond.toString().padLeft(3, '0')}";
-    debugPrint("[$timestamp] [$tag] $message");
-  }
+  // _log method removed as it was unused
 
-  Future<void> bakeMarkers() async {
-    _log("PERF", "Starting marker baking...");
-    try {
-      await Future.delayed(const Duration(milliseconds: 1200));
-      markerImageNormal = await _bakePainter(RoadSignPainter(isPinned: false));
-      markerImagePinned = await _bakePainter(RoadSignPainter(isPinned: true));
-      _log("PERF", "Markers 'baked' into high-res images.");
-    } catch (e) {
-      _log("ERROR", "Baking failed: $e");
-    }
-  }
-
-  Future<ui.Image> _bakePainter(RoadSignPainter painter) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    const double dpr = 3.0; 
-    const Size logicalSize = Size(40, 40);
-    canvas.scale(dpr); 
-    painter.paint(canvas, logicalSize);
-    final picture = recorder.endRecording();
-    return await picture.toImage((logicalSize.width * dpr).toInt(), (logicalSize.height * dpr).toInt());
-  }
 
   Future<LocationPermissionStatus> requestPermission() async {
     return await LocationService().requestPermission();
@@ -169,6 +96,24 @@ class AppState extends ChangeNotifier {
     return LatLng(region['lat'] as double, region['lng'] as double);
   }
 
+  List<Station> _applyPrioritySort(List<Station> stations) {
+    final referencePoint = lastKnownLocation ?? getEffectiveLocation();
+    
+    // 1. Sort by distance first
+    final sortedByDist = List<Station>.from(stations);
+    sortedByDist.sort((a, b) {
+      final distA = _calculateDistance(referencePoint.latitude, referencePoint.longitude, a.lat, a.lng);
+      final distB = _calculateDistance(referencePoint.latitude, referencePoint.longitude, b.lat, b.lng);
+      return distA.compareTo(distB);
+    });
+
+    // 2. Separate Pinned vs Normal
+    final pinned = sortedByDist.where((s) => pinnedStationIds.contains(s.id.trim())).toList();
+    final normal = sortedByDist.where((s) => !pinnedStationIds.contains(s.id.trim())).toList();
+
+    return [...pinned, ...normal];
+  }
+
   void togglePinStation(String stationId) {
     final id = stationId.trim();
     if (pinnedStationIds.contains(id)) {
@@ -177,6 +122,12 @@ class AppState extends ChangeNotifier {
       pinnedStationIds.add(id);
     }
     _prefs?.setStringList('pinnedStations', pinnedStationIds.toList());
+    
+    // CRITICAL: Re-sort the current list so the card jumps to the top/bottom immediately
+    if (allStations.isNotEmpty) {
+      allStations = _applyPrioritySort(allStations);
+    }
+    
     notifyListeners();
   }
 
@@ -216,11 +167,9 @@ class AppState extends ChangeNotifier {
     startAutoRefreshCycle();
     countdownRemaining = 60;
     _startCountdownTimer();
-    bakeMarkers();
     isLoading = false;
     notifyListeners();
   }
-
   Future<void> _runOptimizedInit() async {
     _initStartTime = DateTime.now();
     isLoading = true;
@@ -326,7 +275,7 @@ class AppState extends ChangeNotifier {
         final distB = _calculateDistance(referencePoint.latitude, referencePoint.longitude, b.lat, b.lng);
         return distA.compareTo(distB);
       });
-      allStations = [...sorted.where((s) => pinnedStationIds.contains(s.id.trim())), ...sorted.where((s) => !pinnedStationIds.contains(s.id.trim()))].take(10).toList();
+      allStations = _applyPrioritySort(sorted).take(10).toList();
       for (var s in allStations) { s.distance = _calculateDistance(referencePoint.latitude, referencePoint.longitude, s.lat, s.lng); }
       final vehicleData = await api.fetchRealtimeVehicles(allStations.map((s) => s.id).toList());
       for (var s in allStations) { if (vehicleData.containsKey(s.id)) { final data = vehicleData[s.id] as Map<String, dynamic>; s.availableBikes = data['available_2_0'] ?? 0; s.availableElectricBikes = data['available_e'] ?? 0; s.emptySpaces = data['empty_spaces'] ?? 0; } }
@@ -375,8 +324,13 @@ class AppState extends ChangeNotifier {
   void setRegion(String region) { selectedRegion = region; _prefs?.setString('selectedRegion', region); notifyListeners(); }
   void setUseLocation(bool use) { useLocation = use; _prefs?.setBool('useLocation', use); notifyListeners(); }
   void searchStations(String query) {
-    if (query.isEmpty) { allStations = _fullStationList.take(10).toList(); notifyListeners(); return; }
-    allStations = _fullStationList.where((s) => s.nameTw.contains(query) || s.nameEn.contains(query)).toList();
+    if (query.isEmpty) { 
+      allStations = _applyPrioritySort(_fullStationList).take(10).toList(); 
+      notifyListeners(); 
+      return; 
+    }
+    final filtered = _fullStationList.where((s) => s.nameTw.contains(query) || s.nameEn.contains(query)).toList();
+    allStations = _applyPrioritySort(filtered).take(10).toList();
     notifyListeners();
   }
 
