@@ -1,8 +1,5 @@
 import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-
-
 
 class RoadSignMarker extends StatelessWidget {
   final ui.Image? image;
@@ -17,11 +14,10 @@ class RoadSignMarker extends StatelessWidget {
       width: 40,
       height: 40,
       fit: BoxFit.contain,
-        filterQuality: FilterQuality.medium,
+      filterQuality: FilterQuality.medium,
     );
   }
 }
-
 
 class ClusterMarker extends StatelessWidget {
   final int count;
@@ -30,12 +26,16 @@ class ClusterMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 45, height: 45,
+      width: 45, 
+      height: 45,
       decoration: BoxDecoration(
-        color: Colors.amber,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 5, offset: Offset(0, 2))],
+        color: const Color(0xFFFFD700), // Solid Yellow
+        border: Border.all(
+          color: Colors.white, 
+          width: 4.0, // Thick White Border
+        ),
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
       ),
       child: Center(
         child: Text(
@@ -43,10 +43,11 @@ class ClusterMarker extends StatelessWidget {
           style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontSize: 18,
           ),
         ),
       ),
     );
   }
 }
+

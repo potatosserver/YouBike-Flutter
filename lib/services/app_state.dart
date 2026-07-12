@@ -19,24 +19,27 @@ class RoadSignPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
+    final mainRadius = 20.0; // Diameter 40px
 
-    final paint = Paint()
-      ..color = isPinned ? const Color(0xFFFFD700) : Colors.amber.shade200
+    // 1. Draw Main Body (No Halo)
+    final bodyPaint = Paint()
+      ..color = isPinned ? const Color(0xFFFFD700) : const Color(0xFFF7D560)
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius, paint);
+    canvas.drawCircle(center, mainRadius, bodyPaint);
 
-    paint
+    // 2. Draw Thick White Border
+    final borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    canvas.drawCircle(center, radius - 1, paint);
+      ..strokeWidth = 4.0;
+    canvas.drawCircle(center, mainRadius - 2.0, borderPaint);
 
+    // 3. Draw Bike Icon
     final textPainter = TextPainter(
       text: TextSpan(
         text: String.fromCharCode(Icons.directions_bike.codePoint),
         style: TextStyle(
-          fontSize: 24,
+          fontSize: 22,
           fontFamily: Icons.directions_bike.fontFamily,
           package: Icons.directions_bike.fontPackage,
           color: Colors.black87,
@@ -51,6 +54,10 @@ class RoadSignPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
 class AppState extends ChangeNotifier {
@@ -171,11 +178,8 @@ class AppState extends ChangeNotifier {
     final id = stationId.trim();
     if (pinnedStationIds.contains(id)) {
       pinnedStationIds.remove(id);
-    if (pinnedStationIds.contains(id)) {
-      pinnedStationIds.remove(id);
     } else {
       pinnedStationIds.add(id);
-    }
     }
     _prefs?.setStringList('pinnedStations', pinnedStationIds.toList());
     notifyListeners();
@@ -215,7 +219,6 @@ class AppState extends ChangeNotifier {
     _monitorConnectivity();
     await _runOptimizedInit();
     startAutoRefreshCycle();
-    // Start the first countdown immediately so user doesn't have to click
     countdownRemaining = 60;
     _startCountdownTimer();
     isLoading = false;
@@ -307,7 +310,7 @@ class AppState extends ChangeNotifier {
   Future<void> _performRefresh(bool isInitial, String reason) async {
     if (!isInitial) {
       countdownRemaining = 60;
-      isUpdating = false; // Ensure we show the countdown, not 'Updating...'
+      isUpdating = false; 
       _startCountdownTimer();
       notifyListeners();
     }

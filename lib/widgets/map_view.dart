@@ -139,7 +139,7 @@ class _StationMarkerLayerState extends State<StationMarkerLayer> {
       return Marker(
         key: ValueKey("st_${s.id}"),
         point: LatLng(s.lat, s.lng),
-        width: 30, height: 30,
+        width: 40, height: 40,
         alignment: Alignment.topCenter,
         child: RoadSignMarker(image: isPinned ? pinnedImg : normalImg),
       );
