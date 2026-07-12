@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
@@ -37,33 +37,33 @@ class RouteService {
     
     final url = "${RouteService.baseUrl}?profile=$profile&locale=$locale&key=${RouteService.apiKey}&elevation=false&instructions=true&point=${start.latitude},${start.longitude}&point=${end.latitude},${end.longitude}";
     
-    debugPrint("[Route] 📡 發送導航請求...");
-    debugPrint("[Route] 🚀 URL: $url");
-    debugPrint("[Route] 📍 起點: ${start.latitude}, ${start.longitude}");
-    debugPrint("[Route] 🎯 終點: ${end.latitude}, ${end.longitude}");
+    
+    
+    
+    
 
     try {
       final response = await http.get(Uri.parse(url));
-      debugPrint("[Route] 📨 Response Code: ${response.statusCode}");
+      
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['paths'] != null && (data['paths'] as List).isNotEmpty) {
           final steps = data['paths'][0]['instructions'] as List;
-          debugPrint("[Route] ✅ 成功找到 ${steps.length} 個導航步驟");
+          
           return steps.map((s) => RouteStep.fromJson(s)).toList();
         } else {
-          debugPrint("[Route] ⚠️ API 返回成功但路徑為空 (Paths is empty)");
+          
         }
       } else if (response.statusCode == 401) {
-        debugPrint("[Route] ❌ 認證失敗 (401): API Key 已失效");
+        
         throw Exception("ROUTE_AUTH_FAILED");
       } else {
-        debugPrint("[Route] ❌ API 錯誤回應: ${response.body}");
+        
         throw Exception("ROUTE_API_ERROR");
       }
     } catch (e) {
-      debugPrint("[Route] 💥 網路或解析異常: $e");
+      
     }
     return [];
   }
