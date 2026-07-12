@@ -32,7 +32,7 @@
     "@lang_en": {},
     "settings_theme": "主題",
     "@settings_theme": {},
-    "settings_region": "區域",
+    "settings_region": "地區選擇",
     "@settings_region": {},
     "countdown_unit": "秒後",
     "@countdown_unit": {},
@@ -42,8 +42,6 @@
     "@dist_m": {},
     "dist_km": "公里",
     "@dist_km": {},
-    "settings_region": "地區選擇",
-    "@settings_region": {},
     "electric_bike_details_title": "電輔車列表 - ",
     "@electric_bike_details_title": {},
     "bike_number_label": "車輛編號：",
@@ -124,7 +122,7 @@
     "@notice_insurance": {},
     "notice_take_belongings": "✔️記得帶走置物籃內的隨身物品",
     "@notice_take_belongings": {},
-    "updatingIn": "即時資料將在 {sec} 秒後更新",
+    "updatingIn": "{sec}秒後更新",
     "@updatingIn": {
         "placeholders": {
             "sec": {
@@ -165,5 +163,15 @@
     "updating": "更新中...",
     "@updating": {},
     "sec": "秒",
-    "@sec": {}
+    "@sec": {},
+    "go_to": "前往 ",
+    "@go_to": {},
+    "unknown": "未知",
+    "@unknown": {},
+    "init_syncing": "同步 GPS 數據中...",
+    "@init_syncing": {},
+    "init_updating": "更新站點資料中...",
+    "@init_updating": {},
+    "update_stations": "更新站點",
+    "@update_stations": {}
 }

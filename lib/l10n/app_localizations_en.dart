@@ -12,12 +12,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get init_starting => 'Starting...';
 
   @override
-  String get init_updating => 'Updating data...';
-
-  @override
-  String get init_syncing => 'Syncing with server...';
-
-  @override
   String get init_locating => 'Locating...';
 
   @override
@@ -199,7 +193,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String updatingIn(String sec) {
-    return 'Updating in $sec seconds';
+    return '$sec sec update';
   }
 
   @override
@@ -227,17 +221,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationUnavailable => 'Navigation unavailable';
 
   @override
+  String get updating => 'Updating...';
+
+  @override
+  String get sec => 'seconds';
+
+  @override
   String get go_to => 'Go to ';
 
   @override
   String get unknown => 'Unknown';
 
   @override
-  String get updating => 'Updating...';
+  String get init_syncing => 'Syncing GPS data...';
+
+  @override
+  String get init_updating => 'Updating stations...';
 
   @override
   String get update_stations => 'Update Stations';
-
-  @override
-  String get sec => 'seconds';
 }

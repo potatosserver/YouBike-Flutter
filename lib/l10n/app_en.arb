@@ -122,7 +122,7 @@
     "@notice_insurance": {},
     "notice_take_belongings": "✔️Take your belongings from the basket",
     "@notice_take_belongings": {},
-    "updatingIn": "Updating in {sec} seconds",
+    "updatingIn": "{sec} sec update",
     "@updatingIn": {
         "placeholders": {
             "sec": {
@@ -163,5 +163,15 @@
     "updating": "Updating...",
     "@updating": {},
     "sec": "seconds",
-    "@sec": {}
+    "@sec": {},
+    "go_to": "Go to ",
+    "@go_to": {},
+    "unknown": "Unknown",
+    "@unknown": {},
+    "init_syncing": "Syncing GPS data...",
+    "@init_syncing": {},
+    "init_updating": "Updating stations...",
+    "@init_updating": {},
+    "update_stations": "Update Stations",
+    "@update_stations": {}
 }

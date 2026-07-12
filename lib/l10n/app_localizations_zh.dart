@@ -12,12 +12,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get init_starting => '啟動中...';
 
   @override
-  String get init_updating => '更新資料中...';
-
-  @override
-  String get init_syncing => '正在與伺服器同步...';
-
-  @override
   String get init_locating => '定位中...';
 
   @override
@@ -199,7 +193,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String updatingIn(String sec) {
-    return '即時資料將在 $sec 秒後更新';
+    return '$sec秒後更新';
   }
 
   @override
@@ -227,17 +221,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navigationUnavailable => '導航服務不可用';
 
   @override
+  String get updating => '更新中...';
+
+  @override
+  String get sec => '秒';
+
+  @override
   String get go_to => '前往 ';
 
   @override
   String get unknown => '未知';
 
   @override
-  String get updating => '更新中...';
+  String get init_syncing => '同步 GPS 數據中...';
+
+  @override
+  String get init_updating => '更新站點資料中...';
 
   @override
   String get update_stations => '更新站點';
-
-  @override
-  String get sec => '秒';
 }
