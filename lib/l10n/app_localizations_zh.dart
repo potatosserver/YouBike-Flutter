@@ -12,6 +12,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get init_starting => '啟動中...';
 
   @override
+  String get init_updating => '更新資料中...';
+
+  @override
+  String get init_syncing => '正在與伺服器同步...';
+
+  @override
   String get init_locating => '定位中...';
 
   @override
@@ -222,6 +228,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get updating => '更新中...';
+
+  @override
+  String get update_stations => '更新站點';
 
   @override
   String get sec => '秒';

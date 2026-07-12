@@ -12,6 +12,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get init_starting => 'Starting...';
 
   @override
+  String get init_updating => 'Updating data...';
+
+  @override
+  String get init_syncing => 'Syncing with server...';
+
+  @override
   String get init_locating => 'Locating...';
 
   @override
@@ -222,6 +228,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updating => 'Updating...';
+
+  @override
+  String get update_stations => 'Update Stations';
 
   @override
   String get sec => 'seconds';

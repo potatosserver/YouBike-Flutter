@@ -42,7 +42,7 @@ class LoadingOverlay extends StatelessWidget {
                 ),
               ),
               child: Text(
-                _translateNotice(context, appState.loadingNotice),
+                _translateNotice(context, appState.currentNotice),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -59,9 +59,10 @@ class LoadingOverlay extends StatelessWidget {
   String _translateNotice(BuildContext context, String key) {
     final l10n = AppLocalizations.of(context)!;
     switch (key) {
-      case 'init_locating': return l10n.updating; // 或自定義定位中
-      case 'init_syncing': return "同步中..."; // 建議補上 .arb
-      case 'init_updating': return l10n.updating;
+      case 'init_starting': return l10n.init_starting;
+      case 'init_locating': return l10n.init_locating;
+      case 'init_syncing': return l10n.init_syncing;
+      case 'init_updating': return l10n.init_updating;
       case 'init_success': return l10n.init_success;
       case 'notice_no_speed': return l10n.notice_no_speed;
       case 'notice_no_sidewalk': return l10n.notice_no_sidewalk;

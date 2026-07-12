@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../l10n/app_localizations.dart';
 
 class HomeUpdateButton extends StatefulWidget {
   const HomeUpdateButton({super.key});
@@ -42,6 +43,7 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
     final isDark = theme.brightness == Brightness.dark;
     final Color contentColor = isDark ? const Color(0xFF333333) : Colors.black87;
     
+    final l10n = AppLocalizations.of(context)!
     return Consumer<AppState>(
       builder: (context, appState, child) {
         final countdown = appState.countdownRemaining;
@@ -73,8 +75,8 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
                     const SizedBox(width: 8),
                     Text(
                       isUpdating 
-                          ? '更新中...' 
-                          : (countdown > 0 ? '更新站點 (${countdown}s)' : '更新站點'),
+                          ? l10n.updating 
+                          : (countdown > 0 ? l10n.updatingIn(countdown.toString()) : l10n.update_stations),
                       style: TextStyle(
                         color: contentColor, 
                         fontWeight: FontWeight.bold, 

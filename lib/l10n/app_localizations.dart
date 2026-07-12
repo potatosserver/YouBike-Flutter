@@ -101,6 +101,14 @@ abstract class AppLocalizations {
   /// **'Starting...'**
   String get init_starting;
 
+  /// No description provided for @init_updating.
+  /// In en, this message translates to: 'Updating data...'
+  String get init_updating;
+
+  /// No description provided for @init_syncing.
+  /// In en, this message translates to: 'Syncing with server...'
+  String get init_syncing;
+
   /// No description provided for @init_locating.
   ///
   /// In en, this message translates to:
@@ -508,6 +516,10 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Updating...'**
   String get updating;
+
+  /// No description provided for @update_stations.
+  /// In en, this message translates to: 'Update Stations'
+  String get update_stations;
 
   /// No description provided for @sec.
   ///
