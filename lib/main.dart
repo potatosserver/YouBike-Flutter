@@ -109,7 +109,14 @@ class _MainWrapperState extends State<MainWrapper> {
         // Font Warmer: Forces Material Icons to load before baking occurs
         Opacity(
           opacity: 0.0,
-          child: Text(String.fromCharCode(0xe53d), style: const TextStyle(fontFamily: 'MaterialIcons'),),
+          child: Column(
+            children: [
+              Text(String.fromCharCode(Icons.directions_bike.codePoint), 
+                   style: const TextStyle(fontFamily: 'MaterialIcons')),
+              Text(String.fromCharCode(Icons.star.codePoint), 
+                   style: const TextStyle(fontFamily: 'MaterialIcons')),
+            ],
+          ),
         ),
         ],
     );
