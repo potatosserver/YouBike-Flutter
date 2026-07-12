@@ -132,16 +132,14 @@ class _StationMarkerLayerState extends State<StationMarkerLayer> {
 
     final appState = Provider.of<AppState>(context, listen: false);
     final normalImg = appState.markerImageNormal;
-    final pinnedImg = appState.markerImagePinned;
 
     _cachedMarkers = widget.stations.map((s) {
-      final isPinned = appState.pinnedStationIds.contains(s.id.trim());
       return Marker(
         key: ValueKey("st_${s.id}"),
         point: LatLng(s.lat, s.lng),
         width: 40, height: 40,
-        alignment: Alignment.topCenter,
-        child: RoadSignMarker(image: isPinned ? pinnedImg : normalImg),
+        alignment: Alignment.bottomCenter,
+        child: RoadSignMarker(image: normalImg),
       );
     }).toList();
 

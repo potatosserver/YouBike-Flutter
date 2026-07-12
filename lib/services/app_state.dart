@@ -21,9 +21,9 @@ class RoadSignPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     const mainRadius = 20.0; // Diameter 40px
 
-    // 1. Draw Main Body (No Halo)
+    // 1. Draw Main Body (Gold Standard Yellow #FFD700)
     final bodyPaint = Paint()
-      ..color = isPinned ? const Color(0xFFFFD700) : const Color(0xFFF7D560)
+      ..color = const Color(0xFFFFD700)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, mainRadius, bodyPaint);
 
@@ -40,7 +40,7 @@ class RoadSignPainter extends CustomPainter {
         text: String.fromCharCode(Icons.directions_bike.codePoint),
         style: TextStyle(
           fontSize: 22,
-          fontFamily: 'MaterialIcons',
+          fontFamily: Icons.directions_bike.fontFamily,
           package: Icons.directions_bike.fontPackage,
           color: Colors.black87,
         ),
