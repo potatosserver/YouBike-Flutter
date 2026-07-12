@@ -43,7 +43,7 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
     final isDark = theme.brightness == Brightness.dark;
     final Color contentColor = isDark ? const Color(0xFF333333) : Colors.black87;
     
-    final l10n = AppLocalizations.of(context)!
+    final l10n = AppLocalizations.of(context)!;
     return Consumer<AppState>(
       builder: (context, appState, child) {
         final countdown = appState.countdownRemaining;
