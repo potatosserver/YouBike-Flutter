@@ -33,42 +33,52 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // Helper to convert appState lang string to Flutter Locale
+  Locale _getLocale(String lang) {
+    if (lang == 'en') return const Locale('en', 'US');
+    return const Locale('zh', 'TW');
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) => MaterialApp(
-        title: 'YouBike',
-        themeMode: themeProvider.themeMode,
-        theme: ThemeData(
-          brightness: Brightness.light,
-          primaryColor: const Color(0xFF007BFF),
-          scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-          useMaterial3: true,
-        ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          primaryColor: const Color(0xFF90CAF9),
-          scaffoldBackgroundColor: const Color(0xFF121212),
-          useMaterial3: true,
-        ),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [
-          Locale('zh', 'TW'),
-          Locale('en', 'US'),
-        ],
-        home: const MainWrapper(),
-        routes: {
-          '/settings': (context) => const SettingsScreen(),
-          '/theme-selection': (context) => const ThemeSelectionScreen(),
-          '/region-selection': (context) => const RegionSelectionScreen(),
-          '/language-selection': (context) => const LanguageSelectionScreen(),
-        },
-      ),
+    // Listen to both ThemeProvider and AppState for language/theme changes
+    return Consumer2<ThemeProvider, AppState>(
+      builder: (context, themeProvider, appState, child) {
+        return MaterialApp(
+          title: 'YouBike',
+          themeMode: themeProvider.themeMode,
+          locale: _getLocale(appState.currentLang), // CRITICAL: Link lang state to MaterialApp
+          theme: ThemeData(
+            brightness: Brightness.light,
+            primaryColor: const Color(0xFF007BFF),
+            scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+            useMaterial3: true,
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            primaryColor: const Color(0xFF90CAF9),
+            scaffoldBackgroundColor: const Color(0xFF121212),
+            useMaterial3: true,
+          ),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('zh', 'TW'),
+            Locale('en', 'US'),
+          ],
+          home: const MainWrapper(),
+          routes: {
+            '/settings': (context) => const SettingsScreen(),
+            '/theme-selection': (context) => const ThemeSelectionScreen(),
+            '/region-selection': (context) => const RegionSelectionScreen(),
+            '/language-selection': (context) => const LanguageSelectionScreen(),
+          },
+        );
+      },
     );
   }
 }
