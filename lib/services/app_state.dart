@@ -173,27 +173,45 @@ class AppState extends ChangeNotifier {
   Future<void> _runOptimizedInit() async {
     _initStartTime = DateTime.now();
     isLoading = true;
-    _simulateRandomNotices();
+    
+    // 1. 隨機貼心提醒 (純淨模式：不顯示後續狀態文字)
+    final notices = [
+      'notice_no_speed', 'notice_no_sidewalk', 'notice_no_phone', 'notice_no_brake',
+      'notice_seat_height', 'notice_lights_work', 'notice_insurance', 'notice_take_belongings'
+    ];
+    currentNotice = notices[math.Random().nextInt(notices.length)];
+    notifyListeners();
+    
+    // 確保提醒能被讀到
+    await Future.delayed(const Duration(milliseconds: 800));
     _simulatePercentage();
+    
     try {
-      _initializeLocation().then((_) { refreshStations(isInitial: false, reason: "INIT_GPS"); });
+      // 嚴格同步鏈：定位 -> 基礎資料 -> 實時數據
+      await _initializeLocation();
+      
       final cachedStationsJson = _prefs?.getString('cached_stations');
       if (cachedStationsJson != null) {
         try {
           final List<dynamic> decoded = jsonDecode(cachedStationsJson);
           _fullStationList = decoded.map((item) => Station.fromJson(item as Map<String, dynamic>)).whereType<Station>().toList();
-          currentNotice = "init_updating"; notifyListeners();
-          refreshStations(isInitial: true, reason: "INIT_CACHE");
-          isLoading = false; _isInitialLoadComplete = true; loadingProgress = 100; currentNotice = "init_success";
-          notifyListeners(); return;
-        } catch (e) { debugPrint("Cache load error: $e. Falling back to network."); }
+        } catch (e) { debugPrint("Cache load error: $e"); }
       }
-      currentNotice = "init_syncing"; notifyListeners();
-      await fetchBaseData();
-      currentNotice = "init_updating"; notifyListeners();
-      await refreshStations(isInitial: true, reason: "INIT_NETWORK");
+      
+      if (_fullStationList.isEmpty) {
+        await fetchBaseData();
+      }
+      
+      // 最終門控：確保進入畫面時卡片已有最新數據
+      await refreshStations(isInitial: true, reason: "FINAL_GATE");
+      
     } catch (e) { addLog("init_error $e", isError: true); }
-    finally { _isInitialLoadComplete = true; loadingProgress = 100; currentNotice = "init_success"; if (isLoading) isLoading = false; notifyListeners(); }
+    finally {
+      _isInitialLoadComplete = true;
+      loadingProgress = 100;
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> _initializeLocation() async {

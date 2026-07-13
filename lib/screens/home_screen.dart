@@ -9,6 +9,8 @@ import '../widgets/map_view.dart';
 import '../widgets/search_panel.dart';
 import '../widgets/home_update_button.dart';
 import '../widgets/map_mask_overlay.dart';
+import '../widgets/loading_overlay.dart';
+import '../widgets/loading_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,6 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, constraints) {
           final size = MediaQuery.of(context).size;
           final isWide = size.width >= 600;
+          final appState = Provider.of<AppState>(context);
+
           return Stack(
             children: [
               // 1. Base Map Layer
@@ -122,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Container(color: Colors.transparent),
                   ),
                 ),
-
+              
               // 5. UI Buttons (Topmost)
               Positioned(
                 top: 40, right: 15,
@@ -157,6 +161,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 bottom: 30, left: isWide ? 390 : 0, right: 0,
                 child: const Center(child: HomeUpdateButton()),
               ),
+              
+              // 6. 頂層載入遮罩 (遮住所有內容直到初始化完成)
+              if (appState.isLoading)
+                const LoadingOverlay(),
             ],
           );
         },
