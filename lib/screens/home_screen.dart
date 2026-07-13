@@ -10,7 +10,7 @@ import '../widgets/search_panel.dart';
 import '../widgets/home_update_button.dart';
 import '../widgets/map_mask_overlay.dart';
 import '../widgets/loading_overlay.dart';
-import '../widgets/loading_overlay.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,13 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          _panelHeight = MediaQuery.of(context).size.height * 0.35;
-        });
-      }
-    });
   }
 
   @override
@@ -44,17 +37,28 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final size = MediaQuery.of(context).size;
-          final isWide = size.width >= 600;
-          final appState = Provider.of<AppState>(context);
+          final availableHeight = constraints.maxHeight;
+          final availableWidth = constraints.maxWidth;
+          
+          final double aspectRatio = availableWidth / availableHeight;
+          final bool isWide = aspectRatio > 0.8;
+
+          // 動態計算側邊欄寬度：佔寬度 30%，限制在 300~400px 之間
+          final double sidebarWidth = isWide 
+              ? (availableWidth * 0.3).clamp(300.0, 400.0) 
+              : 0.0;
+          const double horizontalMargin = 20.0;
+          const double gap = 20.0;
 
           return Stack(
             children: [
               // 1. Base Map Layer
               if (isWide)
                 Positioned(
-                  left: 408, top: 20, 
-                  width: size.width - 428, height: size.height - 40,
+                  left: horizontalMargin + sidebarWidth + gap, 
+                  top: horizontalMargin, 
+                  right: horizontalMargin, 
+                  bottom: horizontalMargin,
                   child: MapView(
                     mapController: _mapController,
                     isMapReady: _isMapReady,
@@ -65,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
               else
                 Positioned(
                   top: 0, left: 0, right: 0, 
-                  height: size.height - (_panelHeight ?? size.height * 0.35),
+                  height: availableHeight - (_panelHeight ?? availableHeight * 0.35),
                   child: MapView(
                     mapController: _mapController,
                     isMapReady: _isMapReady,
@@ -79,16 +83,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: IgnorePointer(
                   child: MapMaskOverlay(
                     maskColor: theme.brightness == Brightness.dark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
-                    panelHeight: _panelHeight ?? size.height * 0.35,
+                    panelHeight: _panelHeight ?? availableHeight * 0.35,
                     isWide: isWide,
-                    leftOffset: isWide ? 408.0 : null,
+                    leftOffset: isWide ? horizontalMargin + sidebarWidth + gap : null,
                   ),
                 ),
               ),
               
               // 3. Floating Panels
               if (isWide)
-                Positioned(top: 20, bottom: 20, left: 20, width: 368, 
+                Positioned(top: horizontalMargin, bottom: horizontalMargin, left: horizontalMargin, width: sidebarWidth, 
                   child: SearchPanel(
                     isWide: true, 
                     mapController: _mapController, 
@@ -100,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   bottom: 0, 
                   left: 0, 
                   right: 0, 
-                  height: _panelHeight ?? size.height * 0.35,
+                  height: _panelHeight ?? availableHeight * 0.35,
                   child: SearchPanel(
                     isWide: false, 
                     panelHeight: _panelHeight, 
@@ -112,15 +116,15 @@ class _HomeScreenState extends State<HomeScreen> {
               // 4. TOP-LEVEL Drag Touch Layer (Only for Narrow mode)
               if (!isWide)
                 Positioned(
-                  bottom: (_panelHeight ?? size.height * 0.35) - 40, 
+                  bottom: (_panelHeight ?? availableHeight * 0.35) - 40, 
                   left: 0, 
                   right: 0, 
                   height: 140,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onVerticalDragUpdate: (details) {
-                      double newHeight = (_panelHeight ?? size.height * 0.35) - details.delta.dy;
-                      newHeight = newHeight.clamp(size.height * 0.2, size.height * 0.8);
+                      double newHeight = (_panelHeight ?? availableHeight * 0.35) - details.delta.dy;
+                      newHeight = newHeight.clamp(availableHeight * 0.2, availableHeight * 0.8);
                       setState(() => _panelHeight = newHeight);
                     },
                     child: Container(color: Colors.transparent),
@@ -141,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Positioned(
                 right: 20,
-                bottom: isWide ? 20 : (_panelHeight ?? size.height * 0.35) + 20, 
+                bottom: isWide ? 20 : (_panelHeight ?? availableHeight * 0.35) + 20, 
                 child: Container(
                   decoration: BoxDecoration(
                     color: theme.brightness == Brightness.dark ? const Color(0xFF4A4A4A) : const Color(0xFFFDCACB),
@@ -150,7 +154,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: IconButton(
                     icon: Icon(Icons.my_location, size: 22, color: theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : Colors.black87),
-                    onPressed: () {
+                    onPressed: () async {
+                      await _appState.requestAndCenterLocation();
                       LatLng snapPos = _appState.lastKnownLocation ?? _appState.getEffectiveLocation();
                       _mapController.move(snapPos, 18.0);
                     },
@@ -163,8 +168,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               
               // 6. 頂層載入遮罩 (遮住所有內容直到初始化完成)
-              if (appState.isLoading)
-                const LoadingOverlay(),
+              Positioned.fill(
+                child: Selector<AppState, bool>(
+                  selector: (_, state) => state.isLoading,
+                  builder: (context, isLoading, child) {
+                    return isLoading ? const LoadingOverlay() : const SizedBox.shrink();
+                  },
+                ),
+              ),
             ],
           );
         },

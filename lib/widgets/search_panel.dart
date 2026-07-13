@@ -71,7 +71,8 @@ class _SearchPanelState extends State<SearchPanel> {
     return Consumer<AppState>(
       builder: (context, appState, child) {
         final l10n = AppLocalizations.of(context);
-        if (l10n == null) return const SizedBox.shrink();
+        // 移除 if (l10n == null) return const SizedBox.shrink(); 
+        // 確保面板結構永遠存在，避免視覺跳變
         return Column(
           children: [
             if (!widget.isWide)
@@ -128,7 +129,7 @@ class _SearchPanelState extends State<SearchPanel> {
                           textAlignVertical: TextAlignVertical.center,
                           decoration: InputDecoration(
                             isDense: true,
-                            hintText: l10n.input_placeholder,
+                            hintText: l10n?.input_placeholder ?? "Search...", // 提供後備文字
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 0),
                             suffixIcon: SizedBox(
@@ -167,7 +168,7 @@ class _SearchPanelState extends State<SearchPanel> {
     );
   }
 
-  Widget _buildStationPanel(AppState appState, AppLocalizations l10n) =>
+  Widget _buildStationPanel(AppState appState, AppLocalizations? l10n) =>
       SizedBox(
         width: double.infinity,
         child: appState.allStations.isEmpty 
@@ -178,7 +179,7 @@ class _SearchPanelState extends State<SearchPanel> {
                 children: [
                   const Icon(Icons.search_off, size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
-                  Text(l10n.noStationsFound, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+                  Text(l10n?.noStationsFound ?? "No stations found", textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey, fontSize: 16)),
                 ],
               ),
               )

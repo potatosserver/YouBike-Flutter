@@ -68,6 +68,33 @@ class AppState extends ChangeNotifier {
     return await LocationService().getCurrentPosition();
   }
 
+  Future<void> requestAndCenterLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+        final pos = await getCurrentPosition();
+        if (pos != null) {
+          lastKnownLocation = LatLng(pos.latitude, pos.longitude);
+          center = lastKnownLocation!;
+          notifyListeners();
+          return;
+        }
+      } else if (permission == LocationPermission.deniedForever) {
+        NotificationService.instance.show(
+          message: "location_permission_denied_forever", 
+          type: NotificationType.error
+        );
+      }
+    } catch (e) {
+      debugPrint("Error requesting location: $e");
+    }
+  }
+
   String getDistanceLabel(double distance) {
     return distance < 1000 ? "${distance.toStringAsFixed(0)}m" : "${(distance / 1000).toStringAsFixed(1)}km";
   }
@@ -216,15 +243,30 @@ class AppState extends ChangeNotifier {
 
   Future<void> _initializeLocation() async {
     try {
-      final pos = await getCurrentPosition();
-      if (pos != null) {
-        lastKnownLocation = LatLng(pos.latitude, pos.longitude);
-        center = lastKnownLocation!;
-        initialSnapPoint = center;
-        _prefs?.setDouble('last_lat', lastKnownLocation!.latitude);
-        _prefs?.setDouble('last_lng', lastKnownLocation!.longitude);
-        hasObtainedRealLocation = true;
-      } else if (lastKnownLocation != null) {
+      // 1. 檢查當前權限狀態
+      LocationPermission permission = await Geolocator.checkPermission();
+      
+      // 2. 如果權限被拒絕(尚未授權)，立即主動請求權限彈窗
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      // 3. 如果最終獲取到授權，則嘗試獲取實時位置
+      if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+        final pos = await getCurrentPosition();
+        if (pos != null) {
+          lastKnownLocation = LatLng(pos.latitude, pos.longitude);
+          center = lastKnownLocation!;
+          initialSnapPoint = center;
+          _prefs?.setDouble('last_lat', lastKnownLocation!.latitude);
+          _prefs?.setDouble('last_lng', lastKnownLocation!.longitude);
+          hasObtainedRealLocation = true;
+          return; // 成功獲取實時位置，直接返回
+        }
+      }
+      
+      // 4. 若無權限或獲取失敗，嘗試使用快取位置
+      if (lastKnownLocation != null) {
         center = lastKnownLocation!;
         initialSnapPoint = center;
       } else {
@@ -234,8 +276,11 @@ class AppState extends ChangeNotifier {
         initialSnapPoint = center;
       }
     } catch (e) {
-      if (lastKnownLocation != null) { center = lastKnownLocation!; initialSnapPoint = center; }
-      else { final region = _regions[selectedRegion] ?? _regions['kaohsiung']!; center = LatLng(region['lat'] as double, region['lng'] as double); lastKnownLocation = center; initialSnapPoint = center; }
+      // 靜默處理，確保不影響啟動流程
+      final region = _regions[selectedRegion] ?? _regions['kaohsiung']!;
+      center = LatLng(region['lat'] as double, region['lng'] as double);
+      lastKnownLocation = center;
+      initialSnapPoint = center;
     }
   }
 
@@ -335,15 +380,6 @@ class AppState extends ChangeNotifier {
   void _monitorConnectivity() {
     Connectivity().onConnectivityChanged.listen((event) {
       isOffline = (event.contains(ConnectivityResult.none));
-      notifyListeners();
-    });
-  }
-
-  void _simulateRandomNotices() {
-    final notices = ['init_checking_api', 'init_verifying_cache', 'init_loading_stations', 'init_syncing_gps'];
-    Timer.periodic(const Duration(milliseconds: 300), (timer) {
-      if (_isInitialLoadComplete) { timer.cancel(); return; }
-      currentNotice = notices[math.Random().nextInt(notices.length)];
       notifyListeners();
     });
   }
