@@ -43,7 +43,7 @@ class _MapMaskPainter extends CustomPainter {
 
     final double horizontalMargin = leftOffset ?? (isWide ? 20.0 : 0.0);
     final double verticalMargin = isWide ? 20.0 : 0.0;
-    final double cutoutWidth = isWide ? size.width - (horizontalMargin + 20.0) : size.width;
+    final double cutoutWidth = isWide ? size.width - (horizontalMargin + 40.0) : size.width;
     final double cutoutHeight = isWide ? size.height - (verticalMargin * 2) : size.height - panelHeight;
     
     final cutoutRect = RRect.fromRectAndCorners(

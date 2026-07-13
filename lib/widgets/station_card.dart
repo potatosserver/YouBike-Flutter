@@ -35,15 +35,15 @@ class StationCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.brightness == Brightness.dark ? const Color(0xFF444444) : const Color(0xFFFFF2EC),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
+              color: Colors.black.withValues(alpha: 0.1), 
+              blurRadius: 4, 
               offset: const Offset(0, 2),
             ),
           ],

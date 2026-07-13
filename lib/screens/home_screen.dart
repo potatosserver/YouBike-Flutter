@@ -49,8 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
               // 1. Base Map Layer
               if (isWide)
                 Positioned(
-                  left: 404, top: 20, 
-                  width: size.width - 444, height: size.height - 40,
+                  left: 408, top: 20, 
+                  width: size.width - 428, height: size.height - 40,
                   child: MapView(
                     mapController: _mapController,
                     isMapReady: _isMapReady,
@@ -77,14 +77,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     maskColor: theme.brightness == Brightness.dark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
                     panelHeight: _panelHeight ?? size.height * 0.35,
                     isWide: isWide,
-                    leftOffset: isWide ? 404.0 : null,
+                    leftOffset: isWide ? 408.0 : null,
                   ),
                 ),
               ),
               
               // 3. Floating Panels
               if (isWide)
-                Positioned(top: 12, bottom: 12, left: 12, width: 368, 
+                Positioned(top: 20, bottom: 20, left: 20, width: 368, 
                   child: SearchPanel(
                     isWide: true, 
                     mapController: _mapController, 

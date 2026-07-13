@@ -131,22 +131,24 @@ class _SearchPanelState extends State<SearchPanel> {
                             hintText: l10n.input_placeholder,
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                            suffixIcon: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_hasText)
-                                  IconButton(
-                                    icon: const Icon(Icons.clear, color: Colors.grey, size: 24),
-                                    onPressed: _clearSearch,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
+                            suffixIcon: SizedBox(
+                              width: 64,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_hasText)
+                                    GestureDetector(
+                                      onTap: _clearSearch,
+                                      child: const Icon(Icons.clear, color: Colors.grey, size: 24),
+                                    ),
+                                  if (_hasText) const SizedBox(width: 8),
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: Icon(Icons.search, color: Colors.grey, size: 24),
                                   ),
-                                if (_hasText) const SizedBox(width: 8),
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 12),
-                                  child: Icon(Icons.search, color: Colors.grey, size: 24),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                           onSubmitted: (val) => appState.searchStations(val),

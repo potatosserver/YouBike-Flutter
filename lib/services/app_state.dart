@@ -242,6 +242,29 @@ class AppState extends ChangeNotifier {
     return earthRadius * c;
   }
 
+  bool isSearching = false;
+
+  Future<void> updateRealtimeData([List<Station>? targets]) async {
+    final targetList = targets ?? allStations;
+    if (targetList.isEmpty) return;
+    try {
+      final api = ApiService();
+      final vehicleData = await api.fetchRealtimeVehicles(targetList.map((s) => s.id).toList());
+      final referencePoint = lastKnownLocation ?? getEffectiveLocation();
+      
+      for (var s in targetList) {
+        if (vehicleData.containsKey(s.id)) {
+          final data = vehicleData[s.id] as Map<String, dynamic>;
+          s.availableBikes = data['available_2_0'] ?? 0;
+          s.availableElectricBikes = data['available_e'] ?? 0;
+          s.emptySpaces = data['empty_spaces'] ?? 0;
+        }
+        s.distance = _calculateDistance(referencePoint.latitude, referencePoint.longitude, s.lat, s.lng);
+      }
+      if (targets == null) notifyListeners();
+    } catch (e) { addLog("update_realtime_error $e", isError: true); }
+  }
+
   Future<void> refreshStations({bool isInitial = false, String reason = "UNKNOWN"}) async {
     if (_refreshFuture != null) return _refreshFuture;
     if (!isInitial && _lastRefreshTime != null) {
@@ -260,25 +283,21 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
     try {
-      final api = ApiService();
-      if (_fullStationList.isEmpty) _fullStationList = await api.fetchAllStations();
-      LatLng referencePoint = lastKnownLocation ?? getEffectiveLocation();
-      await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high)).then((pos) {
-        lastKnownLocation = LatLng(pos.latitude, pos.longitude);
-        hasObtainedRealLocation = true;
-        for (var s in allStations) { s.distance = _calculateDistance(lastKnownLocation!.latitude, lastKnownLocation!.longitude, s.lat, s.lng); }
-        notifyListeners();
-      });
-      final sorted = List<Station>.from(_fullStationList);
-      sorted.sort((a, b) {
-        final distA = _calculateDistance(referencePoint.latitude, referencePoint.longitude, a.lat, a.lng);
-        final distB = _calculateDistance(referencePoint.latitude, referencePoint.longitude, b.lat, b.lng);
-        return distA.compareTo(distB);
-      });
-      allStations = _applyPrioritySort(sorted).take(10).toList();
-      for (var s in allStations) { s.distance = _calculateDistance(referencePoint.latitude, referencePoint.longitude, s.lat, s.lng); }
-      final vehicleData = await api.fetchRealtimeVehicles(allStations.map((s) => s.id).toList());
-      for (var s in allStations) { if (vehicleData.containsKey(s.id)) { final data = vehicleData[s.id] as Map<String, dynamic>; s.availableBikes = data['available_2_0'] ?? 0; s.availableElectricBikes = data['available_e'] ?? 0; s.emptySpaces = data['empty_spaces'] ?? 0; } }
+      if (isInitial) {
+        final api = ApiService();
+        if (_fullStationList.isEmpty) _fullStationList = await api.fetchAllStations();
+        
+        LatLng referencePoint = lastKnownLocation ?? getEffectiveLocation();
+        final sorted = List<Station>.from(_fullStationList);
+        sorted.sort((a, b) {
+          final distA = _calculateDistance(referencePoint.latitude, referencePoint.longitude, a.lat, a.lng);
+          final distB = _calculateDistance(referencePoint.latitude, referencePoint.longitude, b.lat, b.lng);
+          return distA.compareTo(distB);
+        });
+        allStations = _applyPrioritySort(sorted).take(10).toList();
+      }
+      
+      await updateRealtimeData();
       _lastRefreshTime = DateTime.now();
     } catch (e) { addLog("refresh_error $e", isError: true); }
     finally { if (!isInitial) { isUpdating = false; notifyListeners(); } }
@@ -323,15 +342,29 @@ class AppState extends ChangeNotifier {
   void setLanguage(String lang) { currentLang = lang; _prefs?.setString('currentLang', lang); notifyListeners(); }
   void setRegion(String region) { selectedRegion = region; _prefs?.setString('selectedRegion', region); notifyListeners(); }
   void setUseLocation(bool use) { useLocation = use; _prefs?.setBool('useLocation', use); notifyListeners(); }
-  void searchStations(String query) {
-    if (query.isEmpty) { 
-      allStations = _applyPrioritySort(_fullStationList).take(10).toList(); 
-      notifyListeners(); 
-      return; 
-    }
-    final filtered = _fullStationList.where((s) => s.nameTw.contains(query) || s.nameEn.contains(query)).toList();
-    allStations = _applyPrioritySort(filtered).take(10).toList();
+  void searchStations(String query) async {
+    isSearching = true;
     notifyListeners();
+
+    try {
+      List<Station> resultList;
+      if (query.isEmpty) { 
+        resultList = _applyPrioritySort(_fullStationList).take(10).toList(); 
+      } else {
+        final filtered = _fullStationList.where((s) => s.nameTw.contains(query) || s.nameEn.contains(query)).toList();
+        resultList = _applyPrioritySort(filtered).take(10).toList();
+      }
+
+      // ATOMIC UPDATE: Fetch data for the NEW list before assigning it to allStations
+      await updateRealtimeData(resultList);
+      
+      allStations = resultList;
+    } catch (e) {
+      addLog("search_error $e", isError: true);
+    } finally {
+      isSearching = false;
+      notifyListeners();
+    }
   }
 
   void _startCountdownTimer() {
