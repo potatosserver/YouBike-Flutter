@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
-import '../services/app_state.dart';
+import '../services/app_config_service.dart';
 import '../services/language_service.dart';
 
 class LanguageSelectionScreen extends StatelessWidget {
@@ -10,7 +10,7 @@ class LanguageSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final appState = Provider.of<AppState>(context);
+    final config = Provider.of<AppConfigService>(context);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -23,14 +23,14 @@ class LanguageSelectionScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         children: AppLocalizations.supportedLocales.map((locale) {
-          final isSelected = appState.currentLang == (locale.languageCode == 'zh' ? 'zh_TW' : 'en');
+          final isSelected = config.currentLang == (locale.languageCode == 'zh' ? 'zh_TW' : 'en');
           final label = locale.languageCode == 'zh' ? "繁體中文" : "English";
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 24),
             child: InkWell(
               onTap: () {
-                appState.setLanguage(locale.languageCode == 'zh' ? 'zh_TW' : 'en');
+                config.setLanguage(locale.languageCode == 'zh' ? 'zh_TW' : 'en');
                 Provider.of<LanguageService>(context, listen: false).setLocale(locale);
               },
               child: Row(

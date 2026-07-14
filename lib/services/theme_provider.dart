@@ -14,13 +14,14 @@ class ThemeProvider with ChangeNotifier {
 
   void _loadThemeMode() async {
     final prefs = await SharedPreferences.getInstance();
-    final mode = prefs.getString(_prefThemeMode);
-    if (mode == 'dark') {
-      _themeMode = ThemeMode.dark;
-    } else if (mode == 'light') {
-      _themeMode = ThemeMode.light;
-    } else {
+    final themeModeString = prefs.getString(_prefThemeMode);
+    if (themeModeString == null) {
       _themeMode = ThemeMode.system;
+    } else {
+      _themeMode = ThemeMode.values.firstWhere(
+        (e) => e.toString() == themeModeString,
+        orElse: () => ThemeMode.system,
+      );
     }
     notifyListeners();
   }
@@ -29,17 +30,7 @@ class ThemeProvider with ChangeNotifier {
     if (mode == _themeMode) return;
     _themeMode = mode;
     notifyListeners();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      String modeStr = 'system';
-      if (mode == ThemeMode.dark) {
-        modeStr = 'dark';
-      } else if (mode == ThemeMode.light) {
-        modeStr = 'light';
-      }
-      await prefs.setString(_prefThemeMode, modeStr);
-    } catch (e) {
-      debugPrint("[THEME-STORAGE-ERROR] $e");
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefThemeMode, mode.toString());
   }
 }

@@ -1,13 +1,12 @@
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/station.dart';
-import '../services/app_state.dart';
+import '../viewmodels/map_view_model.dart';
+import '../viewmodels/station_view_model.dart';
 import '../widgets/map_markers.dart';
 import '../widgets/pulse_marker.dart';
 
@@ -41,8 +40,8 @@ class _MapViewState extends State<MapView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final appState = Provider.of<AppState>(context, listen: false);
-    final initialCenter = appState.center ?? const LatLng(25.0330, 121.5654);
+    final mapVm = Provider.of<MapViewModel>(context, listen: false);
+    final initialCenter = mapVm.center ?? mapVm.getEffectiveLocation();
 
     return FlutterMap(
       mapController: widget.mapController,
@@ -70,25 +69,24 @@ class _MapViewState extends State<MapView> {
       ),
       children: [
         TileLayer(
-          
           urlTemplate: theme.brightness == Brightness.dark 
               ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png' 
               : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
           userAgentPackageName: 'com.youbike.android',
-          tileProvider: CancellableNetworkTileProvider(),
+          tileProvider: NetworkTileProvider(),
           keepBuffer: 5,
           tileDisplay: const TileDisplay.fadeIn(duration: Duration(milliseconds: 1)),
         ),
-        Selector<AppState, List<Station>>(
-          selector: (_, state) => state.fullStations,
+        Selector<StationViewModel, List<Station>>(
+          selector: (_, vm) => vm.fullStations,
           shouldRebuild: (prev, next) => prev.length != next.length,
           builder: (context, stations, child) {
             _log("DEBUG", "StationMarkerLayer updating with ${stations.length} stations");
             return StationMarkerLayer(stations: stations);
           },
         ),
-        Selector<AppState, LatLng?>(
-          selector: (_, state) => state.center,
+        Selector<MapViewModel, LatLng?>(
+          selector: (_, vm) => vm.center,
           builder: (context, center, child) {
             if (center == null) return const SizedBox.shrink();
             return MarkerLayer(
@@ -115,14 +113,12 @@ class StationMarkerLayer extends StatefulWidget {
   State<StationMarkerLayer> createState() => _StationMarkerLayerState();
 }
 
-
 class _StationMarkerLayerState extends State<StationMarkerLayer> {
   List<Marker> _cachedMarkers = [];
   MarkerClusterLayerOptions? _clusterOptions;
   int _lastProcessedCount = 0;
 
   void _updateMarkersAndOptions() {
-    // LOCK: Only re-index if the station count actually changed
     if (widget.stations.length == _lastProcessedCount && _clusterOptions != null) {
       return; 
     }
@@ -149,7 +145,6 @@ class _StationMarkerLayerState extends State<StationMarkerLayer> {
       animationsOptions: const AnimationsOptions(
         zoom: Duration.zero,
         fitBound: Duration.zero,
-        
         spiderfy: Duration.zero,
       ), 
       builder: (context, markers) {
@@ -184,12 +179,8 @@ class _StationMarkerLayerState extends State<StationMarkerLayer> {
 
   @override
   Widget build(BuildContext context) {
-    _updateMarkersAndOptions(); // Guardian check
-
+    _updateMarkersAndOptions();
     if (_clusterOptions == null) return const SizedBox.shrink();
-
-    // Because _clusterOptions is a persistent reference, 
-    // MarkerClusterLayerWidget will NOT rebuild the index tree on move/zoom.
     return MarkerClusterLayerWidget(options: _clusterOptions!);
   }
 }

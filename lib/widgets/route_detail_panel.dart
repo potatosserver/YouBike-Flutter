@@ -1,7 +1,8 @@
+import '../viewmodels/map_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import '../services/app_state.dart';
+import '../services/app_config_service.dart';
 import '../services/route_service.dart';
 import '../widgets/app_theme.dart';
 import '../l10n/app_localizations.dart';
@@ -50,21 +51,21 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
   }
 
   Future<void> _loadRoute() async {
-    final appState = Provider.of<AppState>(context, listen: false);
+    final config = Provider.of<AppConfigService>(context, listen: false);
     final routeService = RouteService();
     
     try {
-      LatLng startPoint = appState.lastKnownLocation ?? appState.getEffectiveLocation();
+      LatLng startPoint = Provider.of<MapViewModel>(context, listen: false).lastKnownLocation ?? Provider.of<MapViewModel>(context, listen: false).getEffectiveLocation();
       
       final steps = await routeService.getRoute(
         startPoint, 
         LatLng(widget.destLat, widget.destLng), 
-        appState.currentLang
+        config.currentLang
       );
       
       if (mounted) {
         setState(() {
-          final lang = Provider.of<AppState>(context, listen: false).currentLang;
+          final lang = Provider.of<AppConfigService>(context, listen: false).currentLang;
           _steps = steps.map((s) => "${_translateInstruction(s.instruction, lang)} (${(s.distance / 1000).toStringAsFixed(2)} km)").toList();
           _isLoading = false;
         });
@@ -84,9 +85,9 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final appState = Provider.of<AppState>(context);
+    final config = Provider.of<AppConfigService>(context);
     
-    final destinationName = appState.currentLang == 'en' ? widget.station.nameEn : widget.station.nameTw;
+    final destinationName = config.currentLang == 'en' ? widget.station.nameEn : widget.station.nameTw;
 
     return Container(
       padding: const EdgeInsets.all(24),

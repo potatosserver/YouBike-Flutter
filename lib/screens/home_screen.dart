@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../services/app_state.dart';
+import '../viewmodels/map_view_model.dart';
+import '../viewmodels/loading_view_model.dart';
 import '../widgets/map_view.dart';
 import '../widgets/search_panel.dart';
 import '../widgets/home_update_button.dart';
@@ -23,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double? _panelHeight; 
   bool _isMapReady = false;
 
-  AppState get _appState => Provider.of<AppState>(context, listen: false);
+  MapViewModel get _mapVm => Provider.of<MapViewModel>(context, listen: false);
 
   @override
   void initState() {
@@ -43,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
           final double aspectRatio = availableWidth / availableHeight;
           final bool isWide = aspectRatio > 0.8;
 
-          // 動態計算側邊欄寬度：佔寬度 30%，限制在 300~400px 之間
           final double sidebarWidth = isWide 
               ? (availableWidth * 0.3).clamp(300.0, 400.0) 
               : 0.0;
@@ -52,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
           return Stack(
             children: [
-              // 1. Base Map Layer
               if (isWide)
                 Positioned(
                   left: horizontalMargin + sidebarWidth + gap, 
@@ -78,7 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               
-              // 2. Framed Mask Overlay (Wrapped in IgnorePointer for touch passthrough)
               Positioned.fill(
                 child: IgnorePointer(
                   child: MapMaskOverlay(
@@ -90,7 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               
-              // 3. Floating Panels
               if (isWide)
                 Positioned(top: horizontalMargin, bottom: horizontalMargin, left: horizontalMargin, width: sidebarWidth, 
                   child: SearchPanel(
@@ -113,7 +110,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               
-              // 4. TOP-LEVEL Drag Touch Layer (Only for Narrow mode)
               if (!isWide)
                 Positioned(
                   bottom: (_panelHeight ?? availableHeight * 0.35) - 40, 
@@ -131,7 +127,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               
-              // 5. UI Buttons (Topmost)
               ...[
                 Positioned(
                   top: isWide ? (horizontalMargin + 16.0) : 40, 
@@ -157,8 +152,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: IconButton(
                       icon: Icon(Icons.my_location, size: 22, color: theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : Colors.black87),
                       onPressed: () async {
-                        await _appState.requestAndCenterLocation();
-                        LatLng snapPos = _appState.lastKnownLocation ?? _appState.getEffectiveLocation();
+                        await _mapVm.requestAndCenterLocation();
+                        LatLng snapPos = _mapVm.lastKnownLocation ?? _mapVm.getEffectiveLocation();
                         _mapController.move(snapPos, 18.0);
                       },
                     ),
@@ -172,9 +167,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
               
-              // 6. 頂層載入遮罩 (遮住所有內容直到初始化完成)
               Positioned.fill(
-                child: Selector<AppState, bool>(
+                child: Selector<LoadingViewModel, bool>(
                   selector: (_, state) => state.isLoading,
                   builder: (context, isLoading, child) {
                     return isLoading ? const LoadingOverlay() : const SizedBox.shrink();

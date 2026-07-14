@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../services/app_state.dart';
+import '../viewmodels/station_view_model.dart';
 import '../models/station.dart';
 import '../widgets/station_card.dart';
 import '../widgets/route_detail_panel.dart';
@@ -68,8 +68,8 @@ class _SearchPanelState extends State<SearchPanel> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Consumer<AppState>(
-      builder: (context, appState, child) {
+    return Consumer<StationViewModel>(
+      builder: (context, stationVm, child) {
         final l10n = AppLocalizations.of(context);
         // 移除 if (l10n == null) return const SizedBox.shrink(); 
         // 確保面板結構永遠存在，避免視覺跳變
@@ -144,20 +144,20 @@ class _SearchPanelState extends State<SearchPanel> {
                                       child: const Icon(Icons.clear, color: Colors.grey, size: 24),
                                     ),
                                   if (_hasText) const SizedBox(width: 8),
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 4),
+                                  const Padding(
+                                    padding: EdgeInsets.only(right: 4),
                                     child: Icon(Icons.search, color: Colors.grey, size: 24),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          onSubmitted: (val) => appState.searchStations(val),
+                          onSubmitted: (val) => stationVm.searchStations(val),
                           style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
                         ),
                       ),
                     ),
-                    Expanded(child: _buildStationPanel(appState, l10n)),
+                    Expanded(child: _buildStationPanel(stationVm, l10n)),
                   ],
                 ),
               ),
@@ -168,10 +168,10 @@ class _SearchPanelState extends State<SearchPanel> {
     );
   }
 
-  Widget _buildStationPanel(AppState appState, AppLocalizations? l10n) =>
+  Widget _buildStationPanel(StationViewModel stationVm, AppLocalizations? l10n) =>
       SizedBox(
         width: double.infinity,
-        child: appState.allStations.isEmpty 
+        child: stationVm.allStations.isEmpty 
             ? Center(
                 child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -185,9 +185,9 @@ class _SearchPanelState extends State<SearchPanel> {
               )
             : ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: math.min(appState.allStations.length, 10), 
+                itemCount: math.min(stationVm.allStations.length, 10), 
                 itemBuilder: (context, index) {
-                  final station = appState.allStations[index];
+                  final station = stationVm.allStations[index];
                   return StationCard(
                     station: station,
                     onTap: () => _moveMapToStation(station),

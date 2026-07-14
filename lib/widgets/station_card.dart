@@ -1,7 +1,8 @@
+import '../services/app_config_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/station.dart';
-import '../services/app_state.dart';
+import '../viewmodels/station_view_model.dart';
 import '../l10n/app_localizations.dart';
 
 class StationCard extends StatelessWidget {
@@ -20,10 +21,11 @@ class StationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
+    final stationVm = Provider.of<StationViewModel>(context);
+    final config = Provider.of<AppConfigService>(context);
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final isPinned = appState.pinnedStationIds.contains(station.id);
+    final isPinned = config.pinnedStationIds.contains(station.id);
     final hasElectric = (station.availableElectricBikes ?? 0) > 0;
     final double distValue = station.distance;
 
@@ -56,7 +58,7 @@ class StationCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    appState.currentLang == 'en' ? station.nameEn : station.nameTw,
+                    config.currentLang == 'en' ? station.nameEn : station.nameTw,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -75,7 +77,7 @@ class StationCard extends StatelessWidget {
                       ),
                     const SizedBox(width: 12),
                     GestureDetector(
-                      onTap: () => appState.togglePinStation(station.id),
+                      onTap: () => config.togglePinStation(station.id),
                       child: Icon(
                         isPinned ? Icons.star : Icons.star_border,
                         color: isPinned ? Colors.amber : (theme.brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600]),
@@ -97,12 +99,12 @@ class StationCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              "${l10n.distance} ${appState.getDistanceLabel(distValue)}",
+              "${l10n.distance} ${stationVm.getDistanceLabel(distValue)}",
               style: TextStyle(fontSize: 15, color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(height: 4),
             Text(
-              "${l10n.address} ${appState.currentLang == 'en' ? station.addressEn : station.addressTw}",
+              "${l10n.address} ${config.currentLang == 'en' ? station.addressEn : station.addressTw}",
               style: TextStyle(fontSize: 15, color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(height: 4),

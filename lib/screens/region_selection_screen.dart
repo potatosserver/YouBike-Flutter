@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
-import '../services/app_state.dart';
+import '../services/app_config_service.dart';
 
 class RegionSelectionScreen extends StatelessWidget {
   const RegionSelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
+    final config = Provider.of<AppConfigService>(context);
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
@@ -21,7 +21,7 @@ class RegionSelectionScreen extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        children: appState.regions.entries.map((entry) {
+        children: config.regions.entries.map((entry) {
           final String regionId = entry.key;
           final String regionKey = entry.value['name'] as String;
           
@@ -43,14 +43,14 @@ class RegionSelectionScreen extends StatelessWidget {
             case 'region_taitung': regionName = l10n.region_taitung; break;
             default: regionName = regionKey;
           }
-          final bool isSelected = appState.selectedRegion == regionId;
+          final bool isSelected = config.selectedRegion == regionId;
 
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 24),
             child: InkWell(
               onTap: () {
-                appState.setRegion(regionId);
+                config.setRegion(regionId);
               },
               child: Row(
                 children: [

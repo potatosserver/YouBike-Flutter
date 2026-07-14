@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/app_state.dart';
+import '../viewmodels/loading_view_model.dart';
 import '../l10n/app_localizations.dart';
 
 class LoadingOverlay extends StatelessWidget {
@@ -8,7 +8,7 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
+    final loadingVm = Provider.of<LoadingViewModel>(context);
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     
@@ -21,7 +21,7 @@ class LoadingOverlay extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              l10n.loading_prefix(appState.loadingProgress.toString()),
+              l10n.loading_prefix(loadingVm.loadingProgress.toStringAsFixed(0)),
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w500,
@@ -42,7 +42,7 @@ class LoadingOverlay extends StatelessWidget {
                 ),
               ),
               child: Text(
-                _translateNotice(context, appState.currentNotice),
+                _translateNotice(context, loadingVm.currentNotice),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,

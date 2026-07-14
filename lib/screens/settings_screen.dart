@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
-import '../services/app_state.dart';
+import '../services/app_config_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
+    final config = Provider.of<AppConfigService>(context);
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     
@@ -55,8 +55,8 @@ class SettingsScreen extends StatelessWidget {
                   icon: Icons.location_on_outlined,
                   title: l10n.settings_location,
                   trailing: Switch(
-                    value: appState.useLocation,
-                    onChanged: (val) => appState.setUseLocation(val),
+                    value: config.useLocation,
+                    onChanged: (val) => config.setUseLocation(val),
                     activeTrackColor: theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : const Color(0xFF4A90E2),
                     activeThumbColor: Colors.white,
                   ),

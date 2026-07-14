@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/app_state.dart';
+import '../viewmodels/station_view_model.dart';
 import '../l10n/app_localizations.dart';
 
 class HomeUpdateButton extends StatefulWidget {
@@ -29,11 +29,11 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
   }
 
   void _handleUpdate() async {
-    final appState = Provider.of<AppState>(context, listen: false);
-    if (appState.isUpdating) return;
+    final stationVm = Provider.of<StationViewModel>(context, listen: false);
+    if (stationVm.isUpdating) return;
     
     _controller.forward(from: 0.0);
-    await appState.refreshStations();
+    await stationVm.refreshStations();
     _controller.reset();
   }
 
@@ -42,13 +42,10 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final Color contentColor = isDark ? const Color(0xFF333333) : Colors.black87;
-    
     final l10n = AppLocalizations.of(context)!;
-    return Consumer<AppState>(
-      builder: (context, appState, child) {
-        final countdown = appState.countdownRemaining;
-        final isUpdating = appState.isUpdating;
-        
+    
+    return Consumer<StationViewModel>(
+      builder: (context, vm, child) {
         return GestureDetector(
           onTap: _handleUpdate,
           child: AnimatedBuilder(
@@ -74,9 +71,7 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isUpdating 
-                          ? l10n.updating 
-                          : (countdown > 0 ? l10n.updatingIn(countdown.toString()) : l10n.update_stations),
+                      l10n.updatingIn(vm.countdownRemaining.toString()),
                       style: TextStyle(
                         color: contentColor, 
                         fontWeight: FontWeight.bold, 
