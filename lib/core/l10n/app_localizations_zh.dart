@@ -1,6 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-import 'package:youbike_android/core/l10n/app_localizations.dart';
+import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
 

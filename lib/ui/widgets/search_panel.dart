@@ -129,7 +129,7 @@ class _SearchPanelState extends State<SearchPanel> {
                           textAlignVertical: TextAlignVertical.center,
                           decoration: InputDecoration(
                             isDense: true,
-                            hintText: l10n?.input_placeholder ?? "Search...", // 提供後備文字
+                            hintText: l10n.input_placeholder, // 提供後備文字
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 0),
                             suffixIcon: SizedBox(

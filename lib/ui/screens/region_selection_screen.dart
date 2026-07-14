@@ -9,7 +9,7 @@ class RegionSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final config = Provider.of<AppConfigService>(context);
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
     return Scaffold(

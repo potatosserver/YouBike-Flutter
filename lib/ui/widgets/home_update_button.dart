@@ -42,7 +42,7 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final Color contentColor = isDark ? const Color(0xFF333333) : Colors.black87;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     
     return Consumer<StationViewModel>(
       builder: (context, vm, child) {

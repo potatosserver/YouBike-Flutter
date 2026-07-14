@@ -5,16 +5,26 @@ class LoadingViewModel with ChangeNotifier {
   bool isLoading = false;
   double loadingProgress = 0.0;
   String currentNotice = "init_starting";
+  int? statusValue; // 用於存放動態數據（如站點數量）
 
-  // Now using L10n Keys instead of hardcoded text
-  final List<String> notices = [
-    "init_starting",
-    "init_locating",
-    "init_syncing",
-    "init_updating",
+  // 分類管理通知
+  final Map<String, String> technicalSteps = {
+    "init_starting": "init_starting",
+    "init_requesting_permission": "init_requesting_permission",
+    "init_verifying_permission": "init_verifying_permission",
+    "init_locating": "init_locating",
+    "init_map_engine": "init_map_engine",
+    "init_map_tiles": "init_map_tiles",
+    "init_syncing": "init_syncing",
+    "init_syncing_stations": "init_syncing_stations", // 新增：動態站點同步
+    "init_clustering": "init_clustering",
+    "init_updating": "init_updating",
+    "init_success": "init_success",
+  };
+
+  final List<String> safetyTips = [
     "notice_no_phone",
     "notice_no_sidewalk",
-    "notice_no_phone",
     "notice_no_brake",
     "notice_seat_height",
     "notice_lights_work",
@@ -26,7 +36,15 @@ class LoadingViewModel with ChangeNotifier {
     isLoading = value;
     if (!value) {
       loadingProgress = 0.0;
+      statusValue = null;
     }
+    notifyListeners();
+  }
+
+  // 強化版更新狀態：支持傳入動態數值
+  void updateStatus(String key, {int? value}) {
+    currentNotice = key;
+    statusValue = value;
     notifyListeners();
   }
 
@@ -36,14 +54,10 @@ class LoadingViewModel with ChangeNotifier {
         timer.cancel();
         return;
       }
+      
       if (loadingProgress < 100) {
-        loadingProgress += 1.2;
+        loadingProgress += 0.8;
         if (loadingProgress > 100) loadingProgress = 100;
-        
-        // Cycle through notice keys based on progress
-        int noticeIndex = (loadingProgress / 8).floor() % notices.length;
-        currentNotice = notices[noticeIndex];
-        
         notifyListeners();
       } else {
         timer.cancel();
@@ -54,6 +68,8 @@ class LoadingViewModel with ChangeNotifier {
   void setFinished() {
     isLoading = false;
     loadingProgress = 100.0;
+    currentNotice = "init_success";
+    statusValue = null;
     notifyListeners();
   }
 }

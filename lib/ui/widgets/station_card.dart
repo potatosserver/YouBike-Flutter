@@ -24,13 +24,13 @@ class StationCard extends StatelessWidget {
     final stationVm = Provider.of<StationViewModel>(context);
     final config = Provider.of<AppConfigService>(context);
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isPinned = config.pinnedStationIds.contains(station.id);
     final hasElectric = (station.availableElectricBikes ?? 0) > 0;
     final double distValue = station.distance;
 
     String formatValue(BuildContext context, int? value) {
-      final l10n = AppLocalizations.of(context)!;
+      final l10n = AppLocalizations.of(context);
       return value == null ? l10n.unknown : value.toString();
     }
 

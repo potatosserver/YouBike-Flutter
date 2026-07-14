@@ -38,7 +38,7 @@ class _ElectricBikeDetailsModalState extends State<ElectricBikeDetailsModal> {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _bikesFuture,
       builder: (context, snapshot) {
-        final l10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context);
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(

@@ -73,7 +73,7 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          final l10n = AppLocalizations.of(context)!;
+          final l10n = AppLocalizations.of(context);
           _errorMessage = l10n.navigationUnavailable;
           _isLoading = false;
         });
@@ -83,7 +83,7 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final config = Provider.of<AppConfigService>(context);
     

@@ -172,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Selector<LoadingViewModel, bool>(
                   selector: (_, state) => state.isLoading,
                   builder: (context, isLoading, child) {
-                    return isLoading ? const LoadingOverlay() : const SizedBox.shrink();
+                    return isLoading ? const LoadingOverlay(isVisible: true) : const SizedBox.shrink();
                   },
                 ),
               ),

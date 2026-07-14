@@ -9,16 +9,27 @@ import 'package:youbike_android/core/router/app_router.dart';
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  Locale _getLocale(String lang) {
-    if (lang == 'en') return const Locale('en', 'US');
-    return const Locale('zh', 'TW');
-  }
+  /// 標準化語言代碼對應
+  static const Map<String, Locale> _localeMap = {
+    'en': Locale('en'),
+    'zh': Locale('zh'),
+  };
+
+  /// 支持的語言列表
+  static const List<Locale> supportedLocales = [
+    Locale('zh'),
+    Locale('en'),
+  ];
+
+  /// 獲取對應的 Locale
+  Locale _getLocale(String lang) => _localeMap[lang] ?? const Locale('zh');
 
   @override
   Widget build(BuildContext context) {
     final dialogTheme = DialogThemeData(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      titleTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+      titleTextStyle:
+          const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
     );
 
     return Consumer2<ThemeProvider, AppConfigService>(
@@ -49,16 +60,14 @@ class MyApp extends StatelessWidget {
             dialogTheme: dialogTheme,
           ),
 
+          // 本地化配置
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('zh', 'TW'),
-            Locale('en', 'US'),
-          ],
+          supportedLocales: supportedLocales,
         );
       },
     );

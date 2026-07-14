@@ -1,6 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-import 'package:youbike_android/core/l10n/app_localizations.dart';
+import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
 
@@ -15,7 +15,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get init_locating => 'Locating...';
 
   @override
-  String get app_full_title => 'YouBike Site Search : A simple, beautiful site search engine';
+  String get app_full_title =>
+      'YouBike Site Search : A simple, beautiful site search engine';
 
   @override
   String get use_location => 'Use Location';
@@ -84,7 +85,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get battery_power_label => 'Battery: ';
 
   @override
-  String get no_electric_bikes => 'No electric bikes available at this station.';
+  String get no_electric_bikes =>
+      'No electric bikes available at this station.';
 
   @override
   String get failed_to_get_bike_data => 'Failed to get electric bike data.';
@@ -171,7 +173,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notice_no_speed => '❌Do not speed or ride in reverse';
 
   @override
-  String get notice_no_sidewalk => '❌Do not change lanes arbitrarily on sidewalks';
+  String get notice_no_sidewalk =>
+      '❌Do not change lanes arbitrarily on sidewalks';
 
   @override
   String get notice_no_phone => '❌Do not use your phone while riding';
@@ -180,10 +183,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notice_no_brake => '❌Avoid harsh braking while riding';
 
   @override
-  String get notice_seat_height => '✔️Remember to adjust the seat to a proper height';
+  String get notice_seat_height =>
+      '✔️Remember to adjust the seat to a proper height';
 
   @override
-  String get notice_lights_work => '✔️Ensure that both front and rear lights are working';
+  String get notice_lights_work =>
+      '✔️Ensure that both front and rear lights are working';
 
   @override
   String get notice_insurance => '✔️Remember to get bicycle accident insurance';

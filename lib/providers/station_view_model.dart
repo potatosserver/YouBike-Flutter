@@ -8,6 +8,7 @@ import 'package:youbike_android/data/services/api_service.dart';
 import 'package:youbike_android/data/services/app_config_service.dart';
 import 'package:youbike_android/providers/map_view_model.dart';
 import 'package:youbike_android/providers/localized_view_model.dart';
+import 'package:youbike_android/providers/loading_view_model.dart';
 
 class StationViewModel extends LocalizedViewModel {
   AppConfigService config;
@@ -42,11 +43,14 @@ class StationViewModel extends LocalizedViewModel {
     });
   }
 
-  Future<void> fetchBaseData() async {
+  Future<void> fetchBaseData(LoadingViewModel? loadingVm) async {
     try {
       final api = ApiService();
       final freshData = await api.fetchAllStations();
       if (freshData.isNotEmpty) {
+        // 回報真實站點數量到載入畫面
+        loadingVm?.updateStatus('init_syncing_stations', value: freshData.length);
+        
         _fullStationList = freshData;
         final cacheData = jsonEncode(_fullStationList.map((s) => s.toJson()).toList());
         await config.prefs?.setString('cached_stations', cacheData);
@@ -86,7 +90,7 @@ class StationViewModel extends LocalizedViewModel {
     notifyListeners();
     try {
       if (isInitial) {
-        if (_fullStationList.isEmpty) await fetchBaseData();
+        if (_fullStationList.isEmpty) await fetchBaseData(null);
         
         final referencePoint = mapVm?.lastKnownLocation ?? mapVm?.getEffectiveLocation() ?? const LatLng(25.0330, 121.5654);
         final sorted = List<Station>.from(_fullStationList);

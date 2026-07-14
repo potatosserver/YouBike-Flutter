@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:youbike_android/ui/screens/home_screen.dart';
+import 'package:youbike_android/ui/widgets/loading_overlay.dart';
 import 'package:youbike_android/providers/loading_view_model.dart';
 import 'package:youbike_android/providers/station_view_model.dart';
 import 'package:youbike_android/providers/map_view_model.dart';
-import 'package:youbike_android/ui/widgets/loading_overlay.dart';
 import 'package:youbike_android/core/utils/log_service.dart';
 
 class AppWrapper extends StatefulWidget {
@@ -15,36 +15,69 @@ class AppWrapper extends StatefulWidget {
 }
 
 class _AppWrapperState extends State<AppWrapper> {
+  bool _isInitializing = true;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final loadingVm = Provider.of<LoadingViewModel>(context, listen: false);
-      final stationVm = Provider.of<StationViewModel>(context, listen: false);
-      final mapVm = Provider.of<MapViewModel>(context, listen: false);
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    final loadingVm = Provider.of<LoadingViewModel>(context, listen: false);
+    final stationVm = Provider.of<StationViewModel>(context, listen: false);
+    final mapVm = Provider.of<MapViewModel>(context, listen: false);
+    
+    loadingVm.setLoading(true);
+    loadingVm.simulatePercentage();
+    
+    try {
+      // --- 階段 1: 定位與權限 ---
+      loadingVm.updateStatus('init_requesting_permission');
+      await Future.delayed(const Duration(milliseconds: 500));
       
-      loadingVm.setLoading(true);
-      loadingVm.simulatePercentage();
+      loadingVm.updateStatus('init_locating');
+      await mapVm.requestAndCenterLocation();
       
-      try {
-        await mapVm.requestAndCenterLocation();
-        await stationVm.fetchBaseData();
-        await stationVm.refreshStations(isInitial: true);
-      } catch (e) {
-        LogService().e('APP_INIT', 'Initial data fetch failed', error: e);
-      } finally {
-        loadingVm.setFinished();
+      // --- 階段 2: 地圖引擎準備 ---
+      loadingVm.updateStatus('init_map_engine');
+      await Future.delayed(const Duration(milliseconds: 400));
+      
+      loadingVm.updateStatus('init_map_tiles');
+      await Future.delayed(const Duration(milliseconds: 400));
+      
+      // --- 階段 3: 數據同步 (掛鉤真實數據) ---
+      loadingVm.updateStatus('init_syncing');
+      await stationVm.fetchBaseData(loadingVm); // 傳入 loadingVm 以回報數量
+      
+      loadingVm.updateStatus('init_clustering');
+      await stationVm.refreshStations(isInitial: true);
+      
+      loadingVm.updateStatus('init_updating');
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+    } catch (e) {
+      LogService().e('APP_INIT', 'Initial data fetch failed', error: e);
+    } finally {
+      loadingVm.setFinished();
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
       }
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final loadingVm = Provider.of<LoadingViewModel>(context);
     return Stack(
       children: [
+        // 底層：主畫面預先渲染
         const HomeScreen(),
-        if (loadingVm.isLoading) const LoadingOverlay(),
+        
+        // 頂層：共用真實載入層
+        LoadingOverlay(isVisible: _isInitializing),
       ],
     );
   }
