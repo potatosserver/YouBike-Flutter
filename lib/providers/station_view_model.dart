@@ -22,6 +22,8 @@ class StationViewModel extends LocalizedViewModel {
       {CardRefreshCoordinator? coordinator, MapMoveTrigger? mapTrigger})
       : _coordinator = coordinator ??
             CardRefreshCoordinator(mapMoveTrigger: mapTrigger ?? MapMoveTrigger()) {
+    _wasUseLocation = config.useLocation;
+    config.addListener(_onConfigChanged);
     _startCountdown();
   }
 
@@ -32,14 +34,39 @@ class StationViewModel extends LocalizedViewModel {
 
   int countdownRemaining = 60;
   Timer? _countdownTimer;
+  late bool _wasUseLocation;
 
   /// Exposed so HomeScreen can attach its MapController.
   MapMoveTrigger get mapTrigger => _coordinator.mapTrigger;
 
   void updateDependencies(AppConfigService newConfig, MapViewModel newMapVm) {
+    config.removeListener(_onConfigChanged);
     config = newConfig;
     mapVm = newMapVm;
+    config.addListener(_onConfigChanged);
+    _wasUseLocation = config.useLocation;
     notifyListeners();
+  }
+
+  void _onConfigChanged() {
+    if (config.useLocation != _wasUseLocation) {
+      _wasUseLocation = config.useLocation;
+      if (config.useLocation) {
+        // 開啟定位 → 立即請求 GPS → 全更新（與按下定位按鈕相同）
+        _onLocationEnabled();
+      } else {
+        // 關閉定位 → 清除 GPS → 全更新
+        mapVm?.lastKnownLocation = null;
+        mapVm?.center = null;
+        mapVm?.notifyListeners();
+        refreshCards(moveTo: mapVm?.getEffectiveLocation());
+      }
+    }
+  }
+
+  Future<void> _onLocationEnabled() async {
+    await mapVm?.requestAndCenterLocation();
+    refreshCards(moveTo: mapVm?.getEffectiveLocation());
   }
 
   void _startCountdown() {
@@ -140,6 +167,7 @@ class StationViewModel extends LocalizedViewModel {
 
   @override
   void dispose() {
+    config.removeListener(_onConfigChanged);
     _countdownTimer?.cancel();
     super.dispose();
   }

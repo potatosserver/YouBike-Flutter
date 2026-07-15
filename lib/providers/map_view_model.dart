@@ -18,6 +18,10 @@ class MapViewModel extends LocalizedViewModel {
   }
 
   Future<void> requestAndCenterLocation() async {
+    if (!config.useLocation) {
+      debugPrint("Location is disabled by user config.");
+      return;
+    }
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -46,7 +50,7 @@ class MapViewModel extends LocalizedViewModel {
   }
 
   LatLng getEffectiveLocation() {
-    if (lastKnownLocation != null) return lastKnownLocation!;
+    if (config.useLocation && lastKnownLocation != null) return lastKnownLocation!;
     // 回退到使用者選擇的區域預設中心
     final regionData = config.regions[config.selectedRegion]!;
     return LatLng(
