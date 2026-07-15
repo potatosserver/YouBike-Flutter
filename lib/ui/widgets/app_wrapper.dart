@@ -5,6 +5,7 @@ import 'package:youbike_android/ui/widgets/loading_overlay.dart';
 import 'package:youbike_android/providers/loading_view_model.dart';
 import 'package:youbike_android/providers/station_view_model.dart';
 import 'package:youbike_android/providers/map_view_model.dart';
+import 'package:youbike_android/core/services/gps_requester.dart';
 import 'package:youbike_android/core/utils/log_service.dart';
 
 class AppWrapper extends StatefulWidget {
@@ -43,7 +44,8 @@ class _AppWrapperState extends State<AppWrapper> {
       await Future.delayed(const Duration(milliseconds: 500));
 
       loadingVm.updateStatus('init_locating', progress: 24);
-      await mapVm.requestAndCenterLocation();
+      const gps = GpsRequester();
+      await gps.requestOrFallback(mapVm);
 
       // --- 階段 2: 地圖引擎準備 ---
       loadingVm.updateStatus('init_map_engine', progress: 38);

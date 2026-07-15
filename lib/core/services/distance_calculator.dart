@@ -17,11 +17,4 @@ class DistanceCalculator {
     final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
     return earthRadius * c;
   }
-
-  /// Human-readable distance label: "320m" or "1.2km".
-  String format(double distance) {
-    return distance < 1000
-        ? '${distance.toStringAsFixed(0)}m'
-        : '${(distance / 1000).toStringAsFixed(1)}km';
-  }
 }

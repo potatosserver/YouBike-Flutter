@@ -7,6 +7,7 @@ import 'package:youbike_android/data/services/route_service.dart';
 import 'package:youbike_android/core/services/route_instruction_translator.dart';
 import 'package:youbike_android/ui/widgets/app_theme.dart';
 import 'package:youbike_android/core/l10n/app_localizations.dart';
+import 'package:youbike_android/core/services/station_format_helper.dart';
 import 'package:youbike_android/data/models/station.dart';
 
 class RouteDetailPanel extends StatefulWidget {
@@ -26,11 +27,11 @@ class RouteDetailPanel extends StatefulWidget {
 }
 
 class _RouteDetailPanelState extends State<RouteDetailPanel> {
+  static const _fmt = StationFormatHelper();
+  static const _translator = RouteInstructionTranslator();
   List<String>? _steps;
   bool _isLoading = true;
   String? _errorMessage;
-
-  static const _translator = RouteInstructionTranslator();
 
   @override
   void initState() {
@@ -75,7 +76,7 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
     final theme = Theme.of(context);
     final config = Provider.of<AppConfigService>(context);
     
-    final destinationName = config.currentLang == 'en' ? widget.station.nameEn : widget.station.nameTw;
+    final destinationName = _fmt.name(widget.station, config.currentLang);
 
     return Container(
       padding: const EdgeInsets.all(24),

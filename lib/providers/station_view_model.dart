@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart' hide DistanceCalculator;
 import 'package:youbike_android/core/services/card_refresh_coordinator.dart';
-import 'package:youbike_android/core/services/distance_calculator.dart';
 import 'package:youbike_android/core/services/map_move_trigger.dart';
 import 'package:youbike_android/data/models/station.dart';
 import 'package:youbike_android/data/services/api_service.dart';
@@ -16,7 +15,6 @@ class StationViewModel extends LocalizedViewModel {
   AppConfigService config;
   MapViewModel? mapVm;
   final CardRefreshCoordinator _coordinator;
-  final DistanceCalculator _calc = const DistanceCalculator();
 
   StationViewModel(this.config, this.mapVm,
       {CardRefreshCoordinator? coordinator, MapMoveTrigger? mapTrigger})
@@ -103,15 +101,19 @@ class StationViewModel extends LocalizedViewModel {
 
   // ── single entry point for everything ──
 
+  void _beginRefresh() {
+    isUpdating = true;
+    countdownRemaining = 60;
+    notifyListeners();
+  }
+
   /// Re-sorts, fetches realtime data, and optionally moves the map.
   /// Called by: countdown expiry, manual update button, search.
   Future<void> refreshCards({LatLng? moveTo}) async {
     if (_fullStationList.isEmpty) await fetchBaseData(null);
     if (_fullStationList.isEmpty) return;
 
-    isUpdating = true;
-    countdownRemaining = 60;
-    notifyListeners();
+    _beginRefresh();
 
     try {
       allStations = await _coordinator.execute(
@@ -144,10 +146,7 @@ class StationViewModel extends LocalizedViewModel {
         notifyListeners();
         return;
       }
-      // Use coordinator directly with the filtered subset
-      isUpdating = true;
-      countdownRemaining = 60;
-      notifyListeners();
+      _beginRefresh();
       allStations = await _coordinator.execute(
         fullStations: filtered,
         pinnedIds: config.pinnedStationIds,
@@ -162,8 +161,6 @@ class StationViewModel extends LocalizedViewModel {
       notifyListeners();
     }
   }
-
-  String getDistanceLabel(double distance) => _calc.format(distance);
 
   @override
   void dispose() {

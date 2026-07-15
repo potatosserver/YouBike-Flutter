@@ -7,6 +7,7 @@ import 'package:youbike_android/providers/map_view_model.dart';
 import 'package:youbike_android/providers/loading_view_model.dart';
 import 'package:youbike_android/ui/widgets/map_view.dart';
 import 'package:youbike_android/providers/station_view_model.dart';
+import 'package:youbike_android/core/services/gps_requester.dart';
 import 'package:youbike_android/ui/widgets/map_mask_overlay.dart';
 import 'package:youbike_android/ui/widgets/loading_overlay.dart';
 import 'package:youbike_android/ui/widgets/search_panel.dart';
@@ -160,10 +161,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: IconButton(
                       icon: Icon(Icons.my_location, size: 22, color: theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : Colors.black87),
                       onPressed: () async {
+                        const gps = GpsRequester();
                         final stationVm = Provider.of<StationViewModel>(context, listen: false);
-                        await _mapVm.requestAndCenterLocation();
+                        final pos = await gps.requestOrFallback(_mapVm);
                         if (!mounted) return;
-                        final pos = _mapVm.getEffectiveLocation();
                         stationVm.refreshCards(moveTo: pos);
                       },
                     ),
