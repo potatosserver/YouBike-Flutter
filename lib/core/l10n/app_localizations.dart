@@ -547,6 +547,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Update Stations'**
   String get update_stations;
+
+  /// No description provided for @init_requesting_permission.
+  ///
+  /// In en, this message translates to:
+  /// **'Requesting location permission...'**
+  String get init_requesting_permission;
+
+  /// No description provided for @init_verifying_permission.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying permission status...'**
+  String get init_verifying_permission;
+
+  /// No description provided for @init_map_engine.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting map engine...'**
+  String get init_map_engine;
+
+  /// No description provided for @init_map_tiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuring map tiles...'**
+  String get init_map_tiles;
+
+  /// No description provided for @init_clustering.
+  ///
+  /// In en, this message translates to:
+  /// **'Initializing station clusters...'**
+  String get init_clustering;
+
+  /// No description provided for @stations.
+  ///
+  /// In en, this message translates to:
+  /// **'stations'**
+  String get stations;
+
+  /// No description provided for @init_syncing_stations.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing {count} stations...'**
+  String init_syncing_stations(int count);
 }
 
 class _AppLocalizationsDelegate

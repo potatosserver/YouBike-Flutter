@@ -245,4 +245,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get update_stations => 'Update Stations';
+
+  @override
+  String get init_requesting_permission => 'Requesting location permission...';
+
+  @override
+  String get init_verifying_permission => 'Verifying permission status...';
+
+  @override
+  String get init_map_engine => 'Starting map engine...';
+
+  @override
+  String get init_map_tiles => 'Configuring map tiles...';
+
+  @override
+  String get init_clustering => 'Initializing station clusters...';
+
+  @override
+  String get stations => 'stations';
+
+  @override
+  String init_syncing_stations(int count) {
+    return 'Syncing $count stations...';
+  }
 }

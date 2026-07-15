@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:youbike_android/providers/loading_view_model.dart';
 import 'package:youbike_android/core/l10n/app_localizations.dart';
+import 'package:youbike_android/core/services/loading_notice_translator.dart';
 
 class LoadingOverlay extends StatefulWidget {
   final bool isVisible;
@@ -18,6 +19,7 @@ class _LoadingOverlayState extends State<LoadingOverlay>
   late Animation<double> _opacityAnimation;
 
   static const Color brandOrange = Color(0xFFFF9800);
+  static const _translator = LoadingNoticeTranslator();
 
   @override
   void initState() {
@@ -30,7 +32,6 @@ class _LoadingOverlayState extends State<LoadingOverlay>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-
     _opacityAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
@@ -112,7 +113,11 @@ class _LoadingOverlayState extends State<LoadingOverlay>
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        _buildNoticeText(context, loadingVm),
+                        _translator.translate(
+                          loadingVm.currentNotice,
+                          AppLocalizations.of(context),
+                          value: loadingVm.statusValue,
+                        ),
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
@@ -128,44 +133,5 @@ class _LoadingOverlayState extends State<LoadingOverlay>
         ),
       ),
     );
-  }
-
-  String _buildNoticeText(BuildContext context, LoadingViewModel vm) {
-    final l10n = AppLocalizations.of(context);
-    final key = vm.currentNotice;
-    final val = vm.statusValue;
-
-    // 處理動態數值插值
-    if (key == 'init_syncing_stations') {
-      final count = val ?? 0;
-      return "正在載入 $count 個站點...";
-      // 注意：實際應使用 l10n.syncing_stations(count)
-    }
-
-    // 普通 Key 映射
-    switch (key) {
-      case 'init_starting':
-        return l10n.init_starting;
-      case 'init_requesting_permission':
-        return "請求定位權限...";
-      case 'init_verifying_permission':
-        return "驗證權限狀態...";
-      case 'init_locating':
-        return l10n.init_locating;
-      case 'init_map_engine':
-        return "啟動地圖渲染引擎...";
-      case 'init_map_tiles':
-        return "配置區域地圖快取...";
-      case 'init_syncing':
-        return l10n.init_syncing;
-      case 'init_clustering':
-        return "初始化站點集群...";
-      case 'init_updating':
-        return l10n.init_updating;
-      case 'init_success':
-        return l10n.init_success;
-      default:
-        return key;
-    }
   }
 }

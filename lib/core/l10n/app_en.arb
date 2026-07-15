@@ -173,5 +173,25 @@
     "init_updating": "Updating stations...",
     "@init_updating": {},
     "update_stations": "Update Stations",
-    "@update_stations": {}
+    "@update_stations": {},
+    "init_requesting_permission": "Requesting location permission...",
+    "@init_requesting_permission": {},
+    "init_verifying_permission": "Verifying permission status...",
+    "@init_verifying_permission": {},
+    "init_map_engine": "Starting map engine...",
+    "@init_map_engine": {},
+    "init_map_tiles": "Configuring map tiles...",
+    "@init_map_tiles": {},
+    "init_clustering": "Initializing station clusters...",
+    "@init_clustering": {},
+    "stations": "stations",
+    "@stations": {},
+    "init_syncing_stations": "Syncing {count} stations...",
+    "@init_syncing_stations": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

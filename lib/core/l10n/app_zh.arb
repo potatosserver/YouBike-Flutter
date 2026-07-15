@@ -173,5 +173,25 @@
     "init_updating": "更新站點資料中...",
     "@init_updating": {},
     "update_stations": "更新站點",
-    "@update_stations": {}
+    "@update_stations": {},
+    "init_requesting_permission": "請求定位權限...",
+    "@init_requesting_permission": {},
+    "init_verifying_permission": "驗證權限狀態...",
+    "@init_verifying_permission": {},
+    "init_map_engine": "啟動地圖渲染引擎...",
+    "@init_map_engine": {},
+    "init_map_tiles": "配置區域地圖快取...",
+    "@init_map_tiles": {},
+    "init_clustering": "初始化站點集群...",
+    "@init_clustering": {},
+    "stations": "站點",
+    "@stations": {},
+    "init_syncing_stations": "同步 {count} 個站點中...",
+    "@init_syncing_stations": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

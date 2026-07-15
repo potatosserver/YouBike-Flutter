@@ -240,4 +240,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get update_stations => '更新站點';
+
+  @override
+  String get init_requesting_permission => '請求定位權限...';
+
+  @override
+  String get init_verifying_permission => '驗證權限狀態...';
+
+  @override
+  String get init_map_engine => '啟動地圖渲染引擎...';
+
+  @override
+  String get init_map_tiles => '配置區域地圖快取...';
+
+  @override
+  String get init_clustering => '初始化站點集群...';
+
+  @override
+  String get stations => '站點';
+
+  @override
+  String init_syncing_stations(int count) {
+    return '同步 $count 個站點中...';
+  }
 }

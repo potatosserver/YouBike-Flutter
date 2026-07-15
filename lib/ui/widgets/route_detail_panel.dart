@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:youbike_android/data/services/app_config_service.dart';
 import 'package:youbike_android/data/services/route_service.dart';
+import 'package:youbike_android/core/services/route_instruction_translator.dart';
 import 'package:youbike_android/ui/widgets/app_theme.dart';
 import 'package:youbike_android/core/l10n/app_localizations.dart';
 import 'package:youbike_android/data/models/station.dart';
@@ -29,44 +30,31 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  static const _translator = RouteInstructionTranslator();
+
   @override
   void initState() {
     super.initState();
     _loadRoute();
   }
 
-  String _translateInstruction(String instruction, String lang) {
-    if (lang != 'en') {
-      final map = {
-        'Continue': '直行',
-        'Turn left': '左轉',
-        'Turn right': '右轉',
-        'U-turn': '掉頭',
-      };
-      for (var entry in map.entries) {
-        if (instruction.contains(entry.key)) return instruction.replaceFirst(entry.key, entry.value);
-      }
-    }
-    return instruction;
-  }
-
   Future<void> _loadRoute() async {
     final config = Provider.of<AppConfigService>(context, listen: false);
     final routeService = RouteService();
-    
+
     try {
       LatLng startPoint = Provider.of<MapViewModel>(context, listen: false).lastKnownLocation ?? Provider.of<MapViewModel>(context, listen: false).getEffectiveLocation();
-      
+
       final steps = await routeService.getRoute(
-        startPoint, 
-        LatLng(widget.destLat, widget.destLng), 
+        startPoint,
+        LatLng(widget.destLat, widget.destLng),
         config.currentLang
       );
-      
+
       if (mounted) {
         setState(() {
           final lang = Provider.of<AppConfigService>(context, listen: false).currentLang;
-          _steps = steps.map((s) => "${_translateInstruction(s.instruction, lang)} (${(s.distance / 1000).toStringAsFixed(2)} km)").toList();
+          _steps = steps.map((s) => '${_translator.translate(s.instruction, lang)} (${(s.distance / 1000).toStringAsFixed(2)} km)').toList();
           _isLoading = false;
         });
       }
