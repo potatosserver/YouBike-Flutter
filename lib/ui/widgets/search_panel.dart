@@ -207,7 +207,7 @@ class _SearchPanelState extends State<SearchPanel> {
 
   void _moveMapToStation(Station station) {
     final target = station.visualPosition ?? LatLng(station.lat, station.lng);
-    widget.mapController.move(target, 18.0);
+    Provider.of<StationViewModel>(context, listen: false).refreshCards(moveTo: target);
   }
 
   void _showRoutePanel(Station station) {

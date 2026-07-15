@@ -3,15 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:youbike_android/providers/map_view_model.dart';
 import 'package:youbike_android/providers/loading_view_model.dart';
 import 'package:youbike_android/ui/widgets/map_view.dart';
+import 'package:youbike_android/providers/station_view_model.dart';
 import 'package:youbike_android/ui/widgets/map_mask_overlay.dart';
 import 'package:youbike_android/ui/widgets/loading_overlay.dart';
 import 'package:youbike_android/ui/widgets/search_panel.dart';
 import 'package:youbike_android/ui/widgets/home_update_button.dart';
-
 
 
 class HomeScreen extends StatefulWidget {
@@ -30,6 +29,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Wire MapController into the coordinator's trigger so refreshCards() can move the map.
+    Future.microtask(() {
+      if (mounted) {
+        Provider.of<StationViewModel>(context, listen: false)
+            .mapTrigger
+            .attach(_mapController);
+      }
+    });
   }
 
   @override
@@ -153,9 +160,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: IconButton(
                       icon: Icon(Icons.my_location, size: 22, color: theme.brightness == Brightness.dark ? const Color(0xFF90CAF9) : Colors.black87),
                       onPressed: () async {
+                        final stationVm = Provider.of<StationViewModel>(context, listen: false);
                         await _mapVm.requestAndCenterLocation();
-                        LatLng snapPos = _mapVm.lastKnownLocation ?? _mapVm.getEffectiveLocation();
-                        _mapController.move(snapPos, 18.0);
+                        if (!mounted) return;
+                        final pos = _mapVm.getEffectiveLocation();
+                        stationVm.refreshCards(moveTo: pos);
                       },
                     ),
                   ),

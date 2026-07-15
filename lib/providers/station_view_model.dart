@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide DistanceCalculator;
+import 'package:youbike_android/core/services/card_refresh_coordinator.dart';
+import 'package:youbike_android/core/services/distance_calculator.dart';
+import 'package:youbike_android/core/services/map_move_trigger.dart';
 import 'package:youbike_android/data/models/station.dart';
 import 'package:youbike_android/data/services/api_service.dart';
 import 'package:youbike_android/data/services/app_config_service.dart';
@@ -12,8 +14,14 @@ import 'package:youbike_android/providers/loading_view_model.dart';
 
 class StationViewModel extends LocalizedViewModel {
   AppConfigService config;
-  MapViewModel? mapVm; // 改為可空
-  StationViewModel(this.config, this.mapVm) {
+  MapViewModel? mapVm;
+  final CardRefreshCoordinator _coordinator;
+  final DistanceCalculator _calc = const DistanceCalculator();
+
+  StationViewModel(this.config, this.mapVm,
+      {CardRefreshCoordinator? coordinator, MapMoveTrigger? mapTrigger})
+      : _coordinator = coordinator ??
+            CardRefreshCoordinator(mapMoveTrigger: mapTrigger ?? MapMoveTrigger()) {
     _startCountdown();
   }
 
@@ -24,6 +32,9 @@ class StationViewModel extends LocalizedViewModel {
 
   int countdownRemaining = 60;
   Timer? _countdownTimer;
+
+  /// Exposed so HomeScreen can attach its MapController.
+  MapMoveTrigger get mapTrigger => _coordinator.mapTrigger;
 
   void updateDependencies(AppConfigService newConfig, MapViewModel newMapVm) {
     config = newConfig;
@@ -38,151 +49,94 @@ class StationViewModel extends LocalizedViewModel {
         countdownRemaining--;
         notifyListeners();
       } else {
-        refreshStations();
+        refreshCards();
       }
     });
   }
+
+  // ── base data (unchanged) ──
 
   Future<void> fetchBaseData(LoadingViewModel? loadingVm) async {
     try {
       final api = ApiService();
       final freshData = await api.fetchAllStations();
       if (freshData.isNotEmpty) {
-        // 回報真實站點數量到載入畫面
-        loadingVm?.updateStatus(
-          'init_syncing_stations',
-          value: freshData.length,
-          progress: 82,
-        );
-
+        loadingVm?.updateStatus('init_syncing_stations',
+            value: freshData.length, progress: 82);
         _fullStationList = freshData;
-        final cacheData =
-            jsonEncode(_fullStationList.map((s) => s.toJson()).toList());
-        await config.prefs?.setString('cached_stations', cacheData);
+        await config.prefs?.setString(
+          'cached_stations',
+          jsonEncode(_fullStationList.map((s) => s.toJson()).toList()),
+        );
       }
     } catch (e) {
-      debugPrint("Base data fetch error: $e");
+      debugPrint('Base data fetch error: $e');
     }
   }
 
-  Future<void> updateRealtimeData([List<Station>? targets]) async {
-    final targetList = targets ?? allStations;
-    if (targetList.isEmpty) return;
-    try {
-      final api = ApiService();
-      final vehicleData =
-          await api.fetchRealtimeVehicles(targetList.map((s) => s.id).toList());
-      final referencePoint = mapVm?.lastKnownLocation ??
-          mapVm?.getEffectiveLocation() ??
-          const LatLng(25.0330, 121.5654);
+  // ── single entry point for everything ──
 
-      for (var s in targetList) {
-        if (vehicleData.containsKey(s.id)) {
-          final data = vehicleData[s.id] as Map<String, dynamic>;
-          s.availableBikes = data['available_2_0'] ?? 0;
-          s.availableElectricBikes = data['available_e'] ?? 0;
-          s.emptySpaces = data['empty_spaces'] ?? 0;
-        }
-        s.distance = _calculateDistance(
-            referencePoint.latitude, referencePoint.longitude, s.lat, s.lng);
-      }
-      if (targets == null) notifyListeners();
-    } catch (e) {
-      debugPrint("Realtime update error: $e");
-    }
-  }
+  /// Re-sorts, fetches realtime data, and optionally moves the map.
+  /// Called by: countdown expiry, manual update button, search.
+  Future<void> refreshCards({LatLng? moveTo}) async {
+    if (_fullStationList.isEmpty) await fetchBaseData(null);
+    if (_fullStationList.isEmpty) return;
 
-  Future<void> refreshStations({bool isInitial = false}) async {
     isUpdating = true;
-    countdownRemaining = 60; // Reset countdown to 60
+    countdownRemaining = 60;
     notifyListeners();
-    try {
-      if (isInitial) {
-        if (_fullStationList.isEmpty) await fetchBaseData(null);
 
-        final referencePoint = mapVm?.lastKnownLocation ??
-            mapVm?.getEffectiveLocation() ??
-            const LatLng(25.0330, 121.5654);
-        final sorted = List<Station>.from(_fullStationList);
-        sorted.sort((a, b) {
-          final distA = _calculateDistance(
-              referencePoint.latitude, referencePoint.longitude, a.lat, a.lng);
-          final distB = _calculateDistance(
-              referencePoint.latitude, referencePoint.longitude, b.lat, b.lng);
-          return distA.compareTo(distB);
-        });
-        allStations = _applyPrioritySort(sorted).take(10).toList();
-      }
-      await updateRealtimeData();
+    try {
+      allStations = await _coordinator.execute(
+        fullStations: _fullStationList,
+        pinnedIds: config.pinnedStationIds,
+        mapVm: mapVm!,
+        limit: 10,
+        moveTo: moveTo,
+      );
     } catch (e) {
-      debugPrint("Refresh error: $e");
+      debugPrint('refreshCards error: $e');
     } finally {
       isUpdating = false;
       notifyListeners();
     }
   }
 
+  /// Search filters station names, then delegates to refreshCards.
   void searchStations(String query) async {
     try {
-      List<Station> resultList;
       if (query.isEmpty) {
-        resultList = _applyPrioritySort(_fullStationList).take(10).toList();
-      } else {
-        final filtered = _fullStationList
-            .where((s) => s.nameTw.contains(query) || s.nameEn.contains(query))
-            .toList();
-        resultList = _applyPrioritySort(filtered).take(10).toList();
+        await refreshCards();
+        return;
       }
-      await updateRealtimeData(resultList);
-      allStations = resultList;
+      final filtered = _fullStationList
+          .where((s) => s.nameTw.contains(query) || s.nameEn.contains(query))
+          .toList();
+      if (filtered.isEmpty) {
+        allStations = [];
+        notifyListeners();
+        return;
+      }
+      // Use coordinator directly with the filtered subset
+      isUpdating = true;
+      countdownRemaining = 60;
+      notifyListeners();
+      allStations = await _coordinator.execute(
+        fullStations: filtered,
+        pinnedIds: config.pinnedStationIds,
+        mapVm: mapVm!,
+        limit: 10,
+        moveTo: null,
+      );
     } catch (e) {
-      debugPrint("Search error: $e");
+      debugPrint('Search error: $e');
     } finally {
+      isUpdating = false;
       notifyListeners();
     }
   }
 
-  List<Station> _applyPrioritySort(List<Station> stations) {
-    final referencePoint = mapVm?.lastKnownLocation ??
-        mapVm?.getEffectiveLocation() ??
-        const LatLng(25.0330, 121.5654);
-    final sortedByDist = List<Station>.from(stations);
-    sortedByDist.sort((a, b) {
-      final distA = _calculateDistance(
-          referencePoint.latitude, referencePoint.longitude, a.lat, a.lng);
-      final distB = _calculateDistance(
-          referencePoint.latitude, referencePoint.longitude, b.lat, b.lng);
-      return distA.compareTo(distB);
-    });
-
-    final pinned = sortedByDist
-        .where((s) => config.pinnedStationIds.contains(s.id.trim()))
-        .toList();
-    final normal = sortedByDist
-        .where((s) => !config.pinnedStationIds.contains(s.id.trim()))
-        .toList();
-    return [...pinned, ...normal];
-  }
-
-  String getDistanceLabel(double distance) {
-    return distance < 1000
-        ? "${distance.toStringAsFixed(0)}m"
-        : "${(distance / 1000).toStringAsFixed(1)}km";
-  }
-
-  double _calculateDistance(
-      double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371000;
-    final double dLat = (lat2 - lat1) * math.pi / 180;
-    final double dLon = (lon2 - lon1) * math.pi / 180;
-    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(lat1 * math.pi / 180) *
-            math.cos(lat2 * math.pi / 180) *
-            math.sin(dLon / 2) *
-            math.sin(dLon / 2);
-    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    return earthRadius * c;
-  }
+  String getDistanceLabel(double distance) => _calc.format(distance);
 
   @override
   void dispose() {

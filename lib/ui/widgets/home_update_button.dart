@@ -33,7 +33,7 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
     if (stationVm.isUpdating) return;
     
     _controller.forward(from: 0.0);
-    await stationVm.refreshStations();
+    await stationVm.refreshCards();
     _controller.reset();
   }
 

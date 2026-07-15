@@ -20,7 +20,13 @@ class _AppWrapperState extends State<AppWrapper> {
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    Future.microtask(() {
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _initializeApp();
+        });
+      }
+    });
   }
 
   Future<void> _initializeApp() async {
@@ -51,7 +57,7 @@ class _AppWrapperState extends State<AppWrapper> {
       await stationVm.fetchBaseData(loadingVm); // 傳入 loadingVm 以回報數量
 
       loadingVm.updateStatus('init_clustering', progress: 86);
-      await stationVm.refreshStations(isInitial: true);
+      await stationVm.refreshCards();
 
       loadingVm.updateStatus('init_updating', progress: 96);
       await Future.delayed(const Duration(milliseconds: 300));
