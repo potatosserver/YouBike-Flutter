@@ -33,6 +33,6 @@ class StationSorter {
         .where((s) => !pinnedIds.contains(s.id.trim()))
         .toList();
 
-    return [...pinned, ...normal].take(limit).toList();
+    return [...pinned, ...normal.take(limit)].toList();
   }
 }

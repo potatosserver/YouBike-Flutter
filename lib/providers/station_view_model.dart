@@ -21,6 +21,7 @@ class StationViewModel extends LocalizedViewModel {
       : _coordinator = coordinator ??
             CardRefreshCoordinator(mapMoveTrigger: mapTrigger ?? MapMoveTrigger()) {
     _wasUseLocation = config.useLocation;
+    _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
     config.addListener(_onConfigChanged);
     _startCountdown();
   }
@@ -41,10 +42,13 @@ class StationViewModel extends LocalizedViewModel {
     config.removeListener(_onConfigChanged);
     config = newConfig;
     mapVm = newMapVm;
-    config.addListener(_onConfigChanged);
     _wasUseLocation = config.useLocation;
+    _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
+    config.addListener(_onConfigChanged);
     notifyListeners();
   }
+
+  late Set<String> _lastPinnedIds;
 
   void _onConfigChanged() {
     if (config.useLocation != _wasUseLocation) {
@@ -59,8 +63,33 @@ class StationViewModel extends LocalizedViewModel {
         mapVm?.notifyListeners();
         refreshCards(moveTo: mapVm?.getEffectiveLocation());
       }
+      return;
+    }
+
+    // 釘選變動 → 立即重排（不重取 API，不重算距離，不移動地圖）
+    if (!_setEquals(config.pinnedStationIds, _lastPinnedIds)) {
+      _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
+      _reorderByPin();
     }
   }
+
+  void _reorderByPin() {
+    if (allStations.isEmpty || _fullStationList.isEmpty) return;
+    final pinned = <Station>[];
+    final normal = <Station>[];
+    for (final s in allStations) {
+      if (config.pinnedStationIds.contains(s.id.trim())) {
+        pinned.add(s);
+      } else {
+        normal.add(s);
+      }
+    }
+    allStations = [...pinned, ...normal];
+    notifyListeners();
+  }
+
+  bool _setEquals(Set<String> a, Set<String> b) =>
+      a.length == b.length && a.containsAll(b);
 
   Future<void> _onLocationEnabled() async {
     await mapVm?.requestAndCenterLocation();

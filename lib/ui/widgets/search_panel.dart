@@ -10,7 +10,6 @@ import 'package:youbike_android/ui/widgets/electric_bike_modal.dart';
 import 'package:youbike_android/core/services/station_format_helper.dart';
 import 'package:youbike_android/data/services/app_config_service.dart';
 import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'dart:math' as math;
 
 class SearchPanel extends StatefulWidget {
   final bool isWide;
@@ -181,7 +180,7 @@ class _SearchPanelState extends State<SearchPanel> {
               ))
             : ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: math.min(stationVm.allStations.length, 10), 
+                itemCount: stationVm.allStations.length, 
                 itemBuilder: (context, index) {
                   final station = stationVm.allStations[index];
                   return StationCard(
