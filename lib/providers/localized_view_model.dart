@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
 
 /// [LocalizedViewModel] 提供一個標準化的 L10n 注入接口。
 /// 繼承此類的 ViewModel 可以直接通過 [l10n] 屬性訪問翻譯字符串，
@@ -24,7 +24,8 @@ abstract class LocalizedViewModel extends ChangeNotifier {
   void onL10nChanged() {}
 
   /// 安全地獲取翻譯字符串。如果 L10n 尚未就緒，則返回預設值或 Key。
-  String translate(String Function(AppLocalizations) getter, {String fallback = ''}) {
+  String translate(String Function(AppLocalizations) getter,
+      {String fallback = ''}) {
     if (_l10n == null) return fallback;
     return getter(_l10n!);
   }

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:youbike_android/ui/screens/home_screen.dart';
-import 'package:youbike_android/ui/widgets/loading_overlay.dart';
-import 'package:youbike_android/providers/loading_view_model.dart';
-import 'package:youbike_android/providers/station_view_model.dart';
-import 'package:youbike_android/providers/map_view_model.dart';
-import 'package:youbike_android/core/services/gps_requester.dart';
-import 'package:youbike_android/core/utils/log_service.dart';
+import 'package:youbike/ui/screens/home_screen.dart';
+import 'package:youbike/ui/widgets/loading_overlay.dart';
+import 'package:youbike/providers/loading_view_model.dart';
+import 'package:youbike/providers/station_view_model.dart';
+import 'package:youbike/providers/map_view_model.dart';
+import 'package:youbike/core/services/gps_requester.dart';
+import 'package:youbike/core/utils/log_service.dart';
 
 class AppWrapper extends StatefulWidget {
   const AppWrapper({super.key});
@@ -78,7 +78,6 @@ class _AppWrapperState extends State<AppWrapper> {
     return Stack(
       children: [
         const HomeScreen(),
-
         LoadingOverlay(isVisible: _isInitializing),
       ],
     );

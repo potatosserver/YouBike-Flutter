@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:youbike_android/core/theme/brand_colors.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
 
 class PulseMarker extends StatelessWidget {
   final double latitude;
@@ -70,7 +70,8 @@ class PulseAnimation extends StatefulWidget {
   State<PulseAnimation> createState() => _PulseAnimationState();
 }
 
-class _PulseAnimationState extends State<PulseAnimation> with SingleTickerProviderStateMixin {
+class _PulseAnimationState extends State<PulseAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -80,7 +81,7 @@ class _PulseAnimationState extends State<PulseAnimation> with SingleTickerProvid
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-    
+
     // 處理延遲啟動，避免所有點同步跳動導致的視覺壓力
     Future.delayed(widget.delay, () {
       if (mounted) {

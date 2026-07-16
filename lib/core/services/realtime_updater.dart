@@ -1,7 +1,7 @@
-import 'package:youbike_android/core/utils/log_service.dart';
+import 'package:youbike/core/utils/log_service.dart';
 import 'package:latlong2/latlong.dart' hide DistanceCalculator;
-import 'package:youbike_android/data/models/station.dart';
-import 'package:youbike_android/data/services/api_service.dart';
+import 'package:youbike/data/models/station.dart';
+import 'package:youbike/data/services/api_service.dart';
 
 /// 從 API 取得即時車輛數據並填入站點。
 /// 距離由 StationSorter 統一計算，此處不重複。

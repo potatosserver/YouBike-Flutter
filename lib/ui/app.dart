@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:youbike_android/core/theme/theme_provider.dart';
-import 'package:youbike_android/core/theme/brand_colors.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/core/router/app_router.dart';
+import 'package:youbike/core/theme/theme_provider.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
+import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/router/app_router.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

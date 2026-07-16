@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:youbike_android/providers/station_view_model.dart';
-import 'package:youbike_android/data/models/station.dart';
-import 'package:youbike_android/ui/widgets/station_card.dart';
-import 'package:youbike_android/ui/widgets/route_detail_panel.dart';
-import 'package:youbike_android/ui/widgets/electric_bike_modal.dart';
-import 'package:youbike_android/core/services/station_format_helper.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/ui/widgets/app_shapes.dart';
+import 'package:youbike/providers/station_view_model.dart';
+import 'package:youbike/data/models/station.dart';
+import 'package:youbike/ui/widgets/station_card.dart';
+import 'package:youbike/ui/widgets/route_detail_panel.dart';
+import 'package:youbike/ui/widgets/electric_bike_modal.dart';
+import 'package:youbike/core/services/station_format_helper.dart';
+import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/ui/widgets/app_shapes.dart';
 
 class SearchPanel extends StatefulWidget {
   final bool isWide;
@@ -19,10 +19,10 @@ class SearchPanel extends StatefulWidget {
   final MapController mapController;
 
   const SearchPanel({
-    super.key, 
-    required this.isWide, 
-    this.panelHeight, 
-    required this.onHeightChanged, 
+    super.key,
+    required this.isWide,
+    this.panelHeight,
+    required this.onHeightChanged,
     required this.mapController,
   });
 
@@ -74,15 +74,22 @@ class _SearchPanelState extends State<SearchPanel> {
           children: [
             if (!widget.isWide)
               Container(
-                width: double.infinity, height: 24, padding: const EdgeInsets.symmetric(vertical: 9),
+                width: double.infinity,
+                height: 24,
+                padding: const EdgeInsets.symmetric(vertical: 9),
                 child: Center(
                   child: Container(
-                    width: MediaQuery.of(context).size.width * 0.4, height: 6, 
+                    width: MediaQuery.of(context).size.width * 0.4,
+                    height: 6,
                     decoration: BoxDecoration(
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.3), 
-                      borderRadius: BorderRadius.circular(3), 
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 3, offset: const Offset(0, 1))]
-                    ),
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(3),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 3,
+                              offset: const Offset(0, 1))
+                        ]),
                   ),
                 ),
               ),
@@ -93,10 +100,11 @@ class _SearchPanelState extends State<SearchPanel> {
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1), 
-                      blurRadius: 4, 
-                      offset: widget.isWide ? const Offset(1, 0) : const Offset(0, 2)
-                    )
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: widget.isWide
+                            ? const Offset(1, 0)
+                            : const Offset(0, 2))
                   ],
                 ),
                 child: Column(
@@ -106,13 +114,15 @@ class _SearchPanelState extends State<SearchPanel> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
                         decoration: BoxDecoration(
                           color: cs.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: _isFocused ? 0.15 : 0.08),
+                              color: Colors.black
+                                  .withValues(alpha: _isFocused ? 0.15 : 0.08),
                               blurRadius: _isFocused ? 6 : 4,
                               offset: const Offset(0, 2),
                             ),
@@ -126,7 +136,8 @@ class _SearchPanelState extends State<SearchPanel> {
                             isDense: true,
                             hintText: l10n.input_placeholder,
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 0),
                             suffixIcon: SizedBox(
                               width: 64,
                               child: Row(
@@ -136,12 +147,14 @@ class _SearchPanelState extends State<SearchPanel> {
                                   if (_hasText)
                                     GestureDetector(
                                       onTap: _clearSearch,
-                                      child: Icon(Icons.clear, color: cs.onSurfaceVariant, size: 24),
+                                      child: Icon(Icons.clear,
+                                          color: cs.onSurfaceVariant, size: 24),
                                     ),
                                   if (_hasText) const SizedBox(width: 8),
                                   Padding(
                                     padding: const EdgeInsets.only(right: 4),
-                                    child: Icon(Icons.search, color: cs.onSurfaceVariant, size: 24),
+                                    child: Icon(Icons.search,
+                                        color: cs.onSurfaceVariant, size: 24),
                                   ),
                                 ],
                               ),
@@ -163,10 +176,11 @@ class _SearchPanelState extends State<SearchPanel> {
     );
   }
 
-  Widget _buildStationPanel(StationViewModel stationVm, AppLocalizations? l10n, ColorScheme cs) =>
+  Widget _buildStationPanel(
+          StationViewModel stationVm, AppLocalizations? l10n, ColorScheme cs) =>
       SizedBox(
         width: double.infinity,
-        child: stationVm.allStations.isEmpty 
+        child: stationVm.allStations.isEmpty
             ? Center(
                 child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -175,19 +189,24 @@ class _SearchPanelState extends State<SearchPanel> {
                   Icon(Icons.search_off, size: 64, color: cs.onSurfaceVariant),
                   const SizedBox(height: 16),
                   Text(l10n?.noStationsFound ?? 'No stations found',
-                       textAlign: TextAlign.center,
-                       style: TextStyle(color: cs.onSurfaceVariant, fontSize: 16)),
+                      textAlign: TextAlign.center,
+                      style:
+                          TextStyle(color: cs.onSurfaceVariant, fontSize: 16)),
                 ],
               ))
             : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: stationVm.allStations.length, 
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: stationVm.allStations.length,
                 itemBuilder: (context, index) {
                   final station = stationVm.allStations[index];
                   return StationCard(
                     station: station,
                     onTap: () => _moveMapToStation(station),
-                    onNavigate: () { _moveMapToStation(station); _showRoutePanel(station); },
+                    onNavigate: () {
+                      _moveMapToStation(station);
+                      _showRoutePanel(station);
+                    },
                     onShowElectric: () {
                       showModalBottomSheet(
                         context: context,
@@ -195,18 +214,23 @@ class _SearchPanelState extends State<SearchPanel> {
                         shape: AppShapes.bottomSheet,
                         builder: (context) => ElectricBikeDetailsModal(
                           stationId: station.id,
-                          stationName: const StationFormatHelper().name(station, Provider.of<AppConfigService>(context, listen: false).currentLang),
+                          stationName: const StationFormatHelper().name(
+                              station,
+                              Provider.of<AppConfigService>(context,
+                                      listen: false)
+                                  .currentLang),
                         ),
                       );
                     },
                   );
                 },
               ),
-        );
+      );
 
   void _moveMapToStation(Station station) {
     final target = station.visualPosition ?? LatLng(station.lat, station.lng);
-    Provider.of<StationViewModel>(context, listen: false).refreshCards(moveTo: target);
+    Provider.of<StationViewModel>(context, listen: false)
+        .refreshCards(moveTo: target);
   }
 
   void _showRoutePanel(Station station) {
@@ -214,7 +238,8 @@ class _SearchPanelState extends State<SearchPanel> {
       context: context,
       isScrollControlled: true,
       shape: AppShapes.bottomSheet,
-      builder: (context) => RouteDetailPanel(station: station, destLat: station.lat, destLng: station.lng),
+      builder: (context) => RouteDetailPanel(
+          station: station, destLat: station.lat, destLng: station.lng),
     );
   }
 }

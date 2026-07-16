@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/core/utils/log_service.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/utils/log_service.dart';
 
 class AppLogPage extends StatefulWidget {
   const AppLogPage({super.key});
@@ -36,7 +36,8 @@ class _AppLogPageState extends State<AppLogPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.confirm, style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+            child: Text(l10n.confirm,
+                style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
           ),
         ],
       ),
@@ -50,19 +51,27 @@ class _AppLogPageState extends State<AppLogPage> {
 
   Color _levelColor(String level) {
     switch (level) {
-      case 'ERROR': return Colors.red.shade700;
-      case 'WARN': return Colors.orange.shade700;
-      case 'INFO': return Colors.blue.shade600;
-      default: return Colors.grey;
+      case 'ERROR':
+        return Colors.red.shade700;
+      case 'WARN':
+        return Colors.orange.shade700;
+      case 'INFO':
+        return Colors.blue.shade600;
+      default:
+        return Colors.grey;
     }
   }
 
   IconData _levelIcon(String level) {
     switch (level) {
-      case 'ERROR': return Icons.error_outline;
-      case 'WARN': return Icons.warning_amber_outlined;
-      case 'INFO': return Icons.info_outline;
-      default: return Icons.circle_outlined;
+      case 'ERROR':
+        return Icons.error_outline;
+      case 'WARN':
+        return Icons.warning_amber_outlined;
+      case 'INFO':
+        return Icons.info_outline;
+      default:
+        return Icons.circle_outlined;
     }
   }
 
@@ -92,7 +101,8 @@ class _AppLogPageState extends State<AppLogPage> {
             ? Center(
                 child: Text(
                   l10n.no_logs,
-                  style: theme.textTheme.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
+                  style: theme.textTheme.bodyLarge
+                      ?.copyWith(color: cs.onSurfaceVariant),
                 ),
               )
             : ListView.builder(
@@ -108,7 +118,8 @@ class _AppLogPageState extends State<AppLogPage> {
 
                   return Card(
                     elevation: 0,
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     color: cs.surface,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -128,27 +139,34 @@ class _AppLogPageState extends State<AppLogPage> {
                                 Row(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: color.withAlpha(30),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
                                         tag,
-                                        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: color,
+                                            fontWeight: FontWeight.w600),
                                       ),
                                     ),
                                     const Spacer(),
                                     Text(
                                       timestamp,
-                                      style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                              color: cs.onSurfaceVariant),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   message,
-                                  style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface),
+                                  style: theme.textTheme.bodyMedium
+                                      ?.copyWith(color: cs.onSurface),
                                 ),
                               ],
                             ),

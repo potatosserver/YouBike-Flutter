@@ -3,7 +3,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:http/http.dart' as http;
 import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
 
 class ChangelogDialog extends StatelessWidget {
   const ChangelogDialog({super.key});
@@ -20,7 +20,8 @@ class ChangelogDialog extends StatelessWidget {
 
   String _ensureMarkdownLinks(String text) {
     final urlRegex = RegExp(r'(?<!\()https?://[^\s\n]+', caseSensitive: false);
-    return text.replaceAllMapped(urlRegex, (m) => '[${m.group(0)}](${m.group(0)})');
+    return text.replaceAllMapped(
+        urlRegex, (m) => '[${m.group(0)}](${m.group(0)})');
   }
 
   Future<String> _loadChangelog() async {
@@ -62,13 +63,20 @@ class ChangelogDialog extends StatelessWidget {
                   if (url == null) return;
                   final uri = Uri.parse(url);
                   canLaunchUrl(uri).then((can) {
-                    if (can) launchUrl(uri, mode: LaunchMode.externalApplication);
+                    if (can)
+                      launchUrl(uri, mode: LaunchMode.externalApplication);
                   });
                 },
                 style: {
-                  "body": Style(margin: Margins.zero, padding: HtmlPaddings.zero, fontSize: FontSize(14.0)),
+                  "body": Style(
+                      margin: Margins.zero,
+                      padding: HtmlPaddings.zero,
+                      fontSize: FontSize(14.0)),
                   "hr": Style(margin: Margins.zero),
-                  "h2": Style(margin: Margins.zero, fontSize: FontSize(18.0), fontWeight: FontWeight.bold),
+                  "h2": Style(
+                      margin: Margins.zero,
+                      fontSize: FontSize(18.0),
+                      fontWeight: FontWeight.bold),
                 },
               ),
             ),

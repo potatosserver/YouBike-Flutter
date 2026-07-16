@@ -1,4 +1,4 @@
-name: youbike_android
+name: youbike
 description: A professional YouBike station finder.
 publish_to: 'none'
 version: 1.0.0+1

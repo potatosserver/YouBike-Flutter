@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:youbike_android/core/utils/log_service.dart';
+import 'package:youbike/core/utils/log_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
-import 'package:youbike_android/providers/localized_view_model.dart';
+import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/providers/localized_view_model.dart';
 
 class MapViewModel extends LocalizedViewModel {
   final AppConfigService config;
@@ -38,9 +38,10 @@ class MapViewModel extends LocalizedViewModel {
       if (permission == LocationPermission.deniedForever) return;
 
       Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.high),
       );
-      
+
       lastKnownLocation = LatLng(position.latitude, position.longitude);
       center = lastKnownLocation;
       notifyListeners();
@@ -50,7 +51,8 @@ class MapViewModel extends LocalizedViewModel {
   }
 
   LatLng getEffectiveLocation() {
-    if (config.useLocation && lastKnownLocation != null) return lastKnownLocation!;
+    if (config.useLocation && lastKnownLocation != null)
+      return lastKnownLocation!;
     // 回退到使用者選擇的區域預設中心
     final regionData = config.regions[config.selectedRegion]!;
     return LatLng(

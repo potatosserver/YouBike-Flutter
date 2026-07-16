@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:youbike_android/core/theme/brand_colors.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/core/services/station_format_helper.dart';
-import 'package:youbike_android/data/models/station.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/services/station_format_helper.dart';
+import 'package:youbike/data/models/station.dart';
+import 'package:youbike/data/services/app_config_service.dart';
 
 class StationCard extends StatelessWidget {
   final Station station;
@@ -70,7 +70,8 @@ class StationCard extends StatelessWidget {
                   if (hasElectric)
                     GestureDetector(
                       onTap: onShowElectric,
-                      child: const Icon(Icons.electric_bolt, color: BrandColors.accentGreen, size: 22),
+                      child: const Icon(Icons.electric_bolt,
+                          color: BrandColors.accentGreen, size: 22),
                     ),
                   const SizedBox(width: 12),
                   GestureDetector(
@@ -84,7 +85,8 @@ class StationCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   GestureDetector(
                     onTap: onNavigate,
-                    child: const Icon(Icons.navigation, color: BrandColors.accentBlue, size: 22),
+                    child: const Icon(Icons.navigation,
+                        color: BrandColors.accentBlue, size: 22),
                   ),
                 ]),
               ],

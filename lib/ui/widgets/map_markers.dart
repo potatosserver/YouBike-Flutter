@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:youbike_android/core/theme/brand_colors.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
 
 class RoadSignMarker extends StatelessWidget {
   const RoadSignMarker({super.key});
@@ -18,7 +18,8 @@ class RoadSignMarker extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 4.0),
             boxShadow: const [
-              BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+              BoxShadow(
+                  color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
             ],
           ),
         ),
@@ -29,7 +30,8 @@ class RoadSignMarker extends StatelessWidget {
           height: 22,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
-            return const Icon(Icons.directions_bike, size: 22, color: Colors.black87);
+            return const Icon(Icons.directions_bike,
+                size: 22, color: Colors.black87);
           },
         ),
       ],
@@ -44,16 +46,18 @@ class ClusterMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 45, 
+      width: 45,
       height: 45,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: BrandColors.markerYellow, // Solid Yellow
         border: Border.all(
-          color: Colors.white, 
+          color: Colors.white,
           width: 4.0, // Thick White Border
         ),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))
+        ],
       ),
       child: Center(
         child: Text(
@@ -68,4 +72,3 @@ class ClusterMarker extends StatelessWidget {
     );
   }
 }
-

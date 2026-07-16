@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:youbike_android/core/theme/brand_colors.dart';
-import 'package:youbike_android/providers/loading_view_model.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/core/services/loading_notice_translator.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
+import 'package:youbike/providers/loading_view_model.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/services/loading_notice_translator.dart';
 
 class LoadingOverlay extends StatefulWidget {
   final bool isVisible;
@@ -106,8 +106,8 @@ class _LoadingOverlayState extends State<LoadingOverlay>
                         child: LinearProgressIndicator(
                           value: loadingVm.loadingProgress / 100,
                           backgroundColor: colorScheme.surfaceContainerHighest,
-                          valueColor:
-                              const AlwaysStoppedAnimation<Color>(BrandColors.orange),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              BrandColors.orange),
                           minHeight: 6,
                         ),
                       ),

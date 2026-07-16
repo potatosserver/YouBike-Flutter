@@ -5,10 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
-import 'package:youbike_android/ui/widgets/setting_group_card.dart';
-import 'package:youbike_android/ui/widgets/changelog_dialog.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/ui/widgets/setting_group_card.dart';
+import 'package:youbike/ui/widgets/changelog_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -64,19 +64,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildItem(
                   icon: Icons.palette_outlined,
                   title: l10n.settings_theme,
-                  trailing: Icon(Icons.chevron_right, size: 22, color: cs.onSurfaceVariant),
+                  trailing: Icon(Icons.chevron_right,
+                      size: 22, color: cs.onSurfaceVariant),
                   onTap: () => context.push('/theme-selection'),
                 ),
                 _buildItem(
                   icon: Icons.map_outlined,
                   title: l10n.settings_region,
-                  trailing: Icon(Icons.chevron_right, size: 22, color: cs.onSurfaceVariant),
+                  trailing: Icon(Icons.chevron_right,
+                      size: 22, color: cs.onSurfaceVariant),
                   onTap: () => context.push('/region-selection'),
                 ),
                 _buildItem(
                   icon: Icons.language_outlined,
                   title: l10n.settings_language,
-                  trailing: Icon(Icons.chevron_right, size: 22, color: cs.onSurfaceVariant),
+                  trailing: Icon(Icons.chevron_right,
+                      size: 22, color: cs.onSurfaceVariant),
                   onTap: () => context.push('/language-selection'),
                 ),
                 _buildItem(
@@ -100,25 +103,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildItem(
                   icon: Icons.article_outlined,
                   title: l10n.settings_logs,
-                  trailing: Icon(Icons.chevron_right, size: 22, color: cs.onSurfaceVariant),
+                  trailing: Icon(Icons.chevron_right,
+                      size: 22, color: cs.onSurfaceVariant),
                   onTap: () => context.push('/app-logs'),
                 ),
                 _buildItem(
                   icon: Icons.info_outline,
                   title: l10n.about_youbike,
-                  trailing: Icon(Icons.chevron_right, size: 22, color: cs.onSurfaceVariant),
+                  trailing: Icon(Icons.chevron_right,
+                      size: 22, color: cs.onSurfaceVariant),
                   onTap: () => _showAboutDialog(),
                 ),
                 _buildItem(
                   icon: Icons.code,
                   title: l10n.github_source_code,
-                  trailing: Icon(Icons.open_in_new, size: 20, color: cs.onSurfaceVariant),
+                  trailing: Icon(Icons.open_in_new,
+                      size: 20, color: cs.onSurfaceVariant),
                   onTap: () async {
                     final url = Uri.parse(
                       'https://github.com/potatosserver/YouBike-Flutter',
                     );
                     if (await canLaunchUrl(url)) {
-                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                      await launchUrl(url,
+                          mode: LaunchMode.externalApplication);
                     }
                   },
                 ),
@@ -212,13 +219,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l10n.about_youbike_content, style: theme.textTheme.bodyMedium),
+              Text(l10n.about_youbike_content,
+                  style: theme.textTheme.bodyMedium),
               const SizedBox(height: 20),
               _buildAboutRow(icon: Icons.code, text: l10n.github_source_code),
               const SizedBox(height: 12),
-              _buildAboutRow(icon: Icons.badge_outlined, text: l10n.developer_label),
+              _buildAboutRow(
+                  icon: Icons.badge_outlined, text: l10n.developer_label),
               const SizedBox(height: 12),
-              _buildAboutRow(icon: Icons.info_outline, text: l10n.version_label(_version)),
+              _buildAboutRow(
+                  icon: Icons.info_outline, text: l10n.version_label(_version)),
             ],
           ),
         ),

@@ -1,4 +1,4 @@
-package com.youbike.android.youbike_android
+package com.potatosserver.youbike
 
 import io.flutter.embedding.android.FlutterActivity
 

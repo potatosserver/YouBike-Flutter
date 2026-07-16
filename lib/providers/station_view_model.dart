@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:youbike_android/core/utils/log_service.dart';
+import 'package:youbike/core/utils/log_service.dart';
 import 'package:latlong2/latlong.dart' hide DistanceCalculator;
-import 'package:youbike_android/core/services/card_refresh_coordinator.dart';
-import 'package:youbike_android/core/services/map_move_trigger.dart';
-import 'package:youbike_android/data/models/station.dart';
-import 'package:youbike_android/data/services/api_service.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
-import 'package:youbike_android/providers/map_view_model.dart';
-import 'package:youbike_android/providers/localized_view_model.dart';
-import 'package:youbike_android/providers/loading_view_model.dart';
+import 'package:youbike/core/services/card_refresh_coordinator.dart';
+import 'package:youbike/core/services/map_move_trigger.dart';
+import 'package:youbike/data/models/station.dart';
+import 'package:youbike/data/services/api_service.dart';
+import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/providers/map_view_model.dart';
+import 'package:youbike/providers/localized_view_model.dart';
+import 'package:youbike/providers/loading_view_model.dart';
 
 class StationViewModel extends LocalizedViewModel {
   AppConfigService config;
@@ -19,7 +19,8 @@ class StationViewModel extends LocalizedViewModel {
   StationViewModel(this.config, this.mapVm,
       {CardRefreshCoordinator? coordinator, MapMoveTrigger? mapTrigger})
       : _coordinator = coordinator ??
-            CardRefreshCoordinator(mapMoveTrigger: mapTrigger ?? MapMoveTrigger()) {
+            CardRefreshCoordinator(
+                mapMoveTrigger: mapTrigger ?? MapMoveTrigger()) {
     _wasUseLocation = config.useLocation;
     _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
     config.addListener(_onConfigChanged);
@@ -155,7 +156,8 @@ class StationViewModel extends LocalizedViewModel {
     await _executeRefresh(stations: filtered);
   }
 
-  Future<void> _executeRefresh({required List<Station> stations, LatLng? moveTo}) async {
+  Future<void> _executeRefresh(
+      {required List<Station> stations, LatLng? moveTo}) async {
     if (_fullStationList.isEmpty) await fetchBaseData(null);
     if (_fullStationList.isEmpty) return;
 

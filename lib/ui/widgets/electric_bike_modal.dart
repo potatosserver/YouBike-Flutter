@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:youbike_android/core/theme/brand_colors.dart';
-import 'package:youbike_android/data/services/api_service.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/ui/widgets/app_shapes.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
+import 'package:youbike/data/services/api_service.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/ui/widgets/app_shapes.dart';
 
 class ElectricBikeDetailsModal extends StatefulWidget {
   final String stationId;
@@ -15,7 +15,8 @@ class ElectricBikeDetailsModal extends StatefulWidget {
   });
 
   @override
-  State<ElectricBikeDetailsModal> createState() => _ElectricBikeDetailsModalState();
+  State<ElectricBikeDetailsModal> createState() =>
+      _ElectricBikeDetailsModalState();
 }
 
 class _ElectricBikeDetailsModalState extends State<ElectricBikeDetailsModal> {
@@ -57,7 +58,7 @@ class _ElectricBikeDetailsModalState extends State<ElectricBikeDetailsModal> {
                 Text(
                   '${l10n.electric_bike_details_title} ${widget.stationName}',
                   style: TextStyle(
-                    fontSize: 20, 
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: cs.onSurface,
                   ),
@@ -103,14 +104,16 @@ class _ElectricBikeDetailsModalState extends State<ElectricBikeDetailsModal> {
                         color: theme.cardColor,
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         child: ListTile(
-                          leading: const Icon(Icons.electric_bike, color: BrandColors.accentGreen),
+                          leading: const Icon(Icons.electric_bike,
+                              color: BrandColors.accentGreen),
                           title: Text(
                             '${l10n.bike_number_label} ${bike['bike_no']}',
                             style: TextStyle(color: cs.onSurface),
                           ),
                           subtitle: Text(
                             '${l10n.pillar_number_label} ${bike['pillar_no']}',
-                            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6)),
+                            style: TextStyle(
+                                color: cs.onSurface.withValues(alpha: 0.6)),
                           ),
                           trailing: Text(
                             '${bike['battery_power']}%',

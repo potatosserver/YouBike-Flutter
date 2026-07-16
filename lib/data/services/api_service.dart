@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'dart:async';
-import 'package:youbike_android/core/utils/log_service.dart';
+import 'package:youbike/core/utils/log_service.dart';
 
 import 'package:http/http.dart' as http;
-import 'package:youbike_android/data/models/station.dart';
+import 'package:youbike/data/models/station.dart';
 
 class ApiService {
-  final String stationsUrl = "https://apis.youbike.com.tw/json/station-min-yb2.json";
-  final String vehicleUrl = "https://apis.youbike.com.tw/json/vehicle-min-yb2.json";
+  final String stationsUrl =
+      "https://apis.youbike.com.tw/json/station-min-yb2.json";
+  final String vehicleUrl =
+      "https://apis.youbike.com.tw/json/vehicle-min-yb2.json";
   final http.Client? client;
 
   ApiService({this.client});
@@ -22,27 +24,31 @@ class ApiService {
   Future<List<Station>> fetchAllStations() async {
     try {
       // 使用更長的超時時間以應對大文件下載
-      final response = await _client.get(Uri.parse(stationsUrl)).timeout(baseDataTimeout);
+      final response =
+          await _client.get(Uri.parse(stationsUrl)).timeout(baseDataTimeout);
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data
             .map((json) => Station.fromJson(json as Map<String, dynamic>))
-            .whereType<Station>() 
+            .whereType<Station>()
             .toList();
       } else {
-        throw Exception('Failed to load station base data: ${response.statusCode}');
+        throw Exception(
+            'Failed to load station base data: ${response.statusCode}');
       }
     } on TimeoutException catch (_) {
-      throw TimeoutException('API Request timed out while fetching stations (30s limit)');
+      throw TimeoutException(
+          'API Request timed out while fetching stations (30s limit)');
     }
   }
 
-  Future<Map<String, dynamic>> fetchRealtimeVehicles(List<String> stationIds) async {
+  Future<Map<String, dynamic>> fetchRealtimeVehicles(
+      List<String> stationIds) async {
     if (stationIds.isEmpty) return {};
-    
+
     const batchSize = 20;
     Map<String, dynamic> allVehicleData = {};
-    
+
     final url = Uri.parse('https://apis.youbike.com.tw/tw2/parkingInfo');
     final headers = {
       'Accept': '*/*',
@@ -52,18 +58,26 @@ class ApiService {
     };
 
     for (var i = 0; i < stationIds.length; i += batchSize) {
-      final batch = stationIds.sublist(i, i + batchSize > stationIds.length ? stationIds.length : i + batchSize);
-      
+      final batch = stationIds.sublist(
+          i,
+          i + batchSize > stationIds.length
+              ? stationIds.length
+              : i + batchSize);
+
       try {
-        final response = await _client.post(
-          url,
-          headers: headers,
-          body: jsonEncode({'station_no': batch}),
-        ).timeout(defaultTimeout);
+        final response = await _client
+            .post(
+              url,
+              headers: headers,
+              body: jsonEncode({'station_no': batch}),
+            )
+            .timeout(defaultTimeout);
 
         if (response.statusCode == 200) {
           final result = jsonDecode(response.body);
-          if (result['retCode'] == 1 && result['retVal'] != null && result['retVal']['data'] != null) {
+          if (result['retCode'] == 1 &&
+              result['retVal'] != null &&
+              result['retVal']['data'] != null) {
             final List<dynamic> data = result['retVal']['data'];
             for (var item in data) {
               final stationNo = item['station_no'].toString();
@@ -87,8 +101,10 @@ class ApiService {
     return allVehicleData;
   }
 
-  Future<List<Map<String, dynamic>>> fetchElectricBikeDetails(String stationId) async {
-    final url = Uri.parse('https://apis.youbike.com.tw/api/front/bike/lists?station_no=$stationId');
+  Future<List<Map<String, dynamic>>> fetchElectricBikeDetails(
+      String stationId) async {
+    final url = Uri.parse(
+        'https://apis.youbike.com.tw/api/front/bike/lists?station_no=$stationId');
     final headers = {
       'Accept': '*/*',
       'Accept-Language': 'zh-TW,zh;q=0.9',
@@ -97,7 +113,8 @@ class ApiService {
     };
 
     try {
-      final response = await _client.get(url, headers: headers).timeout(defaultTimeout);
+      final response =
+          await _client.get(url, headers: headers).timeout(defaultTimeout);
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
         if (result['retCode'] == 1 && result['retVal'] != null) {

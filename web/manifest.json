@@ -1,6 +1,6 @@
 {
-    "name": "youbike_android",
-    "short_name": "youbike_android",
+    "name": "youbike",
+    "short_name": "youbike",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

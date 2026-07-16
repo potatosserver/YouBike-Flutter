@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/core/theme/theme_provider.dart';
-import 'package:youbike_android/ui/widgets/radio_dot.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/theme/theme_provider.dart';
+import 'package:youbike/ui/widgets/radio_dot.dart';
 
 class ThemeSelectionScreen extends StatelessWidget {
   const ThemeSelectionScreen({super.key});
@@ -27,19 +27,22 @@ class ThemeSelectionScreen extends StatelessWidget {
           RadioDot(
             label: '系統預設',
             isSelected: currentMode == ThemeMode.system,
-            onTap: () => Provider.of<ThemeProvider>(context, listen: false).setThemeMode(ThemeMode.system),
+            onTap: () => Provider.of<ThemeProvider>(context, listen: false)
+                .setThemeMode(ThemeMode.system),
           ),
           const SizedBox(height: 24),
           RadioDot(
             label: '淺色模式',
             isSelected: currentMode == ThemeMode.light,
-            onTap: () => Provider.of<ThemeProvider>(context, listen: false).setThemeMode(ThemeMode.light),
+            onTap: () => Provider.of<ThemeProvider>(context, listen: false)
+                .setThemeMode(ThemeMode.light),
           ),
           const SizedBox(height: 24),
           RadioDot(
             label: '深色模式',
             isSelected: currentMode == ThemeMode.dark,
-            onTap: () => Provider.of<ThemeProvider>(context, listen: false).setThemeMode(ThemeMode.dark),
+            onTap: () => Provider.of<ThemeProvider>(context, listen: false)
+                .setThemeMode(ThemeMode.dark),
           ),
         ],
       ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
-import 'package:youbike_android/ui/widgets/radio_dot.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/ui/widgets/radio_dot.dart';
 
 class RegionSelectionScreen extends StatelessWidget {
   const RegionSelectionScreen({super.key});
@@ -49,20 +49,34 @@ class RegionSelectionScreen extends StatelessWidget {
 
   String _lookupLabel(String key, AppLocalizations l10n) {
     switch (key) {
-      case 'region_taipei':          return l10n.region_taipei;
-      case 'region_new_taipei':      return l10n.region_new_taipei;
-      case 'region_taoyuan':         return l10n.region_taoyuan;
-      case 'region_hsinchu_county':  return l10n.region_hsinchu_county;
-      case 'region_hsinchu_city':    return l10n.region_hsinchu_city;
-      case 'region_science_park':    return l10n.region_science_park;
-      case 'region_miaoli':          return l10n.region_miaoli;
-      case 'region_taichung':        return l10n.region_taichung;
-      case 'region_chiayi':          return l10n.region_chiayi;
-      case 'region_tainan':          return l10n.region_tainan;
-      case 'region_kaohsiung':       return l10n.region_kaohsiung;
-      case 'region_pingtung':        return l10n.region_pingtung;
-      case 'region_taitung':         return l10n.region_taitung;
-      default:                       return key;
+      case 'region_taipei':
+        return l10n.region_taipei;
+      case 'region_new_taipei':
+        return l10n.region_new_taipei;
+      case 'region_taoyuan':
+        return l10n.region_taoyuan;
+      case 'region_hsinchu_county':
+        return l10n.region_hsinchu_county;
+      case 'region_hsinchu_city':
+        return l10n.region_hsinchu_city;
+      case 'region_science_park':
+        return l10n.region_science_park;
+      case 'region_miaoli':
+        return l10n.region_miaoli;
+      case 'region_taichung':
+        return l10n.region_taichung;
+      case 'region_chiayi':
+        return l10n.region_chiayi;
+      case 'region_tainan':
+        return l10n.region_tainan;
+      case 'region_kaohsiung':
+        return l10n.region_kaohsiung;
+      case 'region_pingtung':
+        return l10n.region_pingtung;
+      case 'region_taitung':
+        return l10n.region_taitung;
+      default:
+        return key;
     }
   }
 }

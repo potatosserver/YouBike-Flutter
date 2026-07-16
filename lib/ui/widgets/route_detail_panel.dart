@@ -1,14 +1,14 @@
-import 'package:youbike_android/providers/map_view_model.dart';
+import 'package:youbike/providers/map_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
-import 'package:youbike_android/data/services/route_service.dart';
-import 'package:youbike_android/core/services/route_instruction_translator.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/core/services/station_format_helper.dart';
-import 'package:youbike_android/data/models/station.dart';
-import 'package:youbike_android/ui/widgets/app_shapes.dart';
+import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/data/services/route_service.dart';
+import 'package:youbike/core/services/route_instruction_translator.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/services/station_format_helper.dart';
+import 'package:youbike/data/models/station.dart';
+import 'package:youbike/ui/widgets/app_shapes.dart';
 
 class RouteDetailPanel extends StatefulWidget {
   final Station station;
@@ -16,7 +16,7 @@ class RouteDetailPanel extends StatefulWidget {
   final double destLng;
 
   const RouteDetailPanel({
-    super.key, 
+    super.key,
     required this.station,
     required this.destLat,
     required this.destLng,
@@ -45,18 +45,20 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
 
     try {
       final mapVm = Provider.of<MapViewModel>(context, listen: false);
-      final startPoint = mapVm.lastKnownLocation ?? mapVm.getEffectiveLocation();
+      final startPoint =
+          mapVm.lastKnownLocation ?? mapVm.getEffectiveLocation();
 
-      final steps = await routeService.getRoute(
-        startPoint,
-        LatLng(widget.destLat, widget.destLng),
-        config.currentLang
-      );
+      final steps = await routeService.getRoute(startPoint,
+          LatLng(widget.destLat, widget.destLng), config.currentLang);
 
       if (mounted) {
         setState(() {
-          final lang = Provider.of<AppConfigService>(context, listen: false).currentLang;
-          _steps = steps.map((s) => '${_translator.translate(s.instruction, lang)} (${(s.distance / 1000).toStringAsFixed(2)} km)').toList();
+          final lang =
+              Provider.of<AppConfigService>(context, listen: false).currentLang;
+          _steps = steps
+              .map((s) =>
+                  '${_translator.translate(s.instruction, lang)} (${(s.distance / 1000).toStringAsFixed(2)} km)')
+              .toList();
           _isLoading = false;
         });
       }
@@ -77,7 +79,7 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final config = Provider.of<AppConfigService>(context);
-    
+
     final destinationName = _fmt.name(widget.station, config.currentLang);
 
     return Container(
@@ -86,7 +88,10 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
         color: cs.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, -5)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 20,
+              offset: const Offset(0, -5)),
         ],
       ),
       child: SingleChildScrollView(
@@ -104,7 +109,7 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
                   child: Text(
                     '${l10n.go_to}$destinationName',
                     style: TextStyle(
-                      fontSize: 20, 
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: cs.onSurface,
                     ),
@@ -112,7 +117,7 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
                 ),
                 IconButton(
                   icon: Icon(
-                    Icons.close, 
+                    Icons.close,
                     color: cs.onSurface.withValues(alpha: 0.7),
                   ),
                   onPressed: () => Navigator.pop(context),
@@ -131,14 +136,16 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
               Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Text(_errorMessage!, style: TextStyle(color: cs.error)),
+                  child:
+                      Text(_errorMessage!, style: TextStyle(color: cs.error)),
                 ),
               )
             else if (_steps == null || _steps!.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Text(l10n.routeNotFound, style: TextStyle(color: cs.onSurface)),
+                  child: Text(l10n.routeNotFound,
+                      style: TextStyle(color: cs.onSurface)),
                 ),
               )
             else
@@ -154,17 +161,24 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
                         children: [
                           CircleAvatar(
                             radius: 10,
-                            backgroundColor: idx == 0 ? cs.primary : cs.surfaceContainerHighest,
+                            backgroundColor: idx == 0
+                                ? cs.primary
+                                : cs.surfaceContainerHighest,
                             child: Text(
                               '${idx + 1}',
                               style: TextStyle(
-                                fontSize: 10, 
-                                color: idx == 0 ? cs.onPrimary : cs.onSurfaceVariant,
+                                fontSize: 10,
+                                color: idx == 0
+                                    ? cs.onPrimary
+                                    : cs.onSurfaceVariant,
                               ),
                             ),
                           ),
                           if (idx != _steps!.length - 1)
-                            Container(width: 2, height: 20, color: cs.surfaceContainerHighest),
+                            Container(
+                                width: 2,
+                                height: 20,
+                                color: cs.surfaceContainerHighest),
                         ],
                       ),
                       const SizedBox(width: 16),
@@ -172,7 +186,7 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
                         child: Text(
                           step,
                           style: TextStyle(
-                            fontSize: 15, 
+                            fontSize: 15,
                             height: 1.5,
                             color: cs.onSurface.withValues(alpha: 0.8),
                           ),

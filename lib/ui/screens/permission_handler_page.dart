@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/data/services/app_config_service.dart';
 
 class PermissionHandlerPage extends StatefulWidget {
   const PermissionHandlerPage({super.key});
@@ -186,7 +186,8 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.location_on_rounded, size: 64, color: cs.primary),
+                      Icon(Icons.location_on_rounded,
+                          size: 64, color: cs.primary),
                       const SizedBox(height: 24),
                       Text(
                         l10n.permission_location_title,
@@ -211,7 +212,8 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                           label: Text(l10n.grant_permission),
                           onPressed: _requestPermission,
                           style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 14),
                           ),
                         ),
                         Padding(
@@ -228,7 +230,8 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                       if (_permissionGranted)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
-                          child: Icon(Icons.check_circle, color: Colors.green.shade500, size: 32),
+                          child: Icon(Icons.check_circle,
+                              color: Colors.green.shade500, size: 32),
                         ),
                       if (_permissionSkipped)
                         Padding(
@@ -257,7 +260,8 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                     ),
                     child: Text(
                       l10n.setup_complete,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),

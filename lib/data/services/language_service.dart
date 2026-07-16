@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
 
 class LanguageService with ChangeNotifier {
   static const String _languageCodeKey = 'languageCode';
@@ -19,16 +19,15 @@ class LanguageService with ChangeNotifier {
     // 檢查支援的 locale 是否匹配
     for (var supportedLocale in AppLocalizations.supportedLocales) {
       if (supportedLocale.languageCode == localeToUse.languageCode) {
-        return supportedLocale; 
+        return supportedLocale;
       }
     }
 
     // 中文特殊處理：將 zh_TW、zh_CN 等映射到支援的 zh
     if (localeToUse.languageCode.startsWith('zh')) {
       return AppLocalizations.supportedLocales.firstWhere(
-        (l) => l.languageCode == 'zh', 
-        orElse: () => AppLocalizations.supportedLocales.first
-      );
+          (l) => l.languageCode == 'zh',
+          orElse: () => AppLocalizations.supportedLocales.first);
     }
 
     return AppLocalizations.supportedLocales.first;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/data/services/app_config_service.dart';
-import 'package:youbike_android/data/services/language_service.dart';
-import 'package:youbike_android/ui/widgets/radio_dot.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/data/services/language_service.dart';
+import 'package:youbike/ui/widgets/radio_dot.dart';
 
 class LanguageSelectionScreen extends StatelessWidget {
   const LanguageSelectionScreen({super.key});
@@ -30,7 +30,8 @@ class LanguageSelectionScreen extends StatelessWidget {
             isSelected: config.currentLang == 'zh_TW',
             onTap: () {
               config.setLanguage('zh_TW');
-              Provider.of<LanguageService>(context, listen: false).setLocale(const Locale('zh'));
+              Provider.of<LanguageService>(context, listen: false)
+                  .setLocale(const Locale('zh'));
             },
           ),
           const SizedBox(height: 24),
@@ -39,7 +40,8 @@ class LanguageSelectionScreen extends StatelessWidget {
             isSelected: config.currentLang == 'en',
             onTap: () {
               config.setLanguage('en');
-              Provider.of<LanguageService>(context, listen: false).setLocale(const Locale('en'));
+              Provider.of<LanguageService>(context, listen: false)
+                  .setLocale(const Locale('en'));
             },
           ),
         ],

@@ -1,10 +1,10 @@
 import 'package:latlong2/latlong.dart';
-import 'package:youbike_android/core/services/location_resolver.dart';
-import 'package:youbike_android/core/services/station_sorter.dart';
-import 'package:youbike_android/core/services/realtime_updater.dart';
-import 'package:youbike_android/core/services/map_move_trigger.dart';
-import 'package:youbike_android/data/models/station.dart';
-import 'package:youbike_android/providers/map_view_model.dart';
+import 'package:youbike/core/services/location_resolver.dart';
+import 'package:youbike/core/services/station_sorter.dart';
+import 'package:youbike/core/services/realtime_updater.dart';
+import 'package:youbike/core/services/map_move_trigger.dart';
+import 'package:youbike/data/models/station.dart';
+import 'package:youbike/providers/map_view_model.dart';
 
 /// 一鍵完整卡片更新協調器：
 ///   1. 解析參考座標
@@ -42,8 +42,8 @@ class CardRefreshCoordinator {
   }) async {
     final refPoint = _location.resolve(mapVm);
 
-    final candidates = _sorter.sortAndPick(fullStations, refPoint, pinnedIds,
-        limit: limit);
+    final candidates =
+        _sorter.sortAndPick(fullStations, refPoint, pinnedIds, limit: limit);
 
     await _updater.apply(candidates, refPoint);
 

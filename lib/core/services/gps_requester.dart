@@ -1,6 +1,6 @@
-import 'package:youbike_android/core/utils/log_service.dart';
+import 'package:youbike/core/utils/log_service.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:youbike_android/providers/map_view_model.dart';
+import 'package:youbike/providers/map_view_model.dart';
 
 /// GPS 請求與位置解析的唯一入口。
 ///

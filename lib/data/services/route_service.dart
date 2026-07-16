@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:youbike_android/core/utils/log_service.dart';
+import 'package:youbike/core/utils/log_service.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
@@ -30,14 +30,17 @@ class RouteStep {
 class RouteService {
   // 使用 GraphHopper API (同步網頁版)
   static const String baseUrl = "https://graphhopper.com/api/1/route";
-  static const String apiKey = "7cb4eb19-e0f4-40a3-a5e0-f2c039366f32"; // Synchronized from Web production
+  static const String apiKey =
+      "7cb4eb19-e0f4-40a3-a5e0-f2c039366f32"; // Synchronized from Web production
 
-  Future<List<RouteStep>> getRoute(LatLng start, LatLng end, String lang) async {
+  Future<List<RouteStep>> getRoute(
+      LatLng start, LatLng end, String lang) async {
     final locale = lang == 'en' ? 'en' : 'zh-TW';
     const profile = 'foot';
-    
-    final url = "${RouteService.baseUrl}?profile=$profile&locale=$locale&key=${RouteService.apiKey}&elevation=false&instructions=true&point=${start.latitude},${start.longitude}&point=${end.latitude},${end.longitude}";
-    
+
+    final url =
+        "${RouteService.baseUrl}?profile=$profile&locale=$locale&key=${RouteService.apiKey}&elevation=false&instructions=true&point=${start.latitude},${start.longitude}&point=${end.latitude},${end.longitude}";
+
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {

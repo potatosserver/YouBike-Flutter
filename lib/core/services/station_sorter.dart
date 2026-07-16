@@ -1,6 +1,6 @@
 import 'package:latlong2/latlong.dart' hide DistanceCalculator;
-import 'package:youbike_android/core/services/distance_calculator.dart';
-import 'package:youbike_android/data/models/station.dart';
+import 'package:youbike/core/services/distance_calculator.dart';
+import 'package:youbike/data/models/station.dart';
 
 /// 依距離排序站點，釘選置頂，回傳前 N 筆。
 class StationSorter {
@@ -19,19 +19,20 @@ class StationSorter {
 
     for (final s in stations) {
       s.distance = _calc.haversine(
-        refPoint.latitude, refPoint.longitude, s.lat, s.lng,
+        refPoint.latitude,
+        refPoint.longitude,
+        s.lat,
+        s.lng,
       );
     }
 
     final sorted = List<Station>.from(stations)
       ..sort((a, b) => a.distance.compareTo(b.distance));
 
-    final pinned = sorted
-        .where((s) => pinnedIds.contains(s.id.trim()))
-        .toList();
-    final normal = sorted
-        .where((s) => !pinnedIds.contains(s.id.trim()))
-        .toList();
+    final pinned =
+        sorted.where((s) => pinnedIds.contains(s.id.trim())).toList();
+    final normal =
+        sorted.where((s) => !pinnedIds.contains(s.id.trim())).toList();
 
     return [...pinned, ...normal.take(limit)].toList();
   }

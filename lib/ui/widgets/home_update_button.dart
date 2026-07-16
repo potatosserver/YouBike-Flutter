@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:youbike_android/providers/station_view_model.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
+import 'package:youbike/providers/station_view_model.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
 
 class HomeUpdateButton extends StatefulWidget {
   const HomeUpdateButton({super.key});
@@ -10,7 +10,8 @@ class HomeUpdateButton extends StatefulWidget {
   State<HomeUpdateButton> createState() => _HomeUpdateButtonState();
 }
 
-class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerProviderStateMixin {
+class _HomeUpdateButtonState extends State<HomeUpdateButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -50,18 +51,25 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton> with SingleTickerPr
             animation: _controller,
             builder: (context, child) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: Offset(0, 2))
+                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Transform.rotate(
                       angle: _controller.value * 3.1415926535,
-                      child: Icon(Icons.autorenew, size: 20, color: cs.onSurface),
+                      child:
+                          Icon(Icons.autorenew, size: 20, color: cs.onSurface),
                     ),
                     const SizedBox(width: 8),
                     Text(

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:youbike_android/core/l10n/app_localizations.dart';
-import 'package:youbike_android/core/theme/brand_colors.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
@@ -29,7 +29,8 @@ class WelcomePage extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarIconBrightness: isLight ? Brightness.dark : Brightness.light,
-        systemNavigationBarIconBrightness: isLight ? Brightness.dark : Brightness.light,
+        systemNavigationBarIconBrightness:
+            isLight ? Brightness.dark : Brightness.light,
       ),
       child: Scaffold(
         backgroundColor: cs.surface,
@@ -82,7 +83,8 @@ class WelcomePage extends StatelessWidget {
                   FilledButton(
                     onPressed: () => _onGetStarted(context),
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 15),
                     ),
                     child: Text(l10n.get_started),
                   ),

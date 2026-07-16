@@ -13,7 +13,7 @@ plugins {
 }
 
 android {
-    namespace = "com.youbike.android.youbike_android"
+    namespace = "com.potatosserver.youbike"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -23,7 +23,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.youbike.android.youbike_android"
+        applicationId = "com.potatosserver.youbike"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
