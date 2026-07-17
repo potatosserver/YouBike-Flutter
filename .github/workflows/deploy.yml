@@ -1,9 +1,6 @@
 name: Web Compile and Push to Branch
 
 on:
-  push:
-    branches:
-      - main  # 每次 push 到 main 分支就自動執行編譯與推送 [1.2.1]
   workflow_dispatch:  # 保留手動單鍵點擊執行按鈕，不需輸入任何變數
 
 jobs:
