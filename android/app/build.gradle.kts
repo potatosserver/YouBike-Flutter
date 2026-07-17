@@ -35,12 +35,9 @@ android {
     productFlavors {
         create("github") {
             dimension = "channel"
-            applicationIdSuffix = ".github"
-            versionNameSuffix = "-github"
         }
         create("google_play") {
             dimension = "channel"
-            versionNameSuffix = "-gp"
         }
     }
 

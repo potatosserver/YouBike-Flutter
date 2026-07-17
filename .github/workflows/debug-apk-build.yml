@@ -2,7 +2,6 @@ name: Build Debug APK for Attach
 
 on:
   workflow_dispatch:
-    description: 'Build a Debug APK for local flutter attach development'
 
 jobs:
   build:

@@ -237,9 +237,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final result = await service.checkForUpdate();
       if (!mounted) return;
       await _handleUpdateResult(result, l10n);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      Fluttertoast.showToast(msg: l10n.update_check_failed);
+      Fluttertoast.showToast(
+        msg: '${l10n.update_check_failed}: ${error.toString()}',
+      );
     }
   }
 
@@ -251,7 +253,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final service = UpdateCheckerService();
 
     if (result.hasError) {
-      Fluttertoast.showToast(msg: l10n.update_check_failed);
+      final errorMessage = result.errorMessage?.replaceFirst(
+            'Exception: ',
+            '',
+          ) ??
+          l10n.update_check_failed;
+      Fluttertoast.showToast(
+        msg: '${l10n.update_check_failed}: $errorMessage',
+      );
       return;
     }
 
