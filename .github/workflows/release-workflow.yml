@@ -86,20 +86,15 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
         run: |
-          if [ -z "${KEYSTORE_BASE64}" ]; then
-            echo "No keystore found, building with debug signature..."
-            flutter build apk --debug
-          else
-            echo "${KEYSTORE_BASE64}" | base64 --decode > android/upload-keystore.jks
-            echo "storeFile=upload-keystore.jks" > android/key.properties
-            echo "keyAlias=${KEY_ALIAS}" >> android/key.properties
-            echo "keyPassword=${KEY_PASSWORD}" >> android/key.properties
-            echo "storePassword=${STORE_PASSWORD}" >> android/key.properties
-            
-            # 優先編譯 AAB，隨後編譯 APK
-            flutter build appbundle --release
-            flutter build apk --release --split-per-abi
-          fi
+          echo "${KEYSTORE_BASE64}" | base64 --decode > android/upload-keystore.jks
+          echo "storeFile=upload-keystore.jks" > android/key.properties
+          echo "keyAlias=${KEY_ALIAS}" >> android/key.properties
+          echo "keyPassword=${KEY_PASSWORD}" >> android/key.properties
+          echo "storePassword=${STORE_PASSWORD}" >> android/key.properties
+
+          # 優先編譯 google_play flavor 的 AAB，隨後編譯 github flavor 的 APK
+          flutter build appbundle --flavor google_play --obfuscate --split-debug-info=./build/app/outputs/debug-info --dart-define=UPDATE_CHANNEL=google_play
+          flutter build apk --flavor github --split-per-abi --obfuscate --split-debug-info=./build/app/outputs/debug-info --dart-define=UPDATE_CHANNEL=github
 
       - name: Re-pull Latest CHANGELOG.md
         run: |
@@ -109,8 +104,8 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: WalkGo-Release-AAB
-          path: build/app/outputs/bundle/release/*.aab
+          name: YouBike-Release-AAB
+          path: build/app/outputs/bundle/google_playRelease/app-google_play-release.aab
           if-no-files-found: warn
           retention-days: 7
 
