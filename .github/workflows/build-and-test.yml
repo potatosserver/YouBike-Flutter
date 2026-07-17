@@ -4,10 +4,23 @@ on:
   workflow_dispatch:
     inputs:
       update_channel:
-        description: 'Value for UPDATE_CHANNEL (e.g., google_play). Leave empty to omit.'
-        required: false
-        default: ''
-        type: string
+        description: 'Select the UPDATE_CHANNEL for the build.'
+        required: true
+        default: 'github'
+        type: choice
+        options:
+          - github
+          - google_play
+          - web
+          - test
+      flavor:
+        description: 'Select the Android flavor to build.'
+        required: true
+        default: 'github'
+        type: choice
+        options:
+          - github
+          - google_play
 
 jobs:
   build:
@@ -48,19 +61,10 @@ jobs:
 
       - name: Build APK
         run: |
-          FLAVOR="github"
-          DART_DEFINE_ARGS=""
           CHANNEL="${{ github.event.inputs.update_channel }}"
+          FLAVOR="${{ github.event.inputs.flavor }}"
 
-          if [[ "$CHANNEL" == "google_play" ]]; then
-            FLAVOR="google_play"
-            DART_DEFINE_ARGS="--dart-define=UPDATE_CHANNEL=google_play"
-          elif [[ -n "$CHANNEL" ]]; then
-            FLAVOR="github"
-            DART_DEFINE_ARGS="--dart-define=UPDATE_CHANNEL=$CHANNEL"
-          fi
-
-          flutter build apk --flavor $FLAVOR --split-per-abi --obfuscate --split-debug-info=./build/app/outputs/debug-info $DART_DEFINE_ARGS
+          flutter build apk --flavor $FLAVOR --split-per-abi --obfuscate --split-debug-info=./build/app/outputs/debug-info --dart-define=UPDATE_CHANNEL=$CHANNEL
 
       - name: Upload Test APKs
         uses: actions/upload-artifact@v7
