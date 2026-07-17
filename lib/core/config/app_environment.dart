@@ -12,6 +12,8 @@ class AppEnvironment {
         return 'Google Play';
       case 'web':
         return 'Web';
+      case 'test':
+        return 'Test';
       default:
         return updateChannel;
     }

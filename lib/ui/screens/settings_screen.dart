@@ -47,7 +47,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final channel = AppEnvironment.updateChannel.toLowerCase();
-    final showUpdateButton = channel == 'google_play' || channel == 'github';
+    final showUpdateButton =
+        channel == 'google_play' || channel == 'github' || channel == 'test';
     final showGooglePlayButton = channel == 'google_play' || channel == 'web';
 
     return Scaffold(

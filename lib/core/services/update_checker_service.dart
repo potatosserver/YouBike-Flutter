@@ -78,6 +78,14 @@ class UpdateCheckerService {
         );
       }
 
+      if (channel == 'test') {
+        return UpdateCheckResult(
+          isLatest: true,
+          currentVersion: currentVersion,
+          latestVersion: currentVersion,
+        );
+      }
+
       return await _checkGithubLatest(currentVersion);
     } catch (error) {
       return UpdateCheckResult(
