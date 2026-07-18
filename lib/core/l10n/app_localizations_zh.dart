@@ -153,6 +153,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get emptySpaces => '可停空位數: ';
 
   @override
+  String get popupAvailableBikesLabel => '2.0';
+
+  @override
+  String get popupAvailableElectricBikesLabel => '2.0 E';
+
+  @override
+  String get popupEmptySpacesLabel => '空位';
+
+  @override
   String get autoRefresh => '自動刷新';
 
   @override

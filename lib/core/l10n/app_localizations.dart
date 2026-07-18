@@ -386,6 +386,24 @@ abstract class AppLocalizations {
   /// **'Empty Slots: '**
   String get emptySpaces;
 
+  /// No description provided for @popupAvailableBikesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'2.0'**
+  String get popupAvailableBikesLabel;
+
+  /// No description provided for @popupAvailableElectricBikesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'2.0 E'**
+  String get popupAvailableElectricBikesLabel;
+
+  /// No description provided for @popupEmptySpacesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty'**
+  String get popupEmptySpacesLabel;
+
   /// No description provided for @autoRefresh.
   ///
   /// In en, this message translates to:
