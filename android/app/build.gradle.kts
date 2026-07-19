@@ -21,14 +21,17 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // flutter_local_notifications 需要 core library desugaring
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
         applicationId = "com.potatosserver.youbike"
-        minSdk = flutter.minSdkVersion
+        minSdk = flutter.minSdkVersion  // flutter_local_notifications 最低需要 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     flavorDimensions += listOf("channel")
@@ -76,4 +79,7 @@ dependencies {
 
     // Firebase Analytics（Firebase 核心，必須加入）
     implementation("com.google.firebase:firebase-analytics")
+
+    // flutter_local_notifications 需要 core library desugaring
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
