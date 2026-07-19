@@ -2,11 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
+import '../device_id_service.dart';
 import 'firebase_core_service.dart';
 
-/// FCM Token 管理
 class FcmTokenService {
   static FcmTokenService? _instance;
   String? _cachedToken;
@@ -18,56 +17,57 @@ class FcmTokenService {
     return _instance!;
   }
 
-  /// 取得 FCM Token（含權限請求與刷新監聽）
   Future<String?> getToken() async {
     if (_cachedToken != null) return _cachedToken;
 
     try {
       await FirebaseCoreService.instance.ensureInitialized();
-
-      // Android 13+ 通知權限
-      await _requestNotificationPermission();
+      await _requestPermission();
 
       final messaging = FirebaseMessaging.instance;
-
-      // Token 刷新 → 自動更新 Firestore
       messaging.onTokenRefresh.listen(_onTokenRefresh);
 
       _cachedToken = await messaging.getToken();
-      debugPrint('[FcmToken] 取得 Token: ${_cachedToken?.substring(0, 8)}...');
+      debugPrint('[FcmToken] Token: ${_cachedToken?.substring(0, 8)}...');
       return _cachedToken;
     } catch (e) {
-      debugPrint('[FcmToken] 取得 Token 失敗: $e');
+      debugPrint('[FcmToken] Token 失敗: $e');
       return null;
     }
   }
 
-  Future<void> _requestNotificationPermission() async {
-    final settings = await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      criticalAlert: false,
-      provisional: false,
+  Future<void> _requestPermission() async {
+    final s = await FirebaseMessaging.instance.requestPermission(
+      alert: true, badge: true, sound: true,
+      criticalAlert: false, provisional: false,
     );
-    debugPrint('[FcmToken] 通知權限: ${settings.authorizationStatus}');
+    debugPrint('[FcmToken] 權限: ${s.authorizationStatus}');
   }
 
-  /// Token 刷新時自動更新 Firestore device_stats 中的 fcm_token 欄位
   Future<void> _onTokenRefresh(String newToken) async {
     _cachedToken = newToken;
-    debugPrint('[FcmToken] Token 刷新，更新 Firestore: ${newToken.substring(0, 8)}...');
-    await FirestoreDeviceStatsService.instance.reportAppActive();
+    debugPrint('[FcmToken] Token 刷新: ${newToken.substring(0, 8)}...');
+
+    // 直接更新 Firestore 中的 fcm_token 欄位
+    try {
+      final deviceId = (await DeviceIdHelper.getDeviceInfo())['id']!;
+      await FirebaseFirestore.instance
+          .collection('device_stats')
+          .doc(deviceId)
+          .set({'fcm_token': newToken}, SetOptions(merge: true));
+      debugPrint('[FcmToken] Firestore fcm_token 已更新 ✅');
+    } catch (e) {
+      debugPrint('[FcmToken] Firestore 更新失敗: $e');
+    }
   }
 }
 
-/// FCM 訊息處理器 + 本地通知顯示
+// ── 訊息處理 + 前景通知 ──
+
 class FcmMessageHandler {
   static FcmMessageHandler? _instance;
   bool _registered = false;
-
-  final FlutterLocalNotificationsPlugin _local =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _local = FlutterLocalNotificationsPlugin();
 
   FcmMessageHandler._();
 
@@ -86,15 +86,15 @@ class FcmMessageHandler {
     FirebaseMessaging.onMessageOpenedApp.listen(_onOpened);
     _checkInitial();
 
-    debugPrint('[FcmHandler] 所有 FCM 監聽已註冊');
+    debugPrint('[FcmHandler] 監聽已註冊');
   }
 
   Future<void> _initLocal() async {
-    const init = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    await _local.initialize(
+      settings: const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      ),
     );
-
-    await _local.initialize(settings: init, onDidReceiveNotificationResponse: (_) {});
 
     await _local
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -109,7 +109,7 @@ class FcmMessageHandler {
   void _onForeground(RemoteMessage msg) async {
     final title = msg.notification?.title ?? 'YouBike';
     final body = msg.notification?.body ?? '您有一則新訊息';
-    debugPrint('[FCM] 前景通知: $title / $body');
+    debugPrint('[FCM] 前景: $title / $body');
 
     await _local.show(
       id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
@@ -128,7 +128,7 @@ class FcmMessageHandler {
   }
 
   void _onOpened(RemoteMessage msg) {
-    debugPrint('[FCM] 從通知開啟 app: ${msg.data}');
+    debugPrint('[FCM] 點擊通知: ${msg.data}');
   }
 
   Future<void> _checkInitial() async {
