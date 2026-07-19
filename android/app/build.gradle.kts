@@ -10,6 +10,7 @@ if (keystorePropertiesFile.exists()) {
 plugins {
     id("com.android.application")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -67,4 +68,12 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Firebase BoM (Bill of Materials)
+    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
+
+    // Firebase Analytics（Firebase 核心，必須加入）
+    implementation("com.google.firebase:firebase-analytics")
 }

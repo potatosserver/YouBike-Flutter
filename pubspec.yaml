@@ -38,6 +38,11 @@ dependencies:
   in_app_update: ^5.0.0
   font_awesome_flutter: ^11.0.0
 
+  # Firebase
+  firebase_core: ^4.11.0
+  cloud_firestore: ^6.6.0
+  firebase_messaging: ^16.4.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
