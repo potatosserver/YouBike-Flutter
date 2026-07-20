@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -88,6 +89,18 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
   Future<bool> _readGranted() async {
     switch (widget.type) {
       case PermissionType.location:
+        // 統一在 Web 走 Geolocator（與 MapViewModel 同源），避免
+        // permission_handler_html (Permissions API) 與 navigator.geolocation
+        // 在「使用者重設權限」場景的狀態分歧。
+        if (kIsWeb) {
+          try {
+            final p = await Geolocator.checkPermission();
+            return p == LocationPermission.always ||
+                p == LocationPermission.whileInUse;
+          } catch (_) {
+            return false;
+          }
+        }
         final s = await Permission.location.status;
         return s.isGranted || s.isLimited;
       case PermissionType.notification:
@@ -131,6 +144,26 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
   }
 
   Future<void> _requestLocation() async {
+    // Web：走 Geolocator（與 MapViewModel 同源）。Geolocator.requestPermission()
+    // 內部呼叫 navigator.geolocation.getCurrentPosition，會觸發瀏覽器原生詢問框。
+    // Web 沒有「永久拒絕」語意 — deniedForever 在 Web 等於使用者剛拒絕，不該彈
+    // permanentlyDenied dialog 引導去系統設定（Web 沒這個入口）。
+    if (kIsWeb) {
+      try {
+        final p = await Geolocator.requestPermission();
+        if (!mounted) return;
+        if (p == LocationPermission.always ||
+            p == LocationPermission.whileInUse) {
+          setState(() => _permissionGranted = true);
+        }
+        // denied / deniedForever 都視為「使用者剛拒絕」，不彈 dialog，
+        // 讓使用者留在本頁可再次按按鈕或選略過。
+      } catch (_) {
+        // Geolocator 在 Web 例外時不更新狀態
+      }
+      return;
+    }
+
     final status = await Permission.location.status;
 
     if (status.isPermanentlyDenied) {
@@ -396,7 +429,10 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                       shape: const StadiumBorder(),
                     ),
                     child: Text(
-                      widget.type == PermissionType.location
+                      // Web 上不會走 notification 頁（splash 會直接放行），
+                      // 因此 location 頁在 Web 就是最後一步，按鈕顯示「開始使用」。
+                      // 原生端 location 頁仍顯示「繼續」，因還有 notification 頁。
+                      (widget.type == PermissionType.location && !kIsWeb)
                           ? l10n.setup_continue
                           : l10n.setup_complete,
                       style: const TextStyle(

@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,6 +57,21 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<bool> _isLocationGranted() async {
+    // 統一在 Web 走 Geolocator（與 MapViewModel 同源）。
+    // 原因：permission_handler_html 的 Permission.location.status 走
+    // navigator.permissions.query({name:'geolocation'})，在「使用者重設權限」
+    // 場景會與 navigator.geolocation 狀態分歧，導致 splash 誤判已授予、
+    // 跳過權限頁直奔首頁，最後由 MapViewModel 的 Geolocator.requestPermission()
+    // 才在首頁載入時彈出瀏覽器原生詢問框。
+    if (kIsWeb) {
+      try {
+        final p = await Geolocator.checkPermission();
+        return p == LocationPermission.always ||
+            p == LocationPermission.whileInUse;
+      } catch (_) {
+        return false;
+      }
+    }
     final s = await Permission.location.status;
     return s.isGranted || s.isLimited;
   }
