@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
 import 'package:youbike/core/utils/log_service.dart';
 
 class AppLogPage extends StatefulWidget {
@@ -52,11 +53,11 @@ class _AppLogPageState extends State<AppLogPage> {
   Color _levelColor(String level) {
     switch (level) {
       case 'ERROR':
-        return Colors.red.shade700;
+        return BrandColors.logError;
       case 'WARN':
-        return Colors.orange.shade700;
+        return BrandColors.logWarn;
       case 'INFO':
-        return Colors.blue.shade600;
+        return BrandColors.logInfo;
       default:
         return Colors.grey;
     }

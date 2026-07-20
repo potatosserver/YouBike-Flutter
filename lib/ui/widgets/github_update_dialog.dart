@@ -98,7 +98,7 @@ class _GithubUpdateDialogState extends State<GithubUpdateDialog> {
       case GithubUpdateStep.error:
         return Text(
           _errorText ?? l10n.update_check_failed,
-          style: const TextStyle(color: Colors.red),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
         );
       case GithubUpdateStep.details:
         return Column(

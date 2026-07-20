@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/data/services/permission_service.dart';
 
@@ -305,10 +306,11 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                         ),
                       ],
                       if (_permissionGranted)
+                        // ignore: prefer_const_constructors
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
-                          child: Icon(Icons.check_circle,
-                              color: Colors.green.shade500, size: 32),
+                          child: const Icon(Icons.check_circle,
+                              color: BrandColors.success, size: 32),
                         ),
                       if (_permissionSkipped)
                         Padding(

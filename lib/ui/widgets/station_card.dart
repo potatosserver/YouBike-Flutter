@@ -78,7 +78,7 @@ class StationCard extends StatelessWidget {
                     onTap: () => config.togglePinStation(station.id),
                     child: Icon(
                       isPinned ? Icons.star : Icons.star_border,
-                      color: isPinned ? Colors.amber : cs.onSurfaceVariant,
+                      color: isPinned ? BrandColors.pinnedStars : cs.onSurfaceVariant,
                       size: 22,
                     ),
                   ),
