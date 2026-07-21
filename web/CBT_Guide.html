@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouBike 站點搜尋 — Android 封閉測試計劃</title>
     
+    <!-- 網頁 Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png"/>
+    
     <!-- Tailwind CSS (透過支援 CORS/CORP 的 jsDelivr 載入，避開 COEP 阻擋) -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" crossorigin="anonymous"></script>
     
     <!-- Google Material Icons & Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght=300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
 
     <!-- Tailwind v4 專屬的主題客製化設定 -->
@@ -17,11 +20,11 @@
         @theme {
             --font-sans: 'Roboto', 'Noto Sans TC', sans-serif;
             --color-brand-50: #FFF8F1;   /* 溫暖淺底色 */
-            --color-brand-100: #FFE0B2;  /* 淺橘容器色 */
-            --color-brand-500: #FF9800;  /* 品牌核心橘色 */
+            --color-brand-100: #FFE0B2;  /* 淺橘容器/次要按鈕色 */
+            --color-brand-500: #FF9800;  /* 品牌核心亮橘色 */
             --color-brand-600: #F57C00;  /* 輔助橘色 */
             --color-brand-700: #E65100;  /* 深橘色 */
-            --color-brand-900: #3E1D00;  /* 深褐色 */
+            --color-brand-900: #3E1D00;  /* 經典深褐色 (高對比度文字色) */
         }
     </style>
     
@@ -30,7 +33,7 @@
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        /* 清除行動裝置點擊按鈕時出現的預設藍色高亮背景 */
+        /* 行動裝置觸控高亮優化 */
         button, a {
             -webkit-tap-highlight-color: transparent;
         }
@@ -41,7 +44,7 @@
     <!-- Top App Bar / Header -->
     <header class="w-full max-w-3xl mx-auto px-4 py-4 sm:px-6 sm:py-6 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <!-- 品牌圖示 (頂端小標) -->
+            <!-- 品牌圖示 -->
             <div class="w-9 h-9 sm:w-10 sm:h-10">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
                   <g id="foreground-layer">
@@ -56,12 +59,10 @@
         </div>
         
         <div class="flex items-center gap-2">
-            <!-- 頂端外連試用網頁連結 (手機版精簡按鈕) -->
             <a href="https://youbike.pages.dev/" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-xs sm:text-sm font-medium text-brand-700 bg-brand-100/60 hover:bg-brand-100 px-3 py-1.5 rounded-full transition shrink-0">
                 <span class="material-symbols-outlined text-sm sm:text-base">open_in_new</span>
                 <span>試用網頁版</span>
             </a>
-            <!-- 手機版隱藏此標籤以防擠壓 -->
             <span class="hidden sm:inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-brand-100 text-brand-700">
                 封閉測試
             </span>
@@ -70,18 +71,14 @@
 
     <!-- Main Card Container -->
     <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
-        <div class="bg-white w-full max-w-xl rounded-[28px] sm:rounded-[32px] border border-orange-100 p-6 sm:p-10 shadow-sm transition-all duration-300">
+        <div class="bg-white w-full max-w-xl rounded-[28px] sm:rounded-[32px] border border-orange-100 p-6 sm:p-10 shadow-xs transition-all duration-300">
             
-            <!-- Step Progress Indicator (細緻版亮橘色進度條) -->
+            <!-- Step Progress Indicator -->
             <div class="flex items-center justify-between mb-6 sm:mb-8">
                 <div class="flex items-center gap-2 w-full">
-                    <!-- Step 1 Dot -->
                     <div id="dot-1" class="h-1.5 w-full rounded-full bg-brand-500 transition-all duration-300"></div>
-                    <!-- Step 2 Dot -->
                     <div id="dot-2" class="h-1.5 w-full rounded-full bg-brand-100 transition-all duration-300"></div>
-                    <!-- Step 3 Dot -->
                     <div id="dot-3" class="h-1.5 w-full rounded-full bg-brand-100 transition-all duration-300"></div>
-                    <!-- Step 4 Dot -->
                     <div id="dot-4" class="h-1.5 w-full rounded-full bg-brand-100 transition-all duration-300"></div>
                 </div>
             </div>
@@ -89,39 +86,42 @@
             <!-- STEP 1: Welcome & Overview -->
             <div id="step-1" class="step-content space-y-5 sm:space-y-6">
                 <div class="text-center">
-                    <!-- 品牌圖示 (大圖標) -->
                     <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
                           <g id="foreground-layer">
                             <circle cx="256" cy="256" r="216" fill="#FF9800" />
                             <g id="bicycle-graphic" transform="translate(112, 403) scale(0.3)" fill="#FFFFFF">
                               <path d="M200-80q-83 0-141.5-58.5T0-280q0-83 58.5-141.5T200-480q83 0 141.5 58.5T400-280q0 83-58.5 141.5T200-80Zm85-115q35-35 35-85t-35-85q-35-35-85-35t-85 35q-35 35-35 85t35 85q35 35 85 35t85-35Zm155-5v-200L312-512q-12-11-18-25.5t-6-30.5q0-16 6.5-30.5T312-624l112-112q12-12 27.5-18t32.5-6q17 0 32.5 6t27.5 18l76 76q28 28 64 44t76 16v80q-57 0-108.5-22T560-604l-32-32-96 96 88 92v248h-80Zm123.5-563.5Q540-787 540-820t23.5-56.5Q587-900 620-900t56.5 23.5Q700-853 700-820t-23.5 56.5Q653-740 620-740t-56.5-23.5ZM760-80q-83 0-141.5-58.5T560-280q0-83 58.5-141.5T760-480q83 0 141.5 58.5T960-280q0 83-58.5 141.5T760-80Zm85-115q35-35 35-85t-35-85q-35-35-85-35t-85 35q-35 35-35 85t35 85q35 35 85 35t85-35Z"/>
-                    </g>
-                  </g>
-                </svg>
+                            </g>
+                          </g>
+                        </svg>
                     </div>
                     <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">參與測試計畫</h2>
                     <p class="text-xs sm:text-sm text-slate-600 mt-2">
                         本 App 使用 Flutter 與 Material Design 3 打造，提供您直覺、清楚的微笑單車即時站點查詢服務。在正式發布前，邀請您協助進行封閉測試。
                     </p>
+                    
+                    <!-- 建議用 Chrome 開啟提示 -->
+                    <div class="inline-flex items-center gap-1.5 px-3.5 py-1 bg-orange-50 text-brand-700 text-xs font-semibold rounded-full border border-orange-100 mt-3">
+                        <span class="material-symbols-outlined text-sm shrink-0">info</span> 
+                        <span>建議使用 Google Chrome 瀏覽器開啟以方便登入帳號</span>
+                    </div>
                 </div>
 
                 <div class="bg-brand-50 p-4 sm:p-5 rounded-2xl border border-orange-100/60 space-y-2.5 sm:space-y-3">
-                    <h3 class="font-semibold text-xs sm:text-sm text-brand-700">✨ 功能特色介紹</h3>
+                    <h3 class="font-semibold text-xs sm:text-sm text-brand-700">功能特色介紹</h3>
                     <ul class="text-xs text-slate-600 space-y-1.5 sm:space-y-2 pl-4 list-disc leading-relaxed">
-                        <li><b>全台站點地圖：</b>提供 13 縣市站點資訊與即時位置定位。</li>
+                        <li><b>全台站點地圖：</b>提供 13 縣市及區域站點資訊與即時位置定位。</li>
                         <li><b>即時車輛同步：</b>提供站點可借可停數據與電量詳情。</li>
                         <li><b>步行路線規劃：</b>整合步行導航與簡單路段指引。</li>
                         <li><b>橘色品牌主題：</b>採用 Material Design 3 設計與動態色彩。</li>
                     </ul>
                 </div>
 
-                <!-- 導引按鈕區塊 (手機版觸控優化) -->
                 <div class="flex flex-col gap-2.5 sm:gap-3">
-                    <button onclick="goToStep(2)" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3.5 rounded-full font-medium flex items-center justify-center gap-2 transition text-sm sm:text-base">
+                    <button onclick="goToStep(2)" class="w-full bg-brand-500 hover:bg-brand-600 text-brand-900 font-bold py-3.5 rounded-full flex items-center justify-center gap-2 transition text-sm sm:text-base cursor-pointer">
                         開始加入測試 <span class="material-symbols-outlined text-sm">arrow_forward</span>
                     </button>
-                    <!-- 試用網頁按鈕 -->
                     <a href="https://youbike.pages.dev/" target="_blank" rel="noopener noreferrer" class="w-full border border-brand-500 text-brand-700 hover:bg-brand-50 py-3.5 rounded-full font-medium flex items-center justify-center gap-2 transition text-sm sm:text-base">
                         <span class="material-symbols-outlined text-lg">language</span>
                         試用網頁版 (免安裝)
@@ -130,98 +130,186 @@
             </div>
 
             <!-- STEP 2: Join Google Group -->
-            <div id="step-2" class="step-content hidden space-y-5 sm:space-y-6">
+            <div id="step-2" class="step-content hidden space-y-5">
                 <div>
                     <span class="text-xs font-semibold text-brand-600 uppercase tracking-wider">步驟 1 / 3</span>
-                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mt-1">加入測試社群</h2>
-                    <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                        根據 Google Play 測試規範，我們必須先將您的 Google 帳號加入許可名單。請點選下方按鈕加入我們的測試群組。
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mt-1">加入 Google 測試群組</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
+                        在下載 App 之前，您的 Google 帳戶必須先加入我們的測試群組，Google Play 才會開放下載權限。
                     </p>
                 </div>
 
-                <div class="p-4 bg-brand-50 rounded-2xl border border-orange-100/60 flex items-start gap-3">
-                    <span class="material-symbols-outlined text-brand-600 mt-0.5 shrink-0">info</span>
-                    <p class="text-xs text-slate-600 leading-relaxed">
-                        請確認您所加入群組的 Google 帳號，與您行動裝置上登入 Google Play 商店的帳號為同一個。
-                    </p>
+                <!-- 操作面板 (文字說明) -->
+                <div class="bg-brand-50/70 rounded-2xl border border-orange-100 p-4.5 space-y-3.5">
+                    <ul class="text-xs sm:text-sm text-slate-700 space-y-2.5">
+                        <li class="flex items-start gap-2.5">
+                            <span class="bg-brand-500 text-brand-900 font-bold text-[11px] w-5 h-5 rounded-full flex items-center justify-center shrink-0 leading-none">1</span>
+                            <span>點選下方按鈕，開啟 Google 測試群組網頁。</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="bg-brand-500 text-brand-900 font-bold text-[11px] w-5 h-5 rounded-full flex items-center justify-center shrink-0 leading-none">2</span>
+                            <span>點擊頁面中央上方的 <b class="text-slate-900">「加入群組」</b> 按鈕。</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="bg-brand-500 text-brand-900 font-bold text-[11px] w-5 h-5 rounded-full flex items-center justify-center shrink-0 leading-none">3</span>
+                            <span>在彈出視窗中確認您的資訊，點選右下角完成加入。</span>
+                        </li>
+                    </ul>
                 </div>
 
-                <a href="https://groups.google.com/g/youbike" target="_blank" rel="noopener noreferrer" class="w-full bg-brand-100 hover:bg-opacity-80 text-brand-700 py-3.5 rounded-full font-medium flex items-center justify-center gap-2 transition text-xs sm:text-sm">
+                <!-- 參考畫面區塊 (防止抖動，無白色內框) -->
+                <div class="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 relative h-[280px] flex flex-col justify-center items-center overflow-hidden">
+                    <!-- Slide 1 -->
+                    <div class="carousel-slide flex flex-col items-center justify-center h-full w-full">
+                        <img src="https://i.ibb.co/3mD4Fwpk/Screenshot-2026-07-21-07-45-47-785-com-android-chrome-edit.png" alt="步驟 1" class="rounded-lg h-[210px] w-auto object-contain">
+                        <span class="text-[10px] text-slate-400 mt-2 font-medium">1. 點選「加入群組」</span>
+                    </div>
+                    <!-- Slide 2 -->
+                    <div class="carousel-slide hidden flex flex-col items-center justify-center h-full w-full">
+                        <img src="https://i.ibb.co/yBh8jyQp/Screenshot-2026-07-21-07-46-35-655-com-android-chrome-edit.png" alt="步驟 2" class="rounded-lg h-[210px] w-auto object-contain">
+                        <span class="text-[10px] text-slate-400 mt-2 font-medium">2. 確認「您已是群組成員」</span>
+                    </div>
+                    
+                    <!-- 輪播圓點 -->
+                    <div class="absolute bottom-2 flex gap-1 z-10">
+                        <span class="carousel-dot h-1.5 w-1.5 rounded-full bg-brand-500 transition-all"></span>
+                        <span class="carousel-dot h-1.5 w-1.5 rounded-full bg-brand-200 transition-all"></span>
+                    </div>
+
+                    <!-- 手動控制按鈕 -->
+                    <button onclick="moveSlide(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white border border-slate-200 flex items-center justify-center text-slate-600 transition shadow-xs cursor-pointer z-10">
+                        <span class="material-symbols-outlined text-sm">chevron_left</span>
+                    </button>
+                    <button onclick="moveSlide(1)" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white border border-slate-200 flex items-center justify-center text-slate-600 transition shadow-xs cursor-pointer z-10">
+                        <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </button>
+                </div>
+
+                <!-- 連結按鈕 (移到圖片下方) -->
+                <a href="https://groups.google.com/g/youbike" target="_blank" rel="noopener noreferrer" class="w-full bg-brand-500 hover:bg-brand-600 text-brand-900 font-bold py-3.5 rounded-full flex items-center justify-center gap-2 transition text-sm">
                     <span class="material-symbols-outlined text-lg">group</span>
-                    加入 YouBike 測試社群 (Google Groups)
+                    點我進入《YouBike 站點搜尋》測試群組
                 </a>
 
-                <!-- 按鈕在手機版上下排列 -->
+                <!-- 導航按鈕 (下一步按鈕更換為好讀的淡橘色) -->
                 <div class="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3 pt-2">
-                    <button onclick="goToStep(1)" class="w-full sm:w-1/3 border border-slate-300 text-slate-600 hover:bg-slate-50 py-3.5 rounded-full font-medium transition text-sm sm:text-base">
+                    <button onclick="goToStep(1)" class="w-full sm:w-1/3 border border-slate-300 text-slate-600 hover:bg-slate-50 py-3 rounded-full font-medium transition text-sm cursor-pointer">
                         返回
                     </button>
-                    <button onclick="goToStep(3)" class="w-full sm:w-2/3 bg-brand-500 hover:bg-brand-600 text-white py-3.5 rounded-full font-medium flex items-center justify-center gap-2 transition text-sm sm:text-base">
+                    <button onclick="goToStep(3)" class="w-full sm:w-2/3 bg-brand-100 hover:bg-opacity-80 text-brand-900 font-bold py-3 rounded-full flex items-center justify-center gap-2 transition text-sm cursor-pointer">
                         我已加入，下一步 <span class="material-symbols-outlined text-sm">arrow_forward</span>
                     </button>
                 </div>
             </div>
 
             <!-- STEP 3: Accept Invitation -->
-            <div id="step-3" class="step-content hidden space-y-5 sm:space-y-6">
+            <div id="step-3" class="step-content hidden space-y-5">
                 <div>
                     <span class="text-xs font-semibold text-brand-600 uppercase tracking-wider">步驟 2 / 3</span>
-                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mt-1">接受測試邀請</h2>
-                    <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                        加入群組後，請點選下方連結進入測試計畫頁面，並按下<b>「成為測試人員 (Become a Tester)」</b>。
-                    </p>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mt-1">前往 Google Play 成為測試人員</h2>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 text-xs font-medium rounded-full border border-red-100 mt-2">
+                        <span class="material-symbols-outlined text-sm">warning</span> 
+                        <span>請務必確認已完成「步驟一」並成功加入群組</span>
+                    </div>
                 </div>
 
-                <div class="p-4 bg-brand-50 rounded-2xl border border-orange-100/60 flex items-start gap-3">
-                    <span class="material-symbols-outlined text-brand-600 mt-0.5 shrink-0">warning</span>
-                    <p class="text-xs text-slate-600 leading-relaxed">
-                        若頁面顯示「無法提供此應用程式」，請確認第一步是否已確實加入 Google 群組，或稍候 1-2 分鐘重試。
-                    </p>
+                <!-- 操作面板 (文字說明) -->
+                <div class="bg-brand-50/70 rounded-2xl border border-orange-100 p-4.5 space-y-3.5">
+                    <ul class="text-xs sm:text-sm text-slate-700 space-y-2.5">
+                        <li class="flex items-start gap-2.5">
+                            <span class="bg-brand-500 text-brand-900 font-bold text-[11px] w-5 h-5 rounded-full flex items-center justify-center shrink-0 leading-none">1</span>
+                            <span>點選下方連結，進入 Google Play 測試計劃頁面。</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="bg-brand-500 text-brand-900 font-bold text-[11px] w-5 h-5 rounded-full flex items-center justify-center shrink-0 leading-none">2</span>
+                            <span>點擊頁面中的 <b class="text-slate-900">「成為測試人員 (Become a Tester)」</b> 按鈕。</span>
+                        </li>
+                    </ul>
                 </div>
 
-                <a href="https://play.google.com/apps/testing/com.potatosserver.youbike" target="_blank" rel="noopener noreferrer" class="w-full bg-brand-100 hover:bg-opacity-80 text-brand-700 py-3.5 rounded-full font-medium flex items-center justify-center gap-2 transition text-xs sm:text-sm">
+                <!-- 參考畫面區塊 (無白色內框) -->
+                <div class="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 h-[280px] flex flex-col justify-center items-center overflow-hidden">
+                    <div class="flex flex-col items-center justify-center h-full w-full">
+                        <img src="https://i.ibb.co/Kch0SK21/Screenshot-2026-07-21-07-48-05-552-com-android-chrome-edit.png" alt="接受邀請步驟" class="rounded-lg h-[210px] w-auto object-contain">
+                        <span class="text-[10px] text-slate-400 mt-2 font-medium">3. 點選「成為測試人員」</span>
+                    </div>
+                </div>
+
+                <!-- 連結按鈕 (移到圖片下方) -->
+                <a href="https://play.google.com/apps/testing/com.potatosserver.youbike" target="_blank" rel="noopener noreferrer" class="w-full bg-brand-500 hover:bg-brand-600 text-brand-900 font-bold py-3.5 rounded-full flex items-center justify-center gap-2 transition text-sm">
                     <span class="material-symbols-outlined text-lg">how_to_reg</span>
-                    註冊 Google Play 測試資格
+                    點我成為測試人員並下載《YouBike 站點搜尋》
                 </a>
 
-                <!-- 按鈕在手機版上下排列 -->
+                <!-- 導航按鈕 (下一步按鈕更換為好讀的淡橘色) -->
                 <div class="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3 pt-2">
-                    <button onclick="goToStep(2)" class="w-full sm:w-1/3 border border-slate-300 text-slate-600 hover:bg-slate-50 py-3.5 rounded-full font-medium transition text-sm sm:text-base">
+                    <button onclick="goToStep(2)" class="w-full sm:w-1/3 border border-slate-300 text-slate-600 hover:bg-slate-50 py-3 rounded-full font-medium transition text-sm cursor-pointer">
                         返回
                     </button>
-                    <button onclick="goToStep(4)" class="w-full sm:w-2/3 bg-brand-500 hover:bg-brand-600 text-white py-3.5 rounded-full font-medium flex items-center justify-center gap-2 transition text-sm sm:text-base">
+                    <button onclick="goToStep(4)" class="w-full sm:w-2/3 bg-brand-100 hover:bg-opacity-80 text-brand-900 font-bold py-3 rounded-full flex items-center justify-center gap-2 transition text-sm cursor-pointer">
                         已登記完成，下一步 <span class="material-symbols-outlined text-sm">arrow_forward</span>
                     </button>
                 </div>
             </div>
 
-            <!-- STEP 4: Download & Install -->
+            <!-- STEP 4: Download & FAQ -->
             <div id="step-4" class="step-content hidden space-y-5 sm:space-y-6">
                 <div class="text-center">
-                    <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
+                    <div class="w-12 h-12 sm:w-14 h-14 mx-auto bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-3">
                         <span class="material-symbols-outlined text-2xl sm:text-3xl">download</span>
                     </div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">完成設定</h2>
-                    <p class="text-xs sm:text-sm text-slate-600 mt-2">
-                        現在您可以直接前往 Google Play 商店下載您專屬的測試版本 App。
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">完成設定與下載</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                        恭喜！您現在可以直接前往 Google Play 下載專屬測試版 App。
                     </p>
                 </div>
 
-                <div class="p-4 sm:p-5 bg-brand-50 rounded-2xl border border-orange-100/60 space-y-2 text-xs text-slate-600 leading-relaxed">
-                    <p class="font-medium text-slate-800">💡 測試說明：</p>
-                    <ul class="list-disc pl-4 space-y-1">
-                        <li>此為測試版本，若遇到資料偏差或運行不順暢，歡迎直接在 Google 群組發表建議或問題反映。</li>
-                        <li>數據來源：YouBike官方、OpenStreetMap 及其貢獻者。</li>
-                    </ul>
+                <!-- Google Play 下載按鈕 -->
+                <a href="https://play.google.com/store/apps/details?id=com.potatosserver.youbike" target="_blank" rel="noopener noreferrer" class="w-full bg-brand-500 hover:bg-brand-600 text-brand-900 font-bold py-3.5 rounded-full flex items-center justify-center gap-2 transition text-sm">
+                    <span class="material-symbols-outlined text-lg">storefront</span>
+                    前往 Google Play 下載
+                </a>
+
+                <!-- 常見問題與排障 (FAQ) -->
+                <div class="border-t border-slate-200/80 pt-5 space-y-3.5">
+                    <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-brand-600 text-base">help</span>
+                        常見問題與排障 (FAQ)
+                    </h3>
+                    
+                    <div class="space-y-3 text-xs text-slate-600">
+                        <!-- Q1 -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                            <p class="font-bold text-slate-800 mb-1">Q1. 進入步驟二連結時，顯示找不到網頁、沒有權限，或出現 "We're sorry..." 錯誤？</p>
+                            <ul class="list-disc pl-4 space-y-1 text-slate-600">
+                                <li><b>排除方法 1</b>：確認您已確實完成「步驟一」加入 Google 群組。</li>
+                                <li><b>排除方法 2</b>：確認瀏覽器目前登入的 Google 帳號與 Google Play 使用的是同一個（Gmail）。</li>
+                                <li><b>排除方法 3</b>：若在商店下載時出現 <b>"We're sorry, the requested URL was not found on this server."</b> 找不到網頁，此為 Google Play 伺服器同步延遲，請稍候 1-2 小時等 Google 伺服器完成同步即可。</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Q2 -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                            <p class="font-bold text-slate-800 mb-1">Q2. 加入群組後，我需要在群組內發言或做其他動作嗎？</p>
+                            <p>不需要。加入群組後<b>不需</b>在內部發布任何對話。這僅用於開通 Google Play 系統的下載與測試權限資格。</p>
+                        </div>
+                        
+                        <!-- Q3 -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                            <p class="font-bold text-slate-800 mb-1">Q3. 我需要測試多久時間？</p>
+                            <p>為符合 Google 規範，懇請您在手機裡<b>保留此 App 至少 14 天</b>。期間有空時可以打開使用、測試看看功能。</p>
+                        </div>
+
+                        <!-- Q4 -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                            <p class="font-bold text-slate-800 mb-1">Q4. 遇到 Bug 閃退或顯示異常該如何回報？</p>
+                            <p>可以直接在 Google Play 測試頁面填寫意見回饋，或寄信至 <code class="bg-slate-200 px-1 rounded text-[11px]">potatoserver@gmail.com</code> 與我們聯繫。</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex flex-col gap-2.5 sm:gap-3">
-                    <a href="https://play.google.com/store/apps/details?id=com.potatosserver.youbike" target="_blank" rel="noopener noreferrer" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3.5 rounded-full font-medium flex items-center justify-center gap-2 transition text-sm sm:text-base">
-                        <span class="material-symbols-outlined text-lg">storefront</span>
-                        前往 Google Play 下載
-                    </a>
-
-                    <button onclick="goToStep(3)" class="w-full border border-slate-300 text-slate-600 hover:bg-slate-50 py-3.5 rounded-full font-medium transition text-sm sm:text-base">
+                <div class="flex flex-col gap-2.5 pt-2">
+                    <button onclick="goToStep(3)" class="w-full border border-slate-300 text-slate-600 hover:bg-slate-50 py-3 rounded-full font-medium transition text-sm cursor-pointer">
                         返回上一步
                     </button>
                 </div>
@@ -238,17 +326,15 @@
         </div>
     </footer>
 
-    <!-- Step Navigation JavaScript -->
+    <!-- Step Navigation & Carousel JavaScript -->
     <script>
+        // --- 步驟導航 (Step Navigation) ---
         function goToStep(stepNumber) {
-            // Hide all steps
             const steps = document.querySelectorAll('.step-content');
             steps.forEach(step => step.classList.add('hidden'));
 
-            // Show current step
             document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
 
-            // Update Progress Dots (橘色色調)
             for (let i = 1; i <= 4; i++) {
                 const dot = document.getElementById(`dot-${i}`);
                 if (i <= stepNumber) {
@@ -260,6 +346,68 @@
                 }
             }
         }
+
+        // --- 1秒自動切換與手動兼具的輪播 (Carousel & Autoplay) ---
+        let currentSlide = 1;
+        let autoplayTimer = null;
+        const AUTOPLAY_INTERVAL = 1000; // 1000 毫秒 (1秒)
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dots = document.querySelectorAll('.carousel-dot');
+            if (!slides.length) return;
+            
+            if (n > slides.length) { currentSlide = 1; }
+            if (n < 1) { currentSlide = slides.length; }
+            
+            slides.forEach((slide, idx) => {
+                if (idx + 1 === currentSlide) {
+                    slide.classList.remove('hidden');
+                } else {
+                    slide.classList.add('hidden');
+                }
+            });
+            
+            dots.forEach((dot, idx) => {
+                if (idx + 1 === currentSlide) {
+                    dot.classList.add('bg-brand-500');
+                    dot.classList.remove('bg-brand-200');
+                } else {
+                    dot.classList.remove('bg-brand-500');
+                    dot.classList.add('bg-brand-200');
+                }
+            });
+        }
+        
+        function moveSlide(n) {
+            showSlide(currentSlide += n);
+            resetAutoplay(); 
+        }
+
+        function startAutoplay() {
+            if (autoplayTimer === null) {
+                autoplayTimer = setInterval(() => {
+                    showSlide(currentSlide += 1);
+                }, AUTOPLAY_INTERVAL);
+            }
+        }
+
+        function stopAutoplay() {
+            if (autoplayTimer !== null) {
+                clearInterval(autoplayTimer);
+                autoplayTimer = null;
+            }
+        }
+
+        function resetAutoplay() {
+            stopAutoplay();
+            startAutoplay();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showSlide(1);
+            startAutoplay();
+        });
     </script>
 </body>
 </html>
