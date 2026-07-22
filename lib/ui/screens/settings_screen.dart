@@ -219,11 +219,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                   onTap: () => _showAboutDialog(),
                 ),
                 _buildItem(
-                  icon: Icons.network_check,
-                  title: 'Channel: ${AppEnvironment.displayChannel}',
-                  onTap: null,
-                ),
-                _buildItem(
                   icon: Icons.code,
                   title: l10n.github_source_code,
                   trailing: Icon(Icons.open_in_new,
@@ -463,6 +458,9 @@ class _SettingsScreenState extends State<SettingsScreen>
               _buildAboutRow(
                   icon: Icons.info_outline,
                   text: l10n.version_label(_version)),
+              const SizedBox(height: 12),
+              _buildAboutRow(
+                  icon: Icons.network_check, text: 'Channel: ${AppEnvironment.displayChannel}'),
             ],
           ),
         ),
