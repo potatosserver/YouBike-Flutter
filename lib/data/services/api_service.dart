@@ -46,6 +46,16 @@ class ApiService {
       List<String> stationIds) async {
     if (stationIds.isEmpty) return {};
 
+    /// Each POST body should hold at most 20 station_no entries.
+    /// The real reason is two-fold:
+    ///  1. The /tw2/parkingInfo server paginates its `data` response at
+    ///     `per_page=20` — any single call only ever returns the first 20
+    ///     matching rows from its station list, even if you ask for more.
+    ///  2. We've measured a hard ceiling somewhere around N=50 station_no
+    ///     entries that the same endpoint rejects with HTTP 422.
+    /// Slicing into 20-entry chunks upstream turns "one big silent
+    /// truncation" into "N small complete pages" — every chunk lines up
+    /// with the server's natural page size.
     const batchSize = 20;
     Map<String, dynamic> allVehicleData = {};
 
@@ -99,39 +109,6 @@ class ApiService {
       }
     }
     return allVehicleData;
-  }
-
-  /// 單站即時車輛查詢（給「點圖釘自己發」）。
-  /// 內部走同一條 /tw2/parkingInfo 主路，路徑與 batch 完全一致。
-  /// 回 null 表示 server 該站沒回資料（retCode!=1 / 非 200 / 解析失敗 / 型別不對）。
-  Future<Map<String, int>?> fetchRealtimeVehicle(String stationId) async {
-    if (stationId.trim().isEmpty) return null;
-    try {
-      final batch = await fetchRealtimeVehicles([stationId]);
-      final raw = batch[stationId];
-      if (raw is! Map) return null;
-      int? readInt(String key) {
-        final v = raw[key];
-        if (v is num) return v.toInt();
-        if (v is String) return int.tryParse(v);
-        return null;
-      }
-
-      final yb2 = readInt('available_2_0');
-      final eyb = readInt('available_e');
-      final empty = readInt('empty_spaces');
-      // 三個欄位都抓不到時才回 null，避免 caller 誤判為「該站賣光」。
-      if (yb2 == null && eyb == null && empty == null) return null;
-      return {
-        'available_2_0': yb2 ?? 0,
-        'available_e': eyb ?? 0,
-        'empty_spaces': empty ?? 0,
-      };
-    } catch (e) {
-      LogService().e('API', 'Single-station realtime request failed',
-          error: e);
-      return null;
-    }
   }
 
   Future<List<Map<String, dynamic>>> fetchElectricBikeDetails(

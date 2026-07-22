@@ -287,21 +287,42 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   }
 
   /// 點下圖釘後的「單站即時查」。
-  /// 不與 60 秒週期的 n+10 那批走同一路，而是獨立 POST /tw2/parkingInfo。
+  /// 走 batch HTTP 入口（傳 1 個元素的 list）；解析在三欄上同時可行時才視為有資料,
+  /// 全缺/不在 server 回應內 → 不寫入,亦不做 0 解讀,以免把「該站不在此次回應」誤成「無車可借」。
   /// _popupRealtimeToken 是「selection token」—— 用來辨認查回時使用者是否還在看同一個站。
   int _popupRealtimeToken = 0;
 
   Future<void> _loadRealtimeForPopup(Station station) async {
     final token = ++_popupRealtimeToken;
     final api = ApiService();
-    final data = await api.fetchRealtimeVehicle(station.id);
+    Map<String, dynamic>? data;
+    try {
+      final batch = await api.fetchRealtimeVehicles([station.id]);
+      final raw = batch[station.id];
+      if (raw is Map) data = raw.cast<String, dynamic>();
+    } catch (e) {
+      LogService().e('MAP', 'Popup realtime request failed', error: e);
+    }
     if (!mounted) return;
     // 使用者在併行 fetch 期間關閉 popup / 切到別站 → 捨棄此次結果，避免舊資料變現。
     if (token != _popupRealtimeToken) return;
     if (data == null) return;
-    station.availableBikes = data['available_2_0'];
-    station.availableElectricBikes = data['available_e'];
-    station.emptySpaces = data['empty_spaces'];
+
+    int pickNum(Map<String, dynamic> src, String key) {
+      final v = src[key];
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? -1;
+      return -1;
+    }
+
+    final yb2 = pickNum(data, 'available_2_0');
+    final eyb = pickNum(data, 'available_e');
+    final empty = pickNum(data, 'empty_spaces');
+    // 三欄全部讀不到（sentinel -1）→ 視為 server 該站沒回資料,放棄寫入。
+    if (yb2 < 0 && eyb < 0 && empty < 0) return;
+    station.availableBikes = yb2 < 0 ? 0 : yb2;
+    station.availableElectricBikes = eyb < 0 ? 0 : eyb;
+    station.emptySpaces = empty < 0 ? 0 : empty;
     LogService().i(
       'MAP',
       'Popup realtime fetched for ${station.id}: yb2=${station.availableBikes}, '

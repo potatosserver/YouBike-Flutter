@@ -13,7 +13,7 @@ class StationSorter {
     List<Station> stations,
     LatLng refPoint,
     Set<String> pinnedIds, {
-    int limit = 10,
+    int limit = 20,
   }) {
     if (stations.isEmpty) return [];
 

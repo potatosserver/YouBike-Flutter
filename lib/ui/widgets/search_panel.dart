@@ -67,6 +67,7 @@ class _SearchPanelState extends State<SearchPanel> {
 
   void _clearSearch() {
     _searchController.clear();
+    Provider.of<StationViewModel>(context, listen: false).setQuery('');
     _searchFocusNode.requestFocus();
   }
 
@@ -154,6 +155,9 @@ class _SearchPanelState extends State<SearchPanel> {
                           controller: _searchController,
                           focusNode: _searchFocusNode,
                           textAlignVertical: TextAlignVertical.center,
+                          // Show a magnifying-glass / "search" key on the
+                          // soft keyboard so the user can submit by Enter.
+                          textInputAction: TextInputAction.search,
                           decoration: InputDecoration(
                             isDense: true,
                             hintText: l10n.input_placeholder,
@@ -175,14 +179,27 @@ class _SearchPanelState extends State<SearchPanel> {
                                   if (_hasText) const SizedBox(width: 8),
                                   Padding(
                                     padding: const EdgeInsets.only(right: 4),
-                                    child: Icon(Icons.search,
-                                        color: cs.onSurfaceVariant, size: 24),
+                                    child: GestureDetector(
+                                      // Tapping the trailing search icon
+                                      // submits the current input — same
+                                      // effect as pressing the soft-keyboard
+                                      // Enter key.
+                                      onTap: () => stationVm
+                                          .setQuery(_searchController.text),
+                                      child: Icon(Icons.search,
+                                          color: cs.onSurfaceVariant, size: 24),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          onSubmitted: (val) => stationVm.searchStations(val),
+                          onSubmitted: (val) {
+                            stationVm.setQuery(val);
+                            // Dismiss the keyboard so the search result
+                            // is unobstructed.
+                            _searchFocusNode.unfocus();
+                          },
                           style: TextStyle(fontSize: 14, color: cs.onSurface),
                         ),
                       ),
