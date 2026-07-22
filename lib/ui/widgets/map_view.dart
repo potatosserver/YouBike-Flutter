@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:youbike/core/utils/log_service.dart';
 import 'package:youbike/data/models/station.dart';
+import 'package:youbike/data/services/api_service.dart';
 import 'package:youbike/providers/map_view_model.dart';
 import 'package:youbike/providers/station_view_model.dart';
 import 'package:youbike/ui/widgets/map_markers.dart';
@@ -281,6 +283,31 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   void _animateToStation(Station station) {
     setState(() => _selectedStation = station);
     _getAnimatedMap().animateTo(LatLng(station.lat, station.lng), 18.0);
+    _loadRealtimeForPopup(station);
+  }
+
+  /// 點下圖釘後的「單站即時查」。
+  /// 不與 60 秒週期的 n+10 那批走同一路，而是獨立 POST /tw2/parkingInfo。
+  /// _popupRealtimeToken 是「selection token」—— 用來辨認查回時使用者是否還在看同一個站。
+  int _popupRealtimeToken = 0;
+
+  Future<void> _loadRealtimeForPopup(Station station) async {
+    final token = ++_popupRealtimeToken;
+    final api = ApiService();
+    final data = await api.fetchRealtimeVehicle(station.id);
+    if (!mounted) return;
+    // 使用者在併行 fetch 期間關閉 popup / 切到別站 → 捨棄此次結果，避免舊資料變現。
+    if (token != _popupRealtimeToken) return;
+    if (data == null) return;
+    station.availableBikes = data['available_2_0'];
+    station.availableElectricBikes = data['available_e'];
+    station.emptySpaces = data['empty_spaces'];
+    LogService().i(
+      'MAP',
+      'Popup realtime fetched for ${station.id}: yb2=${station.availableBikes}, '
+          'eyb=${station.availableElectricBikes}, empty=${station.emptySpaces}',
+    );
+    setState(() {});
   }
 
   /// Provide a tileUpdateTransformer, sourced from the shared instance (or
