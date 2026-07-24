@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:youbike/core/utils/log_service.dart';
 import 'package:youbike/data/models/station.dart';
@@ -12,6 +11,10 @@ import 'package:youbike/providers/map_view_model.dart';
 import 'package:youbike/providers/station_view_model.dart';
 import 'package:youbike/ui/widgets/map_markers.dart';
 import 'package:youbike/ui/widgets/pulse_marker.dart';
+import 'package:youbike/ui/widgets/clustered_marker_layer.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
+import 'package:youbike/data/models/moovo_station.dart';
+import 'package:youbike/providers/moovo_view_model.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
 import 'package:youbike/core/services/station_format_helper.dart';
 import 'package:youbike/core/services/map_animated_move.dart';
@@ -43,7 +46,10 @@ class MapView extends StatefulWidget {
 
 class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   Timer? _mapMoveDebounceTimer;
-  Station? _selectedStation;
+
+  /// 「已選中顯示彈窗」的來源。YouBike 裝 [Station],Moovo 裝 [MoovoStation]。
+  /// 動畫顯示同樣的小談窗 widget,只是資料欄位來源不同。
+  Object? _selected;
   final _stationFormat = const StationFormatHelper();
   AnimatedMapController? _animatedMap;
 
@@ -131,6 +137,20 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
             );
           },
         ),
+        // Moovo 圖釘層 — 與 YouBike 完全平行、不混層。
+        // 由 useMoovo gate: 開關 false 時 MoovoViewModel.stations 為空,layer = SizedBox.shrink。
+        Selector<MoovoViewModel, bool>(
+          selector: (_, vm) => vm.isReady && vm.stations.isNotEmpty,
+          builder: (context, hasMoovo, _) {
+            if (!hasMoovo) return const SizedBox.shrink();
+            return MoovoMapLayer(
+              onStationTap: (s) {
+                setState(() => _selected = s);
+                _animateToMoovoStation(s);
+              },
+            );
+          },
+        ),
         Selector<MapViewModel, LatLng?>(
           selector: (_, vm) => vm.center,
           builder: (context, center, child) {
@@ -148,22 +168,50 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
             );
           },
         ),
-        if (_selectedStation != null)
-          _buildStationPopup(context, _selectedStation!),
+        if (_selected != null)
+          _buildStationPopup(context, _selected!),
       ],
     );
   }
 
-  Widget _buildStationPopup(BuildContext context, Station station) {
+  Widget _buildStationPopup(BuildContext context, Object selected) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = AppLocalizations.of(context);
 
+    // 共用彈窗 — 從來源 (YouBike Station 或 Moovo MoovoStation) 抽出相同結構的資料。
+    // (name, position, available 普通車, available 電輔車, 空位)
+    final String name;
+    final LatLng position;
+    final int? bikes;
+    final int? ebikes;
+    final int? empty;
+    final Key markerKey;
+    final String lang = Provider.of<AppConfigService>(context).currentLang;
+
+    if (selected is Station) {
+      name = _stationFormat.name(selected, lang);
+      position = LatLng(selected.lat, selected.lng);
+      bikes = selected.availableBikes;
+      ebikes = selected.availableElectricBikes;
+      empty = selected.emptySpaces;
+      markerKey = ValueKey('popup_${selected.id}');
+    } else if (selected is MoovoStation) {
+      name = selected.displayName(lang);
+      position = LatLng(selected.lat, selected.lon);
+      bikes = selected.bikeCount;
+      ebikes = selected.ebikeCount;
+      empty = selected.emptySpaces;
+      markerKey = ValueKey('popup_${selected.id}');
+    } else {
+      return const SizedBox.shrink();
+    }
+
     return MarkerLayer(
       markers: [
         Marker(
-          key: ValueKey('popup_${station.id}'),
-          point: LatLng(station.lat, station.lng),
+          key: markerKey,
+          point: position,
           width: 260,
           height: 220,
           alignment: const Alignment(0, 0),
@@ -192,14 +240,7 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                       children: [
                         Expanded(
                           child: Text(
-                            _stationFormat.name(
-                              station,
-                              // 與全站統一，從 AppConfigService.currentLang 取得語言碼。
-                              // 原本用 Localizations.localeOf(context).languageCode，
-                              // 但與其他 widget 來源不同一，會造成「切換語言後 partial update」。
-                              Provider.of<AppConfigService>(context)
-                                  .currentLang,
-                            ),
+                            name,
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -210,33 +251,40 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => setState(() => _selectedStation = null),
+                          onTap: () => setState(() => _selected = null),
                           child:
                               Icon(Icons.close, size: 18, color: cs.onSurface),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
+                    // 對齊 [BikeStationCard] 的決定:
+                    // YouBike popup 來源顯示 (一般 / 電輔 / 空位)。
+                    // Moovo popup 只留 (一般) — 「可借」(新 key popupRentableBikesLabel)。
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildInfoItem(
-                          l10n.popupAvailableBikesLabel,
-                          station.availableBikes,
+                          selected is Station
+                              ? l10n.popupAvailableBikesLabel
+                              : l10n.popupRentableBikesLabel,
+                          bikes,
                           cs,
                         ),
-                        const SizedBox(width: 12),
-                        _buildInfoItem(
-                          l10n.popupAvailableElectricBikesLabel,
-                          station.availableElectricBikes,
-                          cs,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildInfoItem(
-                          l10n.popupEmptySpacesLabel,
-                          station.emptySpaces,
-                          cs,
-                        ),
+                        if (selected is Station) ...[
+                          const SizedBox(width: 12),
+                          _buildInfoItem(
+                            l10n.popupAvailableElectricBikesLabel,
+                            ebikes,
+                            cs,
+                          ),
+                          const SizedBox(width: 12),
+                          _buildInfoItem(
+                            l10n.popupEmptySpacesLabel,
+                            empty,
+                            cs,
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -287,8 +335,15 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
     );
   }
 
+  void _animateToMoovoStation(MoovoStation station) {
+    // 與 YouBike `_animateToStation` 同步風格:相同 `animateTo` API + 切換彈窗。
+    setState(() => _selected = station);
+    _getAnimatedMap().animateTo(LatLng(station.lat, station.lon), 18.0);
+    _log('MOOVO', 'animate to ${station.nameTw} (${station.lat},${station.lon})');
+  }
+
   void _animateToStation(Station station) {
-    setState(() => _selectedStation = station);
+    setState(() => _selected = station);
     _getAnimatedMap().animateTo(LatLng(station.lat, station.lng), 18.0);
     _loadRealtimeForPopup(station);
   }
@@ -376,7 +431,7 @@ class _PopupArrowPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class StationMarkerLayer extends StatefulWidget {
+class StationMarkerLayer extends StatelessWidget {
   final List<Station> stations;
   final ValueChanged<Station> onStationSelected;
 
@@ -387,98 +442,44 @@ class StationMarkerLayer extends StatefulWidget {
   });
 
   @override
-  State<StationMarkerLayer> createState() => _StationMarkerLayerState();
+  Widget build(BuildContext context) {
+    if (stations.isEmpty) return const SizedBox.shrink();
+    return ClusteredMarkerLayer<Station>(
+      items: stations,
+      pointOf: (s) => LatLng(s.lat, s.lng),
+      keyOf: (s) => 'st_${s.id}',
+      markerChild: (_) => const RoadSignMarker(),
+      clusterBuilder: (n) => ClusterMarker(count: n),
+      onMarkerTap: onStationSelected,
+    );
+  }
 }
 
-class _StationMarkerLayerState extends State<StationMarkerLayer> {
-  List<Marker> _cachedMarkers = [];
-  MarkerClusterLayerOptions? _clusterOptions;
-  int _lastProcessedCount = 0;
-  late Map<String, Station> _stationMap;
-
-  void _updateMarkersAndOptions() {
-    if (widget.stations.length == _lastProcessedCount &&
-        _clusterOptions != null) {
-      return;
-    }
-
-    final stopwatch = Stopwatch()..start();
-    _lastProcessedCount = widget.stations.length;
-
-    // 建立 Station 的 map，用於根據 marker key 查找
-    _stationMap = {
-      for (var s in widget.stations) s.id: s,
-    };
-
-    _cachedMarkers = widget.stations.map((s) {
-      return Marker(
-        key: ValueKey("st_${s.id}"),
-        point: LatLng(s.lat, s.lng),
-        width: 40,
-        height: 40,
-        alignment: Alignment.bottomCenter,
-        child: const RoadSignMarker(),
-      );
-    }).toList();
-
-    _clusterOptions = MarkerClusterLayerOptions(
-      maxClusterRadius: 120,
-      size: const Size(45, 45),
-      alignment: Alignment.center,
-      disableClusteringAtZoom: 16,
-      markers: _cachedMarkers,
-      animationsOptions: const AnimationsOptions(
-        zoom: Duration(milliseconds: 200),
-        fitBound: Duration(milliseconds: 200),
-        spiderfy: Duration(milliseconds: 200),
-      ),
-      builder: (context, markers) {
-        return ClusterMarker(count: markers.length);
-      },
-      showPolygon: false,
-      spiderfySpiralDistanceMultiplier: 3,
-      circleSpiralSwitchover: 12,
-      onClusterTap: (cluster) {
-        debugPrint(
-            "[CLUSTER-TAP] Tapped cluster with ${cluster.markers.length} markers");
-      },
-      onMarkerTap: (marker) {
-        _handleMarkerTap(marker);
-      },
-    );
-
-    stopwatch.stop();
-    debugPrint(
-        "[PERF] 🚀 Index rebuilt (9338 points) in ${stopwatch.elapsedMilliseconds}ms");
-  }
-
-  void _handleMarkerTap(Marker marker) {
-    final key = marker.key;
-    if (key is ValueKey<String> && key.value.startsWith('st_')) {
-      final stationId = key.value.substring(3);
-      final station = _stationMap[stationId];
-      if (station != null) {
-        widget.onStationSelected(station);
-      }
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _updateMarkersAndOptions();
-  }
-
-  @override
-  void didUpdateWidget(covariant StationMarkerLayer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _updateMarkersAndOptions();
-  }
+/// Moovo 來源的地圖圖釘層（已聚合）— 與 [StationMarkerLayer] 並列於地圖 children 內，
+/// 但走同一個共用 `ClusteredMarkerLayer` helper，所以群集半徑 / spiderfy 等設定
+/// 不重複、視覺風格一致。
+///
+/// 與 [StationMarkerLayer] 同檔，方便兩來源比對。
+class MoovoMapLayer extends StatelessWidget {
+  final ValueChanged<MoovoStation>? onStationTap;
+  const MoovoMapLayer({super.key, this.onStationTap});
 
   @override
   Widget build(BuildContext context) {
-    _updateMarkersAndOptions();
-    if (_clusterOptions == null) return const SizedBox.shrink();
-    return MarkerClusterLayerWidget(options: _clusterOptions!);
+    final vm = Provider.of<MoovoViewModel>(context);
+    final stations = vm.stations;
+    if (stations.isEmpty) return const SizedBox.shrink();
+
+    return ClusteredMarkerLayer<MoovoStation>(
+      items: stations,
+      pointOf: (s) => LatLng(s.lat, s.lon),
+      keyOf: (s) => 'mv_${s.id}',
+      markerChild: (_) => const MoovoPinMarker(),
+      clusterBuilder: (n) => ClusterMarker(
+        count: n,
+        color: BrandColors.markerMoovoGreen,
+      ),
+      onMarkerTap: onStationTap,
+    );
   }
 }

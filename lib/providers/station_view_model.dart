@@ -9,6 +9,7 @@ import 'package:youbike/data/models/station.dart';
 import 'package:youbike/data/services/api_service.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/providers/map_view_model.dart';
+import 'package:youbike/providers/moovo_view_model.dart';
 import 'package:youbike/providers/localized_view_model.dart';
 import 'package:youbike/providers/loading_view_model.dart';
 
@@ -24,6 +25,11 @@ class _CancelledRefresh implements Exception {
 class StationViewModel extends LocalizedViewModel {
   AppConfigService config;
   MapViewModel? mapVm;
+  /// Optional Moovo VM — 從 main.dart 的 Provider tree 注入。
+  /// 有了這個,每次 `refreshCards()` 結尾就 `moovoVm?.refresh()`
+  /// → Moovo 與 YouBike 共用同一個 60s 自動 + 手動 + location / 釘選 等觸發入口。
+  MoovoViewModel? moovoVm;
+
   final CardRefreshCoordinator _coordinator;
 
   StationViewModel(this.config, this.mapVm,
@@ -63,7 +69,8 @@ class StationViewModel extends LocalizedViewModel {
   /// 暴露給 HomeScreen 注入 MapController。
   MapMoveTrigger get mapTrigger => _coordinator.mapTrigger;
 
-  void updateDependencies(AppConfigService newConfig, MapViewModel newMapVm) {
+  void updateDependencies(
+      AppConfigService newConfig, MapViewModel newMapVm) {
     config.removeListener(_onConfigChanged);
     config = newConfig;
     mapVm = newMapVm;
@@ -71,6 +78,13 @@ class StationViewModel extends LocalizedViewModel {
     _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
     config.addListener(_onConfigChanged);
     notifyListeners();
+  }
+
+  /// App boot 後由 main.dart 在 Moovo VM 建立完成時呼叫一次,把 moovoVm 接上,
+  /// 從此 `refreshCards()` 結尾就會 fanout 把 MoovoVM 也一起 refresh。
+  void attachMoovoViewModel(MoovoViewModel mv) {
+    if (identical(moovoVm, mv)) return;
+    moovoVm = mv;
   }
 
   late Set<String> _lastPinnedIds;
@@ -269,6 +283,13 @@ class StationViewModel extends LocalizedViewModel {
         isUpdating = false;
         notifyListeners();
       }
+    }
+
+    // Fan out: Moovo 共用這條 60s 自動 / 手動 / location / 釘選 trigger。
+    // 不 await — fire-and-forget,VR `moovoVm.refresh()` 內部已有自己的 gate。
+    // 只在非 cancelled 時呼,避免 noise。
+    if (myGen == _refreshGeneration) {
+      unawaited(moovoVm?.refresh() ?? Future.value());
     }
   }
 

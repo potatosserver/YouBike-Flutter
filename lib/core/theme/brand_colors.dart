@@ -15,6 +15,10 @@ class BrandColors {
   /// 站點標記與群集黃（Road-Sign 標準）。
   static const Color markerYellow = Color(0xFFFFD700);
 
+  /// Moovo 站點標記綠 — 比 Material Green 更亮,電輔車之外一眼辨識。
+  /// Hex 由設計決策 `2026-07`: #b9d302。
+  static const Color markerMoovoGreen = Color(0xFFB9D302);
+
 
   /// 導航圖示、GPS 脈衝點 — 永遠藍色。
   static const Color accentBlue = Colors.blue;

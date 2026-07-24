@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:youbike/providers/station_view_model.dart';
 import 'package:youbike/data/models/station.dart';
-import 'package:youbike/ui/widgets/station_card.dart';
+import 'package:youbike/data/models/moovo_station.dart';
+import 'package:youbike/providers/station_view_model.dart';
 import 'package:youbike/ui/widgets/route_detail_panel.dart';
-import 'package:youbike/ui/widgets/electric_bike_modal.dart';
-import 'package:youbike/core/services/station_format_helper.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/services/station_format_helper.dart';
 import 'package:youbike/ui/widgets/app_shapes.dart';
+import 'package:youbike/ui/widgets/bike_station_card.dart';
+import 'package:youbike/core/services/bike_station_mixer.dart';
+import 'package:youbike/providers/moovo_view_model.dart';
 
 class SearchPanel extends StatefulWidget {
   final bool isWide;
@@ -31,6 +33,7 @@ class SearchPanel extends StatefulWidget {
 }
 
 class _SearchPanelState extends State<SearchPanel> {
+  static const _fmt = StationFormatHelper();
   final FocusNode _searchFocusNode = FocusNode();
   final TextEditingController _searchController = TextEditingController();
   bool _isFocused = false;
@@ -46,8 +49,19 @@ class _SearchPanelState extends State<SearchPanel> {
     super.initState();
     _searchFocusNode.addListener(_handleFocusChange);
     _searchController.addListener(_handleTextChange);
-    _dragBase = widget.panelHeight ??
-        MediaQuery.of(context).size.height * 0.35;
+    _dragBase = widget.panelHeight ?? 0.0;
+  }
+
+  /// `MediaQuery.of(context)` 不能在 `initState` 內呼叫 → 移到 didChangeDependencies。
+  /// 原 line 49 違反 MountedInheritedWidget 規則,Web Chrome 上會炸。
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_dragBase == 0.0 && widget.panelHeight == null) {
+      _dragBase = MediaQuery.of(context).size.height * 0.35;
+    }
+    // 初次綁定時若有 current text,跑一次確保 VM 知道目前 query。
+    _kickCrossCitySearchIfNeeded(_searchController.text.trim());
   }
 
   void _handleFocusChange() {
@@ -56,6 +70,37 @@ class _SearchPanelState extends State<SearchPanel> {
 
   void _handleTextChange() {
     setState(() => _hasText = _searchController.text.isNotEmpty);
+    _kickCrossCitySearchIfNeeded(_searchController.text.trim());
+  }
+
+  /// 監聽「搜尋 query」,在 querystring 非空時 kick 跨城搜尋 —
+  /// 使「埤頭繪本公園」即使使用者位在高雄也能找到彰化埤頭鄉的站。
+  String _lastCrossQuery = '';
+  void _kickCrossCitySearchIfNeeded(String q) {
+    final config = AppConfigService();
+    if (!config.useMoovo) {
+      if (_lastCrossQuery.isNotEmpty) {
+        _lastCrossQuery = '';
+        try {
+          Provider.of<MoovoViewModel>(context, listen: false).clearCrossSearch();
+        } catch (_) {
+          // Provider tree 尚未就緒(MoovoVM 還沒 attach,例如首屏) → 安全忽略。
+        }
+      }
+      return;
+    }
+    if (q == _lastCrossQuery) return;
+    _lastCrossQuery = q;
+    if (q.isEmpty) {
+      try {
+        Provider.of<MoovoViewModel>(context, listen: false).clearCrossSearch();
+      } catch (_) {}
+      return;
+    }
+    try {
+      Provider.of<MoovoViewModel>(context, listen: false)
+          .searchAcrossCities(q);
+    } catch (_) {}
   }
 
   @override
@@ -219,66 +264,138 @@ class _SearchPanelState extends State<SearchPanel> {
           StationViewModel stationVm, AppLocalizations? l10n, ColorScheme cs) =>
       SizedBox(
         width: double.infinity,
-        child: stationVm.allStations.isEmpty
-            ? Center(
-                child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.search_off, size: 64, color: cs.onSurfaceVariant),
-                  const SizedBox(height: 16),
-                  Text(l10n?.noStationsFound ?? 'No stations found',
-                      textAlign: TextAlign.center,
-                      style:
-                          TextStyle(color: cs.onSurfaceVariant, fontSize: 16)),
-                ],
-              ))
-            : ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: stationVm.allStations.length,
-                itemBuilder: (context, index) {
-                  final station = stationVm.allStations[index];
-                  return StationCard(
-                    station: station,
-                    onTap: () => _moveMapToStation(station),
-                    onNavigate: () {
-                      _moveMapToStation(station);
-                      _showRoutePanel(station);
-                    },
-                    onShowElectric: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        shape: AppShapes.bottomSheet,
-                        builder: (context) => ElectricBikeDetailsModal(
-                          stationId: station.id,
-                          stationName: const StationFormatHelper().name(
-                              station,
-                              Provider.of<AppConfigService>(context,
-                                      listen: false)
-                                  .currentLang),
-                        ),
-                      );
-                    },
+        child: Consumer2<StationViewModel, MoovoViewModel>(
+          builder: (context, stationVm, moovoVm, _) {
+            // 兩源混合:YouBike 全量 + Moovo 全量 → Mixer 依距離升序 → 取 N 名。
+            // - 非搜尋: 30 名 (原 YouBike 預設 20 + 預留 Moovo 空間)。
+            // - 搜尋: 40 名,同時匹配兩來源 name / address。
+            //
+            // 跨城搜尋: query 非空時從 VM 的快取取「全台命中」
+            // 即使使用者地圖中心在地區之外也能看到外地站點。
+            const nonSearchLimit = 30;
+            const searchLimit = 40;
+            const mixer = BikeStationMixer();
+            final lang = Provider.of<AppConfigService>(context).currentLang;
+            final useMoovo = Provider.of<AppConfigService>(context).useMoovo;
+            final List<MoovoStation> moovoStations =
+                useMoovo ? moovoVm.stationsWithDistance : const <MoovoStation>[];
+            final List<Station> youbike = stationVm.fullStations;
+
+            final activeQuery = stationVm.activeQuery.trim();
+            // Moovo 的 `_stations` 已是全台 459 池,searchAcross 本地 where 即時命中 —
+            // 不需要額外「跨城 larger 池」分支,直接傳近 Mixer 就好。
+            // (舊 cycle 裡我們用 `extraMoovo` 補跨城命中,API rewrite 後行為內化。)
+            final items = activeQuery.isEmpty
+                ? mixer.topNByDistance(
+                    youbike: youbike,
+                    moovo: moovoStations,
+                    limit: nonSearchLimit,
+                    lang: lang,
+                  )
+                : mixer.searchAcross(
+                    youbike: youbike,
+                    moovo: moovoStations,
+                    query: activeQuery,
+                    limit: searchLimit,
+                    lang: lang,
                   );
-                },
-              ),
+
+            if (items.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off,
+                        size: 64, color: cs.onSurfaceVariant),
+                    const SizedBox(height: 16),
+                    Text(l10n?.noStationsFound ?? 'No stations found',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: cs.onSurfaceVariant, fontSize: 16)),
+                  ],
+                ),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return BikeStationCard(
+                  item: item,
+                  onTap: () {
+                    // 導航地圖 / 路線 — 兩來源暫只 call YouBike 路徑 (route panel
+                    // 仍吃 Station); Moovo 路線 / 路徑未來接 v2 先用 move。
+                    if (item.source == StationSource.youbike) {
+                      _moveMapToStationById(item.id);
+                    } else {
+                      // Moovo:直接呼叫 MapMoveTrigger 觸發 fanout,
+                      // stationVm 內部 listener 會被動接收地圖中心變動。
+                      _moveMapForMoovo(item);
+                    }
+                  },
+                  onNavigate: () {
+                    if (item.source == StationSource.youbike) {
+                      _routeYoubikeItem(item);
+                    } else {
+                      // Moovo:目前無獨立 route panel,先導地圖。Route v2之後接。
+                      _moveMapForMoovo(item);
+                    }
+                  },
+                );
+              },
+            );
+          },
+        ),
       );
 
-  void _moveMapToStation(Station station) {
-    final target = station.visualPosition ?? LatLng(station.lat, station.lng);
-    Provider.of<StationViewModel>(context, listen: false)
-        .refreshCards(moveTo: target);
+  void _moveMapToStationById(String id) {
+    final stationVm = Provider.of<StationViewModel>(context, listen: false);
+    final hit = stationVm.fullStations.firstWhere(
+      (s) => s.id == id,
+      orElse: () => stationVm.fullStations.first,
+    );
+    final target = hit.visualPosition ?? LatLng(hit.lat, hit.lng);
+    stationVm.refreshCards(moveTo: target);
   }
 
-  void _showRoutePanel(Station station) {
+  void _routeYoubikeItem(BikeStationItem item) {
+    final stationVm = Provider.of<StationViewModel>(context, listen: false);
+    final hit = stationVm.fullStations.firstWhere(
+      (s) => s.id == item.id,
+      orElse: () => stationVm.fullStations.first,
+    );
+    _moveMapToStationById(hit.id);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: AppShapes.bottomSheet,
+      builder: (context) {
+        final lang = Provider.of<AppConfigService>(context).currentLang;
+        return RouteDetailPanel(
+          destName: _fmt.name(hit, lang),
+          destLat: hit.lat,
+          destLng: hit.lng,
+        );
+      },
+    );
+  }
+
+  void _moveMapForMoovo(BikeStationItem item) {
+    // Moovo 來源走通用 `RouteDetailPanel`(只吃名字 + 經緯度,與 YouBike 共用)。
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: AppShapes.bottomSheet,
       builder: (context) => RouteDetailPanel(
-          station: station, destLat: station.lat, destLng: station.lng),
+        destName: item.name,
+        destLat: item.lat,
+        destLng: item.lng,
+        isMoovo: true,
+      ),
     );
   }
 }

@@ -153,7 +153,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get emptySpaces => '可停空位數: ';
 
   @override
+  String get rentableBikes => '可借車輛數：';
+
+  @override
   String get popupAvailableBikesLabel => '2.0';
+
+  @override
+  String get popupRentableBikesLabel => '可借';
 
   @override
   String get popupAvailableElectricBikesLabel => '2.0 E';

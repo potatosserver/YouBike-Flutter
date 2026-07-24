@@ -155,7 +155,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptySpaces => 'Empty Slots: ';
 
   @override
+  String get rentableBikes => 'Rentable Bikes: ';
+
+  @override
   String get popupAvailableBikesLabel => '2.0';
+
+  @override
+  String get popupRentableBikesLabel => 'Bikes';
 
   @override
   String get popupAvailableElectricBikesLabel => '2.0 E';

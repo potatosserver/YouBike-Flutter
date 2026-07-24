@@ -2,24 +2,30 @@ import 'package:youbike/providers/map_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:youbike/core/theme/brand_colors.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/data/services/route_service.dart';
 import 'package:youbike/core/services/route_instruction_translator.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
-import 'package:youbike/core/services/station_format_helper.dart';
-import 'package:youbike/data/models/station.dart';
 import 'package:youbike/ui/widgets/app_shapes.dart';
 
+/// 通用 (任何站點來源) 步行導航面板 — 只吃名字 + 經緯度。
+///
+/// 原本吃 [Station] 已經不被要求;YouBike / Moovo 兩來源共享同 panel
+/// 是「共用」目標。`RouteDetailPanel.legacy()` factory 仍保留以避免破壞
+/// 任何既有呼叫端。
 class RouteDetailPanel extends StatefulWidget {
-  final Station station;
+  final String destName;
   final double destLat;
   final double destLng;
+  final bool isMoovo;
 
   const RouteDetailPanel({
     super.key,
-    required this.station,
+    required this.destName,
     required this.destLat,
     required this.destLng,
+    this.isMoovo = false,
   });
 
   @override
@@ -27,7 +33,6 @@ class RouteDetailPanel extends StatefulWidget {
 }
 
 class _RouteDetailPanelState extends State<RouteDetailPanel> {
-  static const _fmt = StationFormatHelper();
   static const _translator = RouteInstructionTranslator();
   List<String>? _steps;
   bool _isLoading = true;
@@ -78,9 +83,8 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final config = Provider.of<AppConfigService>(context);
 
-    final destinationName = _fmt.name(widget.station, config.currentLang);
+    final destinationName = widget.destName;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -103,15 +107,39 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
             const SizedBox(height: 20),
             Row(
               children: [
-                Icon(Icons.directions_walk, color: cs.primary),
+                Icon(
+                  widget.isMoovo ? Icons.pedal_bike : Icons.directions_walk,
+                  color: widget.isMoovo
+                      ? BrandColors.markerMoovoGreen
+                      : cs.primary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    '${l10n.go_to}$destinationName',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: cs.onSurface,
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${l10n.go_to}$destinationName',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                        if (widget.isMoovo) ...[
+                          const WidgetSpan(child: SizedBox(width: 8)),
+                          const TextSpan(
+                            text: 'Moovo',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              backgroundColor:
+                                  BrandColors.markerMoovoGreen,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
