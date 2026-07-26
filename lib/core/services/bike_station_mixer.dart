@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:youbike/data/models/bike_station.dart';
 import 'package:youbike/data/models/moovo_station.dart';
 import 'package:youbike/data/models/station.dart';
 
@@ -62,6 +63,24 @@ class BikeStationItem {
       lng: s.lon,
       bikeCount: s.bikeCount,
       eBikeCount: s.ebikeCount,
+      emptySpaces: s.emptySpaces,
+      distance: s.distance,
+    );
+  }
+
+  /// 從 [BikeStation] 介面直接轉 — Step 5 UI 端使用的單一型別。
+  factory BikeStationItem.fromBike(BikeStation s, {String lang = 'zh_TW'}) {
+    return BikeStationItem(
+      source: s.source == BikeStationSource.moovo
+          ? StationSource.moovo
+          : StationSource.youbike,
+      id: s.id,
+      name: lang.startsWith('en') ? s.nameEn : s.nameTw,
+      address: lang.startsWith('en') ? s.addressEn : s.addressTw,
+      lat: s.lat,
+      lng: s.lng,
+      bikeCount: s.bikeCount,
+      eBikeCount: s.eBikeCount,
       emptySpaces: s.emptySpaces,
       distance: s.distance,
     );

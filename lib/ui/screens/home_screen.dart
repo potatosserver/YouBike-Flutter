@@ -5,7 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:youbike/providers/map_view_model.dart';
 import 'package:youbike/providers/loading_view_model.dart';
 import 'package:youbike/ui/widgets/map_view.dart';
-import 'package:youbike/providers/station_view_model.dart';
+import 'package:youbike/providers/bike_station_view_model.dart';
 import 'package:youbike/core/services/gps_requester.dart';
 import 'package:youbike/ui/widgets/map_mask_overlay.dart';
 import 'package:youbike/ui/widgets/loading_overlay.dart';
@@ -34,14 +34,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     Future.microtask(() {
       if (!mounted) return;
-      final stationVm =
-          Provider.of<StationViewModel>(context, listen: false);
-      stationVm.mapTrigger.attach(_mapController);
-      // Inject the shared AnimatedMapController so every map-trigger fire
-      // slides into place.
+      final bikeVm = Provider.of<BikeStationViewModel>(context, listen: false);
+      bikeVm.mapTrigger.attach(_mapController);
       _animatedMap ??=
           AnimatedMapController(mapController: _mapController, vsync: this);
-      stationVm.mapTrigger.attachStrategy(() => _animatedMap!);
+      bikeVm.boot();
     });
 
     // 回報裝置活躍到 Firestore（非同步，失敗不影響使用）
@@ -55,7 +52,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Scaffold(
+    return Consumer<BikeStationViewModel>(
+      builder: (context, bikeVm, _) {
+        if (!bikeVm.bootDone) {
+          return Scaffold(
+            backgroundColor: cs.surface,
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        return Scaffold(
       backgroundColor: cs.surface,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -194,11 +199,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           size: 22, color: cs.onSurface),
                       onPressed: () async {
                         const gps = GpsRequester();
-                        final stationVm = Provider.of<StationViewModel>(context,
+                        final bikeVm = Provider.of<BikeStationViewModel>(context,
                             listen: false);
                         final pos = await gps.requestOrFallback(_mapVm);
                         if (!mounted) return;
-                        stationVm.refreshCards(moveTo: pos);
+                        bikeVm.refresh(moveTo: pos);
                       },
                     ),
                   ),
@@ -225,5 +230,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         },
       ),
     );
+   },
+   ); // Consumer
   }
 }

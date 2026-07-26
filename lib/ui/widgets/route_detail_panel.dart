@@ -8,6 +8,7 @@ import 'package:youbike/data/services/route_service.dart';
 import 'package:youbike/core/services/route_instruction_translator.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
 import 'package:youbike/ui/widgets/app_shapes.dart';
+import 'package:youbike/data/models/bike_station.dart';
 
 /// 通用 (任何站點來源) 步行導航面板 — 只吃名字 + 經緯度。
 ///
@@ -18,14 +19,14 @@ class RouteDetailPanel extends StatefulWidget {
   final String destName;
   final double destLat;
   final double destLng;
-  final bool isMoovo;
+  final BikeStationSource? source;
 
   const RouteDetailPanel({
     super.key,
     required this.destName,
     required this.destLat,
     required this.destLng,
-    this.isMoovo = false,
+    this.source,
   });
 
   @override
@@ -85,6 +86,7 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
     final cs = theme.colorScheme;
 
     final destinationName = widget.destName;
+    final isMoovo = widget.source == BikeStationSource.moovo;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -108,8 +110,8 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
             Row(
               children: [
                 Icon(
-                  widget.isMoovo ? Icons.pedal_bike : Icons.directions_walk,
-                  color: widget.isMoovo
+                  isMoovo ? Icons.pedal_bike : Icons.directions_walk,
+                  color: isMoovo
                       ? BrandColors.markerMoovoGreen
                       : cs.primary,
                 ),
@@ -126,7 +128,7 @@ class _RouteDetailPanelState extends State<RouteDetailPanel> {
                             color: cs.onSurface,
                           ),
                         ),
-                        if (widget.isMoovo) ...[
+                        if (isMoovo) ...[
                           const WidgetSpan(child: SizedBox(width: 8)),
                           const TextSpan(
                             text: 'Moovo',

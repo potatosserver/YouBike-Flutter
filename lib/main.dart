@@ -10,8 +10,10 @@ import 'package:youbike/providers/map_view_model.dart';
 import 'package:youbike/providers/station_view_model.dart';
 import 'package:youbike/providers/moovo_view_model.dart';
 import 'package:youbike/providers/loading_view_model.dart';
+import 'package:youbike/providers/bike_station_view_model.dart';
 import 'package:youbike/ui/app.dart';
 import 'package:youbike/data/services/firebase_service.dart';
+import 'package:youbike/data/services/bike_station_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -109,6 +111,15 @@ void main() async {
           },
         ),
         ChangeNotifierProvider.value(value: languageService),
+        // BikeStation VM — unified source for the search panel (Step 5+).
+        // Old StationVM / MoovoVM remain for backward compat during transition.
+        ChangeNotifierProvider<BikeStationViewModel>(
+          create: (ctx) => BikeStationViewModel(
+            config: configService,
+            repository: BikeStationRepository(),
+            mapVm: ctx.read<MapViewModel>(),
+          ),
+        ),
       ],
       child: const MyApp(),
     ),

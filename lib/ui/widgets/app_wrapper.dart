@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:youbike/ui/screens/home_screen.dart';
 import 'package:youbike/ui/widgets/loading_overlay.dart';
 import 'package:youbike/providers/loading_view_model.dart';
-import 'package:youbike/providers/station_view_model.dart';
+import 'package:youbike/providers/bike_station_view_model.dart';
 import 'package:youbike/providers/map_view_model.dart';
 import 'package:youbike/core/config/app_environment.dart';
 import 'package:youbike/core/services/gps_requester.dart';
@@ -34,7 +34,7 @@ class _AppWrapperState extends State<AppWrapper> {
 
   Future<void> _initializeApp() async {
     final loadingVm = Provider.of<LoadingViewModel>(context, listen: false);
-    final stationVm = Provider.of<StationViewModel>(context, listen: false);
+    final stationVm = Provider.of<BikeStationViewModel>(context, listen: false);
     final mapVm = Provider.of<MapViewModel>(context, listen: false);
 
     loadingVm.setLoading(true);
@@ -55,10 +55,9 @@ class _AppWrapperState extends State<AppWrapper> {
       await Future.delayed(const Duration(milliseconds: 400));
 
       loadingVm.updateStatus('init_syncing', progress: 68);
-      await stationVm.fetchBaseData(loadingVm); // 傳入 loadingVm 以回報數量
+      await stationVm.refresh();
 
       loadingVm.updateStatus('init_clustering', progress: 86);
-      await stationVm.refreshCards(moveTo: mapVm.getEffectiveLocation());
 
       loadingVm.updateStatus('init_updating', progress: 96);
       await Future.delayed(const Duration(milliseconds: 300));

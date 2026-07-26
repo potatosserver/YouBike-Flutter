@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:youbike/providers/station_view_model.dart';
+import 'package:youbike/providers/bike_station_view_model.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
 
 class HomeUpdateButton extends StatefulWidget {
@@ -30,11 +30,11 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton>
   }
 
   void _handleUpdate() async {
-    final stationVm = Provider.of<StationViewModel>(context, listen: false);
-    if (stationVm.isUpdating) return;
+    final stationVm = Provider.of<BikeStationViewModel>(context, listen: false);
+    if (stationVm.isLoading) return;
 
     _controller.forward(from: 0.0);
-    await stationVm.refreshCards();
+    await stationVm.refresh();
     _controller.reset();
   }
 
@@ -43,7 +43,7 @@ class _HomeUpdateButtonState extends State<HomeUpdateButton>
     final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
 
-    return Consumer<StationViewModel>(
+    return Consumer<BikeStationViewModel>(
       builder: (context, vm, child) {
         return GestureDetector(
           onTap: _handleUpdate,
