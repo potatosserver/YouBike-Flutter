@@ -95,6 +95,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       }
                     },
                     animatedMap: _animatedMap,
+                    onFirstReady: () =>
+                        Provider.of<BikeStationViewModel>(context, listen: false)
+                            .mapTrigger
+                            .setReady(),
                   ),
                 )
               else
@@ -116,6 +120,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       }
                     },
                     animatedMap: _animatedMap,
+                    onFirstReady: () =>
+                        Provider.of<BikeStationViewModel>(context, listen: false)
+                            .mapTrigger
+                            .setReady(),
                   ),
                 ),
               Positioned.fill(

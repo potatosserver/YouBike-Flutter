@@ -26,6 +26,10 @@ class MapView extends StatefulWidget {
   /// (e.g. SearchPanel triggering a card tap) drive the same animation.
   final AnimatedMapController? animatedMap;
 
+  /// 在 `onMapReady` 時呼叫；caller 端通常拿 shared trigger 後呼叫 `setReady()`，
+  /// 用以避免 Web 平台「first camera read before rendered」例外。
+  final VoidCallback? onFirstReady;
+
   const MapView({
     super.key,
     required this.mapController,
@@ -33,6 +37,7 @@ class MapView extends StatefulWidget {
     required this.onReady,
     required this.onMoveToStation,
     this.animatedMap,
+    this.onFirstReady,
   });
 
   @override
@@ -78,6 +83,8 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
         onMapReady: () {
           _log("MAP-INIT", "Map initialized and ready for use");
           widget.onReady(true);
+          // Web 上 attach 後第一次讀 camera 須等到此時；shared trigger 由 caller 注入
+          widget.onFirstReady?.call();
         },
         onPositionChanged: (position, hasMoved) {
           if (!hasMoved) return;
