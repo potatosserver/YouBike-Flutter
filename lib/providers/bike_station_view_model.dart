@@ -185,7 +185,22 @@ class BikeStationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _sortPanel();
+      // 搜尋模式 — 重複用 setQuery 的篩選邏輯，不跳回預設 20 張
+      if (_activeQuery.isNotEmpty) {
+        final hits = _fullBikes.where(
+          (s) => s.nameTw.contains(_activeQuery) || s.nameEn.contains(_activeQuery),
+        ).toList();
+        if (hits.isNotEmpty) {
+          _panelBikes = _sorter.sortByDistance(
+            stations: hits,
+            refPoint: _refPoint(),
+            pinnedIds: _config.pinnedStationIds,
+            limit: 40, // 和 setQuery 一致
+          );
+        } // 若 hits 空 — 保持目前的 panelBikes（如果之前有結果）或空白
+      } else {
+        _sortPanel();
+      }
 
       final rawYB = [
         for (final b in _panelBikes)
@@ -194,11 +209,12 @@ class BikeStationViewModel extends ChangeNotifier {
       if (rawYB.isNotEmpty) {
         await _realtime.apply(rawYB, _refPoint());
         // re-sort — keep pinned at top, preserve current count
+        final limit = _activeQuery.isEmpty ? 20 : 40;
         _panelBikes = _sorter.sortByDistance(
           stations: _panelBikes,
           refPoint: _refPoint(),
           pinnedIds: _config.pinnedStationIds,
-          limit: _panelBikes.length.clamp(1, 20),
+          limit: limit,
         );
       }
     } catch (e) {
