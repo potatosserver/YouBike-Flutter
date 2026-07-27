@@ -96,8 +96,9 @@ class BikeStationViewModel extends ChangeNotifier {
 
   LatLng _regionCenter() {
     final entry = _config.regions[_config.selectedRegion];
-    if (entry != null)
+    if (entry != null) {
       return LatLng(entry['lat'] as double, entry['lng'] as double);
+    }
     return const LatLng(25.048, 121.517);
   }
 
@@ -296,8 +297,9 @@ class BikeStationViewModel extends ChangeNotifier {
   void _reorderByPin() {
     if (_panelBikes.isEmpty) return;
     final pinned = <BikeStation>[], normal = <BikeStation>[];
-    for (final s in _panelBikes)
+    for (final s in _panelBikes) {
       (_config.pinnedStationIds.contains(s.id) ? pinned : normal).add(s);
+    }
     _panelBikes = [...pinned, ...normal];
     notifyListeners();
   }
@@ -305,7 +307,12 @@ class BikeStationViewModel extends ChangeNotifier {
   void _startCountdown() {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_countdown > 0) { _countdown--; notifyListeners(); } else refresh();
+      if (_countdown > 0) {
+        _countdown--;
+        notifyListeners();
+      } else {
+        refresh();
+      }
     });
   }
 

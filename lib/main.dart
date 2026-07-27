@@ -7,8 +7,7 @@ import 'package:youbike/core/theme/theme_provider.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/core/utils/log_service.dart';
 import 'package:youbike/providers/map_view_model.dart';
-import 'package:youbike/providers/station_view_model.dart';
-import 'package:youbike/providers/moovo_view_model.dart';
+
 import 'package:youbike/providers/loading_view_model.dart';
 import 'package:youbike/providers/bike_station_view_model.dart';
 import 'package:youbike/ui/app.dart';
@@ -73,46 +72,9 @@ void main() async {
           create: (_) => MapViewModel(configService),
           update: (_, config, mapVm) => mapVm!..updateConfig(config),
         ),
-        ChangeNotifierProxyProvider2<AppConfigService, MapViewModel,
-            StationViewModel>(
-          create: (_) => StationViewModel(configService, null),
-          update: (_, config, mapVm, stationVm) {
-            stationVm!.updateDependencies(config, mapVm);
-            return stationVm;
-          },
-        ),
-        // Moovo VM — `useMoovo` 為 true 才實際發 API (在 VM 內 gate),
-        // MapMoveTrigger 與 stationVm 共用單一來源避免雙 map 狀態。
-        // 同步在 create / update 裡 attach 給 stationVm → 60s 自動 / 手動 /
-        // location / 釘選 都會 fanout 把 MoovoVM 也帶去 refresh。
-        ChangeNotifierProxyProvider<AppConfigService, MoovoViewModel>(
-          create: (ctx) {
-            final stationVm = ctx.read<StationViewModel>();
-            final mapVm = ctx.read<MapViewModel>();
-            final mv = MoovoViewModel(
-              config: configService,
-              mapTrigger: stationVm.mapTrigger,
-              mapViewModel: mapVm,
-            );
-            stationVm.attachMoovoViewModel(mv);
-            return mv;
-          },
-          update: (ctx, _, prev) {
-            if (prev != null) return prev;
-            final stationVm = ctx.read<StationViewModel>();
-            final mapVm = ctx.read<MapViewModel>();
-            final mv = MoovoViewModel(
-              config: configService,
-              mapTrigger: stationVm.mapTrigger,
-              mapViewModel: mapVm,
-            );
-            stationVm.attachMoovoViewModel(mv);
-            return mv;
-          },
-        ),
+        
         ChangeNotifierProvider.value(value: languageService),
-        // BikeStation VM — unified source for the search panel (Step 5+).
-        // Old StationVM / MoovoVM remain for backward compat during transition.
+        // BikeStation VM — unified source for the search panel.
         ChangeNotifierProvider<BikeStationViewModel>(
           create: (ctx) => BikeStationViewModel(
             config: configService,

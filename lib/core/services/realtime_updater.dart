@@ -4,7 +4,6 @@ import 'package:youbike/data/models/station.dart';
 import 'package:youbike/data/services/api_service.dart';
 
 /// 從 API 取得即時車輛數據並填入站點。
-/// 距離由 StationSorter 統一計算，此處不重複。
 class RealtimeUpdater {
   const RealtimeUpdater();
 

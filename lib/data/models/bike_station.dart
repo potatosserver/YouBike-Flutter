@@ -13,7 +13,7 @@ import 'moovo_station.dart';
 /// 一律**不動**:
 /// - `Station` / `MoovoStation` 的既有寫入/序列化行為。
 /// - `StationViewModel` / `MoovoViewModel` / 任何 VM。
-/// - `BikeStationMixer` / `StationSorter` / 任何 UI 端。
+/// - `BikeStationMixer` / 任何 UI 端。
 ///
 /// 這一步只允許導入「新檔案」與「兩 model 加 toBike()」。下一步才會集中距離計算等。
 enum BikeStationSource { youbike, moovo }

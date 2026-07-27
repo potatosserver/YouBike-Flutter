@@ -87,8 +87,8 @@ class BikeStationItem {
   }
 }
 
-/// 為何分離 `mixer` 與 YouBike 既有 `StationSorter`:
-/// - `StationSorter` 專注「YouBike-only」,已跟 `CardRefreshCoordinator` 結合。
+/// 為何分離 `mixer` 與 `BikeStationSorter`:
+/// - `BikeStationSorter` 專注「排序 + 距離計算」。
 /// - `BikeStationMixer` 專注「跨源混排」,純函式、可由 search_panel 直接呼叫。
 class BikeStationMixer {
   const BikeStationMixer();
@@ -117,8 +117,7 @@ class BikeStationMixer {
 
   /// 搜尋過濾 + 距離排序兩來源後取前 [limit] 名。
   ///
-  /// 為何不用 `StationSorter.sortAndPick`:後者只吃 `Station`,
-  /// 我們需同時對 Moovo 跑同名匹配、地址匹配,所以在「跨源」helper 內重做一次。
+  /// 在「跨源」helper 內對 YouBike / Moovo 各自做同名匹配後混排。
   /// 重複 id 自動去重(預期是 0;若 caller 傳混合 col 則保險)。
   List<BikeStationItem> searchAcross({
     required List<Station> youbike,
