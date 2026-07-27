@@ -18,12 +18,14 @@ class BikeStationCard extends StatelessWidget {
   final BikeStationItem item;
   final VoidCallback onTap;
   final VoidCallback onNavigate;
+  final VoidCallback? onShowElectric;
 
   const BikeStationCard({
     super.key,
     required this.item,
     required this.onTap,
     required this.onNavigate,
+    this.onShowElectric,
   });
 
   bool get _isMoovo => item.source == StationSource.moovo;
@@ -80,6 +82,18 @@ class BikeStationCard extends StatelessWidget {
                   ),
                 ),
                 Row(children: [
+                  if (onShowElectric != null && (item.eBikeCount ?? 0) > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10.0),
+                      child: GestureDetector(
+                        onTap: onShowElectric,
+                        child: const Icon(
+                          Icons.electric_bolt,
+                          color: BrandColors.accentGreen,
+                          size: 22,
+                        ),
+                      ),
+                    ),
                   if (_isMoovo)
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),

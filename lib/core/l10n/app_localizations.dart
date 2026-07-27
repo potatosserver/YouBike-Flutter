@@ -416,6 +416,12 @@ abstract class AppLocalizations {
   /// **'Empty'**
   String get popupEmptySpacesLabel;
 
+  /// No description provided for @electricBikeDetailsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View electric battery level'**
+  String get electricBikeDetailsButton;
+
   /// No description provided for @autoRefresh.
   ///
   /// In en, this message translates to:

@@ -202,7 +202,6 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
           key: markerKey,
           point: position,
           width: 260,
-          height: 220,
           alignment: const Alignment(0, 0),
           child: Column(
             mainAxisSize: MainAxisSize.min,

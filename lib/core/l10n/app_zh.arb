@@ -106,6 +106,8 @@
     "@popupAvailableElectricBikesLabel": {},
     "popupEmptySpacesLabel": "空位",
     "@popupEmptySpacesLabel": {},
+    "electricBikeDetailsButton": "查看電輔車電量",
+    "@electricBikeDetailsButton": {},
     "autoRefresh": "自動刷新",
     "@autoRefresh": {},
     "param_settings": "參數設定",

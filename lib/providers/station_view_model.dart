@@ -135,16 +135,22 @@ class StationViewModel extends LocalizedViewModel {
     refreshCards(moveTo: mapVm?.getEffectiveLocation());
   }
 
+  // DEBUG — 追蹤第二個 parkingInfo 來源，暫時壓制舊 VM 60s cycle。
+  // 舊 VM (StationViewModel) 的 countdown timer 仍在背景觸發 refreshCards()，
+  // 而 refreshCards() 會以 limit=20 發 parkingInfo，導致和新 VM 的 limit=30
+  // parkingInfo 重疊。新面板 (search_panel) 已完全改用 BikeStationViewModel，
+  // 舊 VM 的即時更新不再需要。
   void _startCountdown() {
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (countdownRemaining > 0) {
-        countdownRemaining--;
-        notifyListeners();
-      } else {
-        refreshCards();
-      }
-    });
+    // DISABLED: 舊 VM 的 60s timer 會和 BikeStationViewModel 雙 double fire
+    // _countdownTimer?.cancel();
+    // _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    //   if (countdownRemaining > 0) {
+    //     countdownRemaining--;
+    //     notifyListeners();
+    //   } else {
+    //     refreshCards();
+    //   }
+    // });
   }
 
   Future<void> fetchBaseData(LoadingViewModel? loadingVm) async {

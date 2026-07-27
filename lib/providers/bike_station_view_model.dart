@@ -124,12 +124,27 @@ class BikeStationViewModel extends ChangeNotifier {
   }
 
   void _sortPanel() {
-    _panelBikes = _sorter.sortByDistance(
-      stations: _fullBikes,
-      refPoint: _refPoint(),
-      pinnedIds: _config.pinnedStationIds,
-      limit: 30,
-    );
+    final pinned = <BikeStation>[];
+    final rest = <BikeStation>[];
+    final pinnedIds = _config.pinnedStationIds;
+    for (final b in _fullBikes) {
+      if (pinnedIds.contains(b.id)) {
+        pinned.add(b);
+      } else {
+        rest.add(b);
+      }
+    }
+    // pinned 優先，再從 rest 補到總共 20
+    _panelBikes = [
+      ...pinned,
+      for (final b in _sorter.sortByDistance(
+            stations: rest,
+            refPoint: _refPoint(),
+            pinnedIds: {},
+            limit: 20 - pinned.length,
+          ))
+        b,
+    ];
   }
 
   Future<void> _fillRealtimeBg() async {
@@ -137,12 +152,12 @@ class BikeStationViewModel extends ChangeNotifier {
     if (rawYB.isEmpty) return;
     try {
       await _realtime.apply(rawYB, _refPoint());
-      // re-sort
+      // re-sort — keep current count, don't expand
       _panelBikes = _sorter.sortByDistance(
         stations: _panelBikes,
         refPoint: _refPoint(),
         pinnedIds: _config.pinnedStationIds,
-        limit: _activeQuery.isEmpty ? 30 : 40,
+        limit: _activeQuery.isEmpty ? 20 : 40,
       );
       notifyListeners();
     } catch (e) {
@@ -154,31 +169,27 @@ class BikeStationViewModel extends ChangeNotifier {
 
   Future<void> refresh({LatLng? moveTo}) async {
     if (_isLoading) return;
+    if (_fullBikes.isEmpty) return; // 還沒 boot 完不做事
     _isLoading = true;
     _countdown = 60;
     notifyListeners();
 
     try {
-      final yb = await _repo.fetchYouBikeStations();
-      final mo = _config.useMoovo ? await _repo.fetchMoovoStations() : null;
-
-      final all = <BikeStation>{ if (yb != null) ...yb, if (mo != null) ...mo };
-      _fullBikes = all.toList();
-
       _sortPanel();
 
-      // realtime fill for YouBike
-      if (yb != null) {
-        final rawYB = [ for (final b in _panelBikes) if (b.source == BikeStationSource.youbike) b.rawStation! ];
-        if (rawYB.isNotEmpty) {
-          await _realtime.apply(rawYB, _refPoint());
-          _panelBikes = _sorter.sortByDistance(
-            stations: _panelBikes,
-            refPoint: _refPoint(),
-            pinnedIds: _config.pinnedStationIds,
-            limit: 30,
-          );
-        }
+      final rawYB = [
+        for (final b in _panelBikes)
+          if (b.source == BikeStationSource.youbike) b.rawStation!,
+      ];
+      if (rawYB.isNotEmpty) {
+        await _realtime.apply(rawYB, _refPoint());
+        // re-sort — keep pinned at top, preserve current count
+        _panelBikes = _sorter.sortByDistance(
+          stations: _panelBikes,
+          refPoint: _refPoint(),
+          pinnedIds: _config.pinnedStationIds,
+          limit: _panelBikes.length.clamp(1, 20),
+        );
       }
     } catch (e) {
       LogService().w('BikeVM', 'refresh failed: $e');
@@ -193,7 +204,7 @@ class BikeStationViewModel extends ChangeNotifier {
   }
 
   void focusStation(BikeStation bs) {
-    refresh(moveTo: LatLng(bs.lat, bs.lng));
+    _trigger.fire(LatLng(bs.lat, bs.lng));
   }
 
   void setQuery(String q) {
@@ -213,7 +224,7 @@ class BikeStationViewModel extends ChangeNotifier {
       return;
     }
     _panelBikes = _sorter.sortByDistance(
-      stations: hits, refPoint: _refPoint(), pinnedIds: _config.pinnedStationIds, limit: 40);
+      stations: hits, refPoint: _refPoint(), pinnedIds: _config.pinnedStationIds, limit: 20);
     _fillRealtimeBg();
   }
 

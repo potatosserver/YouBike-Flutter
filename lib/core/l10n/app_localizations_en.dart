@@ -170,6 +170,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get popupEmptySpacesLabel => 'Empty';
 
   @override
+  String get electricBikeDetailsButton => 'View electric battery level';
+
+  @override
   String get autoRefresh => 'Auto Refresh';
 
   @override

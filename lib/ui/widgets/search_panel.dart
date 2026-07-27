@@ -6,6 +6,7 @@ import 'package:youbike/ui/widgets/route_detail_panel.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
 import 'package:youbike/ui/widgets/app_shapes.dart';
 import 'package:youbike/ui/widgets/bike_station_card.dart';
+import 'package:youbike/ui/widgets/electric_bike_modal.dart';
 import 'package:youbike/core/services/bike_station_mixer.dart';
 import 'package:youbike/data/models/bike_station.dart';
 
@@ -241,12 +242,27 @@ class _SearchPanelState extends State<SearchPanel> {
                       _moveMapForMoovo(item);
                     }
                   },
+                  onShowElectric: item.source == StationSource.youbike
+                      ? () => _showElectricBikeDetails(item)
+                      : null,
                 );
               },
             );
           },
         ),
       );
+
+  void _showElectricBikeDetails(BikeStationItem item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ElectricBikeDetailsModal(
+        stationId: item.id,
+        stationName: item.name,
+      ),
+    );
+  }
 
   void _moveMapToStationById(String id) {
     final bikeVm = Provider.of<BikeStationViewModel>(context, listen: false);

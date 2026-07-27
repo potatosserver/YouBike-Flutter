@@ -168,6 +168,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get popupEmptySpacesLabel => '空位';
 
   @override
+  String get electricBikeDetailsButton => '查看電輔車電量';
+
+  @override
   String get autoRefresh => '自動刷新';
 
   @override
