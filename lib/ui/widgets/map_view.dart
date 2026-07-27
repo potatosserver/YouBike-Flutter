@@ -202,10 +202,19 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
           key: markerKey,
           point: position,
           width: 260,
-          alignment: const Alignment(0, 0),
+          height: 120,
+          alignment: Alignment.topCenter,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              SizedBox(
+                width: 20,
+                height: 10,
+                child: CustomPaint(
+                  painter: _PopupArrowPainter(color: cs.surface),
+                  size: const Size(20, 10),
+                ),
+              ),
               Container(
                 width: 260,
                 padding:
@@ -275,16 +284,6 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-              Container(
-                width: 20,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: Colors.transparent,
-                ),
-                child: CustomPaint(
-                  painter: _PopupArrowPainter(color: cs.surface),
-                ),
-              ),
             ],
           ),
         ),
@@ -347,9 +346,9 @@ class _PopupArrowPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
     final path = ui.Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..lineTo(size.width, 0)
+      ..moveTo(0, size.height)
+      ..lineTo(size.width / 2, 0)
+      ..lineTo(size.width, size.height)
       ..close();
     canvas.drawPath(path, paint);
   }
