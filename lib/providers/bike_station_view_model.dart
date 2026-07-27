@@ -37,7 +37,9 @@ class BikeStationViewModel extends ChangeNotifier {
   }
 
   /// 外部 (home / splash) 在使用前呼喚,讓資料與 GPS 先準備好。
+  /// 呼叫端若已 bootDone 會直接 return（單一入口、防重覆）。
   Future<void> boot() async {
+    if (_bootDone) return; // ← 單一入口防護
     if (_config.useLocation) {
       await _mapVm?.requestAndCenterLocation();
     }
@@ -114,6 +116,12 @@ class BikeStationViewModel extends ChangeNotifier {
       _sortPanel();
     } catch (e) {
       LogService().w('BikeVM', 'base fetch failed: $e');
+      // 資料拉取失敗 → 不設 bootDone，讓 HomeScreen 繼續顯示 loading。
+      // 下一次 60s countdown 歸零時 refresh() 會被 _fullBikes.isEmpty guard 擋住，
+      // 唯一的路徑是使用者重開 App 或是 config 變動觸發 _onLocationEnabled。
+      _isLoading = false;
+      notifyListeners();
+      return; // ← 關鍵：若失敗就中斷，不往下設 bootDone
     }
 
     _isLoading = false;

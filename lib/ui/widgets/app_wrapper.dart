@@ -55,7 +55,8 @@ class _AppWrapperState extends State<AppWrapper> {
       await Future.delayed(const Duration(milliseconds: 400));
 
       loadingVm.updateStatus('init_syncing', progress: 68);
-      await stationVm.refresh();
+      // 由 AppWrapper 統一執行 boot — 確保 LoadingOverlay 與 bootDone 同步。
+      await stationVm.boot();
 
       loadingVm.updateStatus('init_clustering', progress: 86);
 

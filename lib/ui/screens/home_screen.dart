@@ -32,13 +32,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    // boot 統一口徑只在 AppWrapper 呼叫；這裡只負責把 mapController 接上。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final bikeVm = Provider.of<BikeStationViewModel>(context, listen: false);
       bikeVm.mapTrigger.attach(_mapController);
       _animatedMap ??=
           AnimatedMapController(mapController: _mapController, vsync: this);
-      bikeVm.boot();
+      // 若已經 boot 完成 (極慢網路, postFrame 才到)，補觸發 filter
+      if (bikeVm.bootDone) bikeVm.setQuery(bikeVm.activeQuery);
     });
 
     // 回報裝置活躍到 Firestore（非同步，失敗不影響使用）
