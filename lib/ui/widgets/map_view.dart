@@ -122,9 +122,8 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
             final yb = all
                 .where((b) => b.source == BikeStationSource.youbike)
                 .toList();
-            final mo = all
-                .where((b) => b.source == BikeStationSource.moovo)
-                .toList();
+            final mo =
+                all.where((b) => b.source == BikeStationSource.moovo).toList();
             return Stack(children: [
               if (yb.isNotEmpty)
                 ClusteredMarkerLayer<BikeStation>(
@@ -167,8 +166,7 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
             );
           },
         ),
-        if (_selected != null)
-          _buildStationPopup(context, _selected!),
+        if (_selected != null) _buildStationPopup(context, _selected!),
       ],
     );
   }
@@ -207,14 +205,6 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                width: 20,
-                height: 10,
-                child: CustomPaint(
-                  painter: _PopupArrowPainter(color: cs.surface),
-                  size: const Size(20, 10),
-                ),
-              ),
               Container(
                 width: 260,
                 padding:
@@ -284,6 +274,14 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                   ],
                 ),
               ),
+              SizedBox(
+                width: 20,
+                height: 10,
+                child: CustomPaint(
+                  painter: _PopupArrowPainter(color: cs.surface),
+                  size: const Size(20, 10),
+                ),
+              ),
             ],
           ),
         ),
@@ -346,9 +344,9 @@ class _PopupArrowPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
     final path = ui.Path()
-      ..moveTo(0, size.height)
-      ..lineTo(size.width / 2, 0)
-      ..lineTo(size.width, size.height)
+      ..moveTo(0, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width, 0)
       ..close();
     canvas.drawPath(path, paint);
   }
