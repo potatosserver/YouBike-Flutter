@@ -229,11 +229,7 @@ class _SearchPanelState extends State<SearchPanel> {
                 return BikeStationCard(
                   item: item,
                   onTap: () {
-                    if (item.source == StationSource.youbike) {
-                      _moveMapToStationById(item.id);
-                    } else {
-                      _moveMapForMoovo(item);
-                    }
+                    _moveMapToStationById(item.id);
                   },
                   onNavigate: () {
                     if (item.source == StationSource.youbike) {

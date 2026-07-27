@@ -31,6 +31,7 @@ class BikeStationViewModel extends ChangeNotifier {
         _mapVm = mapVm,
         _trigger = trigger ?? MapMoveTrigger() {
     _wasUseLocation = config.useLocation;
+    _wasUseMoovo = config.useMoovo;
     _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
     config.addListener(_onConfigChanged);
     _startCountdown();
@@ -88,6 +89,7 @@ class BikeStationViewModel extends ChangeNotifier {
 
   Timer? _countdownTimer;
   late bool _wasUseLocation;
+  late bool _wasUseMoovo;
   Set<String> _lastPinnedIds = {};
 
   LatLng _refPoint() => _mapVm?.getEffectiveLocation() ?? _regionCenter();
@@ -241,7 +243,9 @@ class BikeStationViewModel extends ChangeNotifier {
   void _onConfigChanged() {
     final locChanged = _config.useLocation != _wasUseLocation;
     final pinChanged = !_setEquals(_config.pinnedStationIds, _lastPinnedIds);
+    final moovoChanged = _config.useMoovo != _wasUseMoovo;
     _wasUseLocation = _config.useLocation;
+    _wasUseMoovo = _config.useMoovo;
     _lastPinnedIds = Set<String>.from(_config.pinnedStationIds);
 
     if (locChanged) {
@@ -252,6 +256,16 @@ class BikeStationViewModel extends ChangeNotifier {
         _mapVm?.center = null;
         _mapVm?.notifyListeners();
         refresh();
+      }
+      return;
+    }
+    if (moovoChanged) {
+      if (_config.useMoovo && _bootDone) {
+        unawaited(_loadMoovoIntoPool());
+      } else if (_config.useMoovo) {
+        // boot hasn't finished yet — boot will read the new useMoovo value
+      } else {
+        _removeMoovoFromPool();
       }
       return;
     }
@@ -280,6 +294,30 @@ class BikeStationViewModel extends ChangeNotifier {
   }
 
   bool _setEquals(Set<String> a, Set<String> b) => a.length == b.length && a.containsAll(b);
+
+  Future<void> _loadMoovoIntoPool() async {
+    try {
+      final mo = await _repo.fetchMoovoStations();
+      if (mo != null) {
+        // merge into _fullBikes — guard against duplicates
+        final existingIds = _fullBikes.map((b) => b.id).toSet();
+        final fresh = mo.where((b) => !existingIds.contains(b.id)).toList();
+        if (fresh.isNotEmpty) {
+          _fullBikes = [..._fullBikes, ...fresh];
+          _sortPanel();
+          _fillRealtimeBg();
+        }
+      }
+    } catch (e) {
+      LogService().w('BikeVM', 'loadMoovoIntoPool failed: $e');
+    }
+  }
+
+  void _removeMoovoFromPool() {
+    _fullBikes = _fullBikes.where((b) => b.source != BikeStationSource.moovo).toList();
+    _sortPanel();
+    notifyListeners();
+  }
 
   @override
   void dispose() {
