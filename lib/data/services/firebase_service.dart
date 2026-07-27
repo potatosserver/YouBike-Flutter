@@ -19,5 +19,3 @@ export 'firebase/firestore_device_stats_stub.dart'
 
 export 'firebase/fcm_service_stub.dart'
     if (dart.library.io) 'firebase/fcm_service.dart';
-
-export 'firebase_service_compat.dart';
