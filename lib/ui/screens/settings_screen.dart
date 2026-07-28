@@ -340,7 +340,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         config.appVersion.split('+').first; // '1.0.1+2' → '1.0.1'
 
     try {
+      Fluttertoast.showToast(msg: l10n.checking_for_updates);
       final result = await service.checkForUpdate(currentVersion: versionOnly);
+      Fluttertoast.cancel();
       if (!mounted) return;
       await _handleUpdateResult(result, l10n);
     } catch (error) {

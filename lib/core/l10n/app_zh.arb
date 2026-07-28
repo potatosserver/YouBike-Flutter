@@ -280,6 +280,8 @@
     "@beta_moovo_subtitle": {},
     "check_for_updates": "檢查更新",
     "@check_for_updates": {},
+    "checking_for_updates": "正在檢查更新...",
+    "@checking_for_updates": {},
     "latest_version_installed": "目前已是最新版本。",
     "@latest_version_installed": {},
     "update_check_failed": "檢查更新失敗，請檢查您的網路連線。",

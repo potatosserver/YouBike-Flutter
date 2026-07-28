@@ -401,6 +401,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get check_for_updates => 'Check for Updates';
 
   @override
+  String get checking_for_updates => 'Checking for updates...';
+
+  @override
   String get latest_version_installed =>
       'You are already using the latest version.';
 

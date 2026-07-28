@@ -280,6 +280,8 @@
     "@beta_moovo_subtitle": {},
     "check_for_updates": "Check for Updates",
     "@check_for_updates": {},
+    "checking_for_updates": "Checking for updates...",
+    "@checking_for_updates": {},
     "latest_version_installed": "You are already using the latest version.",
     "@latest_version_installed": {},
     "update_check_failed": "Failed to check for updates. Please check your network connection.",

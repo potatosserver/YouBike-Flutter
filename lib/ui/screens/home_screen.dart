@@ -16,6 +16,8 @@ import 'package:youbike/data/services/firebase_service.dart';
 import 'package:youbike/core/services/map_animated_move.dart';
 import 'package:youbike/ui/widgets/github_update_alert_dialog.dart';
 import 'package:youbike/core/services/update_checker_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:youbike/core/l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -63,12 +65,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final service = UpdateCheckerService();
     final config = Provider.of<AppConfigService>(context, listen: false);
     final versionOnly = config.appVersion.split('+').first;
+    final l10n = AppLocalizations.of(context);
 
     try {
+      Fluttertoast.showToast(msg: l10n.checking_for_updates);
       final result = await service.checkForUpdate(currentVersion: versionOnly);
+      Fluttertoast.cancel();
       if (!mounted) return;
       
-      if (!result.isLatest) {
+      if (result.isLatest) {
+        Fluttertoast.showToast(msg: l10n.latest_version_installed);
+      } else {
         final latestRelease = await service.getLatestGithubRelease();
         if (latestRelease != null && mounted) {
           await GithubUpdateAlertDialog.show(context, latestRelease);

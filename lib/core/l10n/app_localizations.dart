@@ -830,6 +830,12 @@ abstract class AppLocalizations {
   /// **'Check for Updates'**
   String get check_for_updates;
 
+  /// No description provided for @checking_for_updates.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for updates...'**
+  String get checking_for_updates;
+
   /// No description provided for @latest_version_installed.
   ///
   /// In en, this message translates to:

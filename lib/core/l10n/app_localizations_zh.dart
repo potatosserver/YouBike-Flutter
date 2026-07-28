@@ -394,6 +394,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get check_for_updates => '檢查更新';
 
   @override
+  String get checking_for_updates => '正在檢查更新...';
+
+  @override
   String get latest_version_installed => '目前已是最新版本。';
 
   @override
