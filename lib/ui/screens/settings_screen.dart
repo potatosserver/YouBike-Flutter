@@ -13,10 +13,10 @@ import 'package:youbike/core/l10n/app_localizations.dart';
 import 'package:youbike/core/services/update_checker_service.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/data/services/permission_service.dart';
-import 'package:youbike/ui/widgets/github_update_dialog.dart';
 import 'package:youbike/ui/widgets/setting_group_card.dart';
 import 'package:youbike/ui/widgets/changelog_dialog.dart';
 import 'package:youbike/ui/widgets/base/confirm_dialog.dart';
+import 'package:youbike/ui/widgets/github_update_alert_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -234,9 +234,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     final url = Uri.parse(
                       'https://github.com/potatosserver/YouBike-Flutter',
                     );
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url,
-                          mode: LaunchMode.externalApplication);
+                    try {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    } catch (e) {
+                      debugPrint('Error launching GitHub URL: $e');
                     }
                   },
                 ),
@@ -374,50 +375,39 @@ class _SettingsScreenState extends State<SettingsScreen>
       return;
     }
 
-    if (result.hasGithubRelease && result.githubRelease != null) {
-      await GithubUpdateDialog.show(localContext, result.githubRelease!);
-      return;
-    }
-
     if (result.isLatest) {
       Fluttertoast.showToast(msg: l10n.latest_version_installed);
       return;
     }
 
-    await showDialog<void>(
-      context: localContext,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text(l10n.check_for_updates),
-          content: Text(
-            'New version available: ${result.latestVersion}\nCurrent version: ${result.currentVersion}',
-          ),
-          actions: [
-            if (result.releaseNotesUrl != null)
+    // 這裡原本是顯示簡單的 AlertDialog，現在改用統一的 GithubUpdateAlertDialog
+    final latestRelease = await service.getLatestGithubRelease();
+    if (latestRelease != null) {
+      await GithubUpdateAlertDialog.show(localContext, latestRelease);
+    } else {
+      // fallback: 如果無法獲取 release 詳細資訊，顯示基礎版本資訊
+      await showDialog<void>(
+        context: localContext,
+        builder: (ctx) {
+          return AlertDialog(
+            title: Text(l10n.check_for_updates),
+            content: Text(
+              'New version available: ${result.latestVersion}\\nCurrent version: ${result.currentVersion}',
+            ),
+            actions: [
               TextButton(
-                onPressed: () async {
-                  final url = Uri.parse(result.releaseNotesUrl!);
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  }
+                onPressed: () {
                   if (ctx.mounted) {
                     Navigator.of(ctx).pop();
                   }
                 },
-                child: Text(l10n.view_release_notes),
+                child: Text(l10n.close),
               ),
-            TextButton(
-              onPressed: () {
-                if (ctx.mounted) {
-                  Navigator.of(ctx).pop();
-                }
-              },
-              child: Text(l10n.close),
-            ),
-          ],
-        );
-      },
-    );
+            ],
+          );
+        },
+      );
+    }
   }
 
   Future<void> _openGooglePlayStore() async {

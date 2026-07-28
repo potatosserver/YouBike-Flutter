@@ -1,13 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:http/http.dart' as http;
-import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:youbike/core/config/app_environment.dart';
 
 class UpdateCheckResult {
@@ -16,7 +12,6 @@ class UpdateCheckResult {
   final String latestVersion;
   final String? releaseNotesUrl;
   final AppUpdateInfo? playUpdateInfo;
-  final GithubReleaseInfo? githubRelease;
   final String? errorMessage;
 
   UpdateCheckResult({
@@ -25,13 +20,11 @@ class UpdateCheckResult {
     required this.latestVersion,
     this.releaseNotesUrl,
     this.playUpdateInfo,
-    this.githubRelease,
     this.errorMessage,
   });
 
   bool get hasError => errorMessage != null;
   bool get hasGooglePlayUpdate => playUpdateInfo != null;
-  bool get hasGithubRelease => githubRelease != null;
 }
 
 class GithubReleaseInfo {
@@ -135,84 +128,6 @@ class UpdateCheckerService {
     }
   }
 
-  Future<String?> getArchitecture() async {
-    if (!Platform.isAndroid) {
-      return null;
-    }
-
-    const availableApkAbis = {'arm64-v8a', 'armeabi-v7a', 'x86_64'};
-    try {
-      final deviceInfo = DeviceInfoPlugin();
-      final androidInfo = await deviceInfo.androidInfo;
-      final supportedAbis = androidInfo.supportedAbis;
-
-      for (final String abi in supportedAbis) {
-        if (availableApkAbis.contains(abi)) {
-          return abi;
-        }
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<String?> downloadGithubUpdate(
-    GithubReleaseInfo release,
-    String arch, {
-    Function(double)? onProgress,
-    Function(String)? onError,
-    Function(String)? onStatus,
-  }) async {
-    try {
-      final assets = release.assets;
-      final apkName = 'app-$arch-release.apk';
-      final apkAsset = assets.firstWhere(
-        (asset) => asset['name'] == apkName,
-        orElse: () => null,
-      );
-
-      if (apkAsset == null) {
-        onError?.call('No compatible APK found for this device.');
-        return null;
-      }
-
-      final tempDir = await getTemporaryDirectory();
-      final apkPath = '${tempDir.path}/$apkName';
-      final apkUrl = apkAsset['browser_download_url'] as String?;
-      if (apkUrl == null) {
-        onError?.call('Invalid download URL.');
-        return null;
-      }
-
-      onStatus?.call('Downloading $apkName...');
-      final dio = Dio();
-      await dio.download(
-        apkUrl,
-        apkPath,
-        onReceiveProgress: (count, total) {
-          if (total > 0) {
-            onProgress?.call(count / total);
-          }
-        },
-      );
-
-      onStatus?.call('Download complete.');
-      return apkPath;
-    } on DioException catch (e) {
-      final message = e.message ?? 'Download failed.';
-      onError?.call(message);
-      return null;
-    } catch (e) {
-      onError?.call(e.toString());
-      return null;
-    }
-  }
-
-  Future<void> installFromPath(String apkPath) async {
-    await OpenFilex.open(apkPath);
-  }
-
   Future<UpdateCheckResult> _checkGithubLatest(String currentVersion) async {
     final latestRelease = await getLatestGithubRelease();
     if (latestRelease == null) {
@@ -231,7 +146,6 @@ class UpdateCheckerService {
       currentVersion: currentVersion,
       latestVersion: latestVersion,
       releaseNotesUrl: latestRelease.htmlUrl,
-      githubRelease: isLatest ? null : latestRelease,
     );
   }
 

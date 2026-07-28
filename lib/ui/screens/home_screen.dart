@@ -14,6 +14,8 @@ import 'package:youbike/ui/widgets/home_update_button.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/data/services/firebase_service.dart';
 import 'package:youbike/core/services/map_animated_move.dart';
+import 'package:youbike/ui/widgets/github_update_alert_dialog.dart';
+import 'package:youbike/core/services/update_checker_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,14 +42,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _animatedMap ??=
           AnimatedMapController(mapController: _mapController, vsync: this);
       // 若已經 boot 完成 (極慢網路, postFrame 才到)，補觸發 filter
-      if (bikeVm.bootDone) bikeVm.setQuery(bikeVm.activeQuery);
+      if (bikeVm.bootDone) {
+        bikeVm.setQuery(bikeVm.activeQuery);
+        _checkStartupUpdate();
+      }
     });
 
-    // 回報裝置活躍到 Firestore（非同步，失敗不影響使用）
-    // 先在 microtask 之前取得 config，避免跨 async gap 使用 context。
+    // 回報裝置活躍到 Firestore
     final config = Provider.of<AppConfigService>(context, listen: false);
     Future.microtask(() => FirestoreDeviceStatsService.instance
         .reportAppActive(config));
+  }
+
+  // 為了處理 bootDone 在 postFrameCallback 之後才變為 true 的情況，
+  // 我們需要監聽 bikeVm.bootDone 的變化。
+  // 但最簡單的做法是在 build 中檢查一次，並記錄已檢查過。
+  bool _hasCheckedStartupUpdate = false;
+
+  Future<void> _checkStartupUpdate() async {
+    final service = UpdateCheckerService();
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    final versionOnly = config.appVersion.split('+').first;
+
+    try {
+      final result = await service.checkForUpdate(currentVersion: versionOnly);
+      if (!mounted) return;
+      
+      if (!result.isLatest) {
+        final latestRelease = await service.getLatestGithubRelease();
+        if (latestRelease != null && mounted) {
+          await GithubUpdateAlertDialog.show(context, latestRelease);
+        }
+      }
+    } catch (e) {
+      debugPrint('Startup update check failed: $e');
+    }
   }
 
   @override
@@ -62,6 +91,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             body: const Center(child: CircularProgressIndicator()),
           );
         }
+        
+        if (!_hasCheckedStartupUpdate) {
+          _hasCheckedStartupUpdate = true;
+          Future.microtask(() => _checkStartupUpdate());
+        }
+
         return Scaffold(
       backgroundColor: cs.surface,
       body: LayoutBuilder(
