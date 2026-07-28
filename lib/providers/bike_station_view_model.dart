@@ -234,6 +234,21 @@ class BikeStationViewModel extends ChangeNotifier {
     _trigger.fire(LatLng(bs.lat, bs.lng));
   }
 
+  /// 針對單一站點立即更新即時數據（僅限 YouBike）。
+  /// 用於圖釘點擊後，確保彈窗顯示的是最新數據。
+  Future<void> refreshStation(BikeStation bs) async {
+    if (bs.source != BikeStationSource.youbike || bs.rawStation == null) return;
+
+    try {
+      // 僅針對該站點發送即時數據請求
+      await _realtime.apply([bs.rawStation!], _refPoint());
+      // 通知 UI 更新（彈窗會重新讀取 bs 的最新數值）
+      notifyListeners();
+    } catch (e) {
+      LogService().w('BikeVM', 'single station refresh failed');
+    }
+  }
+
   void setQuery(String q) {
     _activeQuery = q.trim();
     if (q.isEmpty) {

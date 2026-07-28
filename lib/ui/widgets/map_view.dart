@@ -318,6 +318,10 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   }
 
   void _animateToStation(BikeStation bs) {
+    // 1. 觸發單站即時更新
+    Provider.of<BikeStationViewModel>(context, listen: false).refreshStation(bs);
+    
+    // 2. 原有邏輯：選中站點並移動地圖
     setState(() => _selected = bs);
     _getAnimatedMap().animateTo(LatLng(bs.lat, bs.lng), 18.0);
   }
