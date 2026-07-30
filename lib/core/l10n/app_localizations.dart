@@ -914,6 +914,24 @@ abstract class AppLocalizations {
   /// **'Open Google Play'**
   String get open_google_play;
 
+  /// No description provided for @cbt_guide_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Closed Beta'**
+  String get cbt_guide_title;
+
+  /// No description provided for @cbt_guide_content.
+  ///
+  /// In en, this message translates to:
+  /// **'This app is not yet publicly available on Google Play. Please join the closed beta testing program to access it.'**
+  String get cbt_guide_content;
+
+  /// No description provided for @cbt_guide_open.
+  ///
+  /// In en, this message translates to:
+  /// **'View Beta Guide'**
+  String get cbt_guide_open;
+
   /// No description provided for @release_notes.
   ///
   /// In en, this message translates to:

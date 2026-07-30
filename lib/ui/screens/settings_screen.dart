@@ -55,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final channel = AppEnvironment.updateChannel.toLowerCase();
     final showUpdateButton =
         channel == 'google_play' || channel == 'github' || channel == 'test';
-    final showGooglePlayButton = channel == 'google_play' || channel == 'web';
+    const showGooglePlayButton = true;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -165,7 +165,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                     trailing: Icon(Icons.open_in_new,
                         size: 20, color: cs.onSurfaceVariant),
                     onTap: () async {
-                      await _openGooglePlayStore();
+                      if (channel == 'google_play') {
+                        await _openGooglePlayStore();
+                      } else {
+                        _showCbtGuideDialog();
+                      }
                     },
                   ),
                 _buildItem(
@@ -341,6 +345,36 @@ class _SettingsScreenState extends State<SettingsScreen>
     } else {
       await launchUrl(webUri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  void _showCbtGuideDialog() {
+    final l10n = AppLocalizations.of(context);
+    final cbtUrl = Uri.parse('https://youbike.pages.dev/CBT_Guide');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.cbt_guide_title),
+        content: Text(l10n.cbt_guide_content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.close),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await launchUrl(cbtUrl,
+                    mode: LaunchMode.externalApplication);
+              } catch (e) {
+                debugPrint('Error launching CBT Guide URL: $e');
+              }
+            },
+            child: Text(l10n.cbt_guide_open),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAboutDialog() {

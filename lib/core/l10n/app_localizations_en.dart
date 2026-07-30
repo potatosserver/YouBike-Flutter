@@ -449,6 +449,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get open_google_play => 'Open Google Play';
 
   @override
+  String get cbt_guide_title => 'Join Closed Beta';
+
+  @override
+  String get cbt_guide_content =>
+      'This app is not yet publicly available on Google Play. Please join the closed beta testing program to access it.';
+
+  @override
+  String get cbt_guide_open => 'View Beta Guide';
+
+  @override
   String get release_notes => 'Release Notes';
 
   @override

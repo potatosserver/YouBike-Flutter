@@ -436,6 +436,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get open_google_play => '開啟 Google Play 商店';
 
   @override
+  String get cbt_guide_title => '加入封閉測試';
+
+  @override
+  String get cbt_guide_content =>
+      '本 App 尚未在 Google Play 正式上架，請先加入封閉測試計畫後再下載使用。';
+
+  @override
+  String get cbt_guide_open => '查看封閉測試指南';
+
+  @override
   String get release_notes => '版本說明';
 
   @override
