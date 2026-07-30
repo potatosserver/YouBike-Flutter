@@ -31,23 +31,13 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    // 非首次：依序檢查定位、通知權限是否已處理（授權 或 略過）
+    // 非首次：檢查定位權限是否已處理（授權或略過）
     final skipLoc = prefs.getBool(PermissionPrefKeys.skipLocation) ?? false;
-    final skipNotif = prefs.getBool(PermissionPrefKeys.skipNotification) ?? false;
 
     final locGranted = await _perm.readLocationStatus();
     if (!mounted) return;
     if (!locGranted && !skipLoc) {
       context.go('/permission');
-      return;
-    }
-
-    final notifGranted = _perm.isWeb ||
-        skipNotif ||
-        await _perm.readSystemNotificationStatus();
-    if (!mounted) return;
-    if (!notifGranted && !skipNotif) {
-      context.go('/permission/notification');
       return;
     }
 

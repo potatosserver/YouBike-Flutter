@@ -24,15 +24,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/permission',
-        builder: (context, state) => const PermissionHandlerPage(
-          type: PermissionType.location,
-        ),
-      ),
-      GoRoute(
-        path: '/permission/notification',
-        builder: (context, state) => const PermissionHandlerPage(
-          type: PermissionType.notification,
-        ),
+        builder: (context, state) => const PermissionHandlerPage(),
       ),
       GoRoute(
         path: '/',

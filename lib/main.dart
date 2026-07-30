@@ -56,7 +56,7 @@ void main() async {
     log.w('APP_START', 'Firebase/AppCheck 初始化失敗: $e');
   }
 
-  // 3. 註冊 FCM 訊息監聽（通知服務開關僅影響「引導使用者到系統設定」，不做 in-app 阻擋）
+  // 3. 註冊 FCM 訊息監聽
   await FcmMessageHandler.instance.registerListeners();
 
   log.i('APP_START',

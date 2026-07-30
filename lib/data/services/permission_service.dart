@@ -1,8 +1,8 @@
 // PermissionService — 權限檢查與請求的統一入口。
 //
 // 目前服務對象：Android + Web（暫不考慮 iOS）。
-// - Android：permission_handler (POST_NOTIFICATIONS) 為主
-// - Web：無 OS 通知概念，permission_handler 也不可用；以 kIsWeb 短路並回 true（保守視為開啟）
+// - Android：permission_handler 為主
+// - Web：以 kIsWeb 短路並回傳適當值
 //
 // 集中原本散落於 splash / permission_handler_page / settings_screen 的
 // 「讀取 / 請求 / 永久拒絕 dialog」三重複邏輯。
@@ -19,15 +19,6 @@ class PermissionPrefKeys {
   PermissionPrefKeys._();
 
   static const String skipLocation = 'skip_location_permission';
-  static const String skipNotification = 'skip_notification_permission';
-}
-
-/// 通知權限請求的結果分類。
-enum NotificationRequestResult {
-  granted,
-  denied,
-  permanentlyDenied,
-  unavailable,
 }
 
 /// 定位權限請求的結果分類。
@@ -43,47 +34,8 @@ class PermissionService {
   factory PermissionService() => _instance;
   PermissionService._internal();
 
-  /// 是否處於 Web 平台 — 權限流程需短路（Web 沒 OS 通知）。
+  /// 是否處於 Web 平台 — 權限流程需短路。
   bool get isWeb => kIsWeb;
-
-  // ── 通知權限 ──
-
-  /// 讀取目前 OS 真實的通知權限狀態。
-  /// - Android 13+ 走 permission_handler（POST_NOTIFICATIONS）
-  /// - Web：回傳 true（Web 沒有 OS 通知概念，避免誤關閉）
-  Future<bool> readSystemNotificationStatus() async {
-    if (kIsWeb) return true;
-    try {
-      final s = await Permission.notification.status;
-      return s.isGranted || s.isLimited;
-    } catch (e) {
-      LogService().e('PERM', 'notification.status failed', error: e);
-      return false;
-    }
-  }
-
-  /// 一次性請求 OS 通知權限（同 permission_handler_page 一次性原則）。
-  /// 已授予直接回 granted；永久拒絕回 permanentlyDenied 不重彈系統框。
-  /// 暫時性拒絕（使用者按拒絕）回 denied，呼叫端不再二次請求。
-  Future<NotificationRequestResult> requestOsNotificationOnce() async {
-    if (kIsWeb) return NotificationRequestResult.unavailable;
-    try {
-      final s = await Permission.notification.status;
-      if (s.isGranted) return NotificationRequestResult.granted;
-      if (s.isPermanentlyDenied) {
-        return NotificationRequestResult.permanentlyDenied;
-      }
-      final result = await Permission.notification.request();
-      if (result.isGranted) return NotificationRequestResult.granted;
-      if (result.isPermanentlyDenied) {
-        return NotificationRequestResult.permanentlyDenied;
-      }
-      return NotificationRequestResult.denied;
-    } catch (e) {
-      LogService().e('PERM', 'request OS notification failed', error: e);
-      return NotificationRequestResult.unavailable;
-    }
-  }
 
   // ── 定位權限 ──
 
@@ -156,7 +108,7 @@ class PermissionService {
 
   // ── 共用 UI helper ──
 
-  /// 彈出「權限永久拒絕」對話框，引導使用者前往 App 系統設定。
+  /// 彈出「權限永久拒絕」對話框，引導使用者前往 App 設定。
   /// 集中於 [PermissionDeniedDialog]，原本重複於兩處的 dialog 樣板已被合併。
   void showPermanentlyDeniedDialog(BuildContext context) {
     PermissionDeniedDialog.show(context);
