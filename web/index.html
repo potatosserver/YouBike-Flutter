@@ -88,18 +88,30 @@
   <link href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" rel="stylesheet" />
 
   <style>
-    body {
-      background-color: #ffffff;
+    html, body {
+      width: 100%;
+      height: 100%;
       margin: 0;
       padding: 0;
       overflow: hidden;
+    }
+    body {
+      background-color: #ffffff;
+    }
+    /* 強制 Flutter canvas 永遠滿版 — 避免 Web 版手機模式初始縮小 */
+    flutter-view {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100dvw;
+      height: 100dvh;
     }
     #loading-screen {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
+      width: 100dvw;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       justify-content: center;
