@@ -24,7 +24,21 @@ class BrandColors {
   static const Color accentBlue = Colors.blue;
 
   /// 電動車圖示與電池百分比 — 永遠亮綠色。
-  static const Color accentGreen = Color(0xFF4CAF50);
+    static const Color accentGreen = Color(0xFF4CAF50);
+
+    // ── 圖釘狀態標記色 ──
+
+    /// 有電輔車 — 右上角綠色圓點。
+    static const Color markerElectricDot = Color(0xFF4CAF50);
+
+    /// 車位滿載 — 外圈紅色。
+    static const Color markerFullRing = Color(0xFFE53935);
+
+    /// 無車可借 — 外圈橘色。
+    static const Color markerNoBikeRing = Color(0xFFFF9800);
+
+    /// 暫停營運 — 灰色覆蓋。
+    static const Color markerSuspendedOverlay = Color(0x88000000);
 
   // ── 語義輔助色（取代散落的 hard-code） ──
 

@@ -398,6 +398,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enables upcoming Moovo station support. Currently experimental and may be unstable.';
 
   @override
+  String get beta_map_status_markers => 'Map Status Markers';
+
+  @override
+  String get beta_map_status_markers_subtitle =>
+      'Shows colored status indicators around map pins: green dot for electric bikes, red ring when full, orange ring when no bikes, gray overlay when suspended.';
+
+  @override
   String get check_for_updates => 'Check for Updates';
 
   @override

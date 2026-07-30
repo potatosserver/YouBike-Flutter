@@ -17,15 +17,17 @@ import 'package:latlong2/latlong.dart';
 ///   markerChild: (_) => const RoadSignMarker(),
 ///   clusterBuilder: (n) => ClusterMarker(count: n),
 ///   onMarkerTap: (s) => onStationTap(s),
-///   maxClusterRadius: 120,
+///   maxClusterRadius: 180,
 /// );
 /// ```
 ///
 /// 為什麼要這個 helper,而非讓每個來源自己寫:
 /// - YouBike 是黃色 + 40px RoadSign、Moovo 是綠色 + 40px MoovoPin
 /// - 但「聚合半徑、spiderfy 距離、cluster tap」這些幾乎全一致
-/// - 只要 dropdown / 增加一個 BikeProvider 只要寫一個 markerChild + 一個 clusterBuilder
-/// - 不用再 fork StationMarkerLayer
+/// - 一旦 即時數據版本變動 vs 內部快取版本不一致 → 重建 markers。
+  /// - 不用 list copy，只用一個 int 比較。
+  /// - 只要 dropdown / 增加一個 BikeProvider 只要寫一個 markerChild + 一個 clusterBuilder
+  /// - 不用再 fork StationMarkerLayer
 abstract class Clusterable {
   LatLng get clusterPoint;
 }
@@ -37,6 +39,9 @@ class ClusteredMarkerLayer<T> extends StatefulWidget {
   final Widget Function(T) markerChild;
   final Widget Function(int) clusterBuilder;
   final ValueChanged<T>? onMarkerTap;
+
+  /// 即時數據版本（int）。變化時觸發 markers 重建。
+  final int dataVersion;
 
   // 共用 cluster 設定：跟既有 StationMarkerLayer 對齊。
   final int maxClusterRadius;
@@ -55,7 +60,8 @@ class ClusteredMarkerLayer<T> extends StatefulWidget {
     required this.markerChild,
     required this.clusterBuilder,
     this.onMarkerTap,
-    this.maxClusterRadius = 120,
+    this.dataVersion = 0,
+    this.maxClusterRadius = 180,
     this.size = const Size(45, 45),
     this.disableClusteringAtZoom = 16,
     this.animationsOptions = const AnimationsOptions(
@@ -76,7 +82,7 @@ class _ClusteredMarkerLayerState<T> extends State<ClusteredMarkerLayer<T>> {
   late List<Marker> _cachedMarkers;
   late Map<String, T> _itemByKey;
   late MarkerClusterLayerOptions _options;
-  int _lastCount = -1;
+  int _lastVersion = -1;
 
   @override
   void initState() {
@@ -87,13 +93,16 @@ class _ClusteredMarkerLayerState<T> extends State<ClusteredMarkerLayer<T>> {
   @override
   void didUpdateWidget(covariant ClusteredMarkerLayer<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.items.length != widget.items.length || _lastCount == -1) {
+    // 長度或 dataVersion 變化 → 重建 markers（不複製 list）
+    if (oldWidget.items.length != widget.items.length ||
+        _lastVersion == -1 ||
+        _lastVersion != widget.dataVersion) {
       _rebuild();
     }
   }
 
   void _rebuild() {
-    _lastCount = widget.items.length;
+    _lastVersion = widget.dataVersion;
     _itemByKey = {for (final t in widget.items) widget.keyOf(t): t};
     _cachedMarkers = [
       for (final t in widget.items)

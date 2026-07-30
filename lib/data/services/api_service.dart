@@ -96,6 +96,9 @@ class ApiService {
                 'available_2_0': detail != null ? detail['yb2'] : null,
                 'available_e': detail != null ? detail['eyb'] : null,
                 'empty_spaces': item['empty_spaces'],
+                'parking_spaces': item['parking_spaces'],
+                'forbidden_spaces': item['forbidden_spaces'],
+                'status': item['status'],
               };
             }
           } else {

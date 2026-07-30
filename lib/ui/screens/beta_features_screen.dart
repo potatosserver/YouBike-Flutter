@@ -46,6 +46,18 @@ class BetaFeaturesScreen extends StatelessWidget {
                     activeThumbColor: cs.onPrimary,
                   ),
                 ),
+                _buildItem(
+                  context: context,
+                  icon: Icons.location_pin,
+                  title: l10n.beta_map_status_markers,
+                  subtitle: l10n.beta_map_status_markers_subtitle,
+                  trailing: Switch(
+                    value: config.useMapStatusMarkers,
+                    onChanged: (val) => config.setUseMapStatusMarkers(val),
+                    activeTrackColor: cs.primary,
+                    activeThumbColor: cs.onPrimary,
+                  ),
+                ),
               ],
             ),
           ],

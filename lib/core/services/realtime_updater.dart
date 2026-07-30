@@ -22,6 +22,9 @@ class RealtimeUpdater {
           s.availableBikes = data['available_2_0'] ?? 0;
           s.availableElectricBikes = data['available_e'] ?? 0;
           s.emptySpaces = data['empty_spaces'] ?? 0;
+          s.parkingSpaces = data['parking_spaces'] ?? 0;
+          s.forbiddenSpaces = data['forbidden_spaces'] ?? 0;
+          s.status = data['status'] ?? 1;
         }
       }
     } catch (e) {

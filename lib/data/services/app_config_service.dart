@@ -11,6 +11,11 @@ class AppConfigService with ChangeNotifier {
   /// 儲存於 SharedPreferences (key `useMoovo`)，預設 `false`。
   /// 其他檔案可透過 Provider 取得 `useMoovo` (`listen: true/false` 都可)。
   bool useMoovo = false;
+
+  /// 圖釘狀態標記開關（位於設定 → 參數 → Beta 版 → 內含）。
+  /// 預設關閉，啟用後圖釘外圍會顯示電輔車綠點、滿載紅圈、無車橘圈、暫停灰覆蓋。
+  /// 儲存於 SharedPreferences (key `useMapStatusMarkers`)，預設 `false`。
+  bool useMapStatusMarkers = false;
   Set<String> pinnedStationIds = {};
   SharedPreferences? _prefs;
   String _appVersion = '0.0.0+0';
@@ -43,6 +48,7 @@ class AppConfigService with ChangeNotifier {
     useLocation = _prefs?.getBool('useLocation') ?? true;
     useNotification = _prefs?.getBool('useNotification') ?? true;
     useMoovo = _prefs?.getBool('useMoovo') ?? false;
+    useMapStatusMarkers = _prefs?.getBool('useMapStatusMarkers') ?? false;
     final pinnedList = _prefs?.getStringList('pinnedStations') ?? [];
     pinnedStationIds = pinnedList.map((id) => id.trim()).toSet();
     // 集中讀取 PackageInfo — 取代原本散落 3 處的 PackageInfo.fromPlatform() 呼叫。
@@ -84,6 +90,13 @@ class AppConfigService with ChangeNotifier {
   void setUseMoovo(bool use) {
     useMoovo = use;
     _prefs?.setBool('useMoovo', use);
+    notifyListeners();
+  }
+
+  /// 設定圖釘狀態標記開關 — 與 `useMoovo` 相同的 Pattern。
+  void setUseMapStatusMarkers(bool use) {
+    useMapStatusMarkers = use;
+    _prefs?.setBool('useMapStatusMarkers', use);
     notifyListeners();
   }
 

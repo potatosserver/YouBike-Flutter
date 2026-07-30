@@ -46,6 +46,7 @@ class MapView extends StatefulWidget {
 
 class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   Timer? _mapMoveDebounceTimer;
+  Timer? _realtimeScreenDebounce;
 
   BikeStation? _selected;
   AnimatedMapController? _animatedMap;
@@ -100,6 +101,7 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
           if (event is MapEventMoveEnd) {
             _log("PERF",
                 "Map stable at Zoom: ${widget.mapController.camera.zoom.toStringAsFixed(2)}");
+            _scheduleRealtimeForScreen();
           }
         },
       ),
@@ -130,9 +132,10 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                   items: yb,
                   pointOf: (b) => LatLng(b.lat, b.lng),
                   keyOf: (b) => b.sourceKey,
-                  markerChild: (_) => const RoadSignMarker(),
+                  markerChild: (b) => _buildYoubikeMarker(b),
                   clusterBuilder: (n) => ClusterMarker(count: n),
                   onMarkerTap: (b) => _animateToStation(b),
+                  dataVersion: bikeVm.dataVersion,
                 ),
               if (mo.isNotEmpty)
                 ClusteredMarkerLayer<BikeStation>(
@@ -317,13 +320,86 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
     );
   }
 
+  /// 根據站點即時數據建立帶狀態標記的 YouBike 圖釘。
+  /// 狀態標記由 `useMapStatusMarkers` beta 開關控制，預設為關閉（顯示原始圖釘）。
+  Widget _buildYoubikeMarker(BikeStation b) {
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    if (!config.useMapStatusMarkers) return const RoadSignMarker();
+    final eBikeCount = b.eBikeCount ?? 0;
+    final bikes = b.bikeCount ?? 0;
+    final empty = b.emptySpaces ?? 0;
+    final st = b.status ?? 1;
+    final parking = b.parkingSpaces; // 保持 nullable：null=尚未收到即時資料
+
+    // 是否已收到即時資料（parkingSpaces 被寫入即為真）
+    final hasRealtime = parking != null;
+    final p = parking ?? 0;
+
+    // 暫停營運判定：
+    //   1) API status=2
+    //   2) 已收到即時資料 且 parking/available/empty 全為 0
+    final suspended = st == 2 || (hasRealtime && p == 0 && bikes == 0 && empty == 0);
+    // 有電輔車
+    final hasElectric = eBikeCount > 0;
+    // 車位滿載：無空格但仍有車可借
+    final isFull = hasRealtime && !suspended && empty == 0 && bikes > 0;
+    // 無車可借：無車但有空格
+    final noBikes = hasRealtime && !suspended && bikes == 0 && empty > 0;
+
+    return BikePinMarker.youbike(
+      hasElectric: hasElectric,
+      isFull: isFull,
+      noBikes: noBikes,
+      isSuspended: suspended,
+    );
+  }
+
   void _animateToStation(BikeStation bs) {
-    // 1. 觸發單站即時更新
-    Provider.of<BikeStationViewModel>(context, listen: false).refreshStation(bs);
-    
+    // 1. 觸發單站即時更新（beta 模式已由畫面範圍請求覆蓋，跳過節省流量）
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    if (!config.useMapStatusMarkers) {
+      Provider.of<BikeStationViewModel>(context, listen: false).refreshStation(bs);
+    }
+
     // 2. 原有邏輯：選中站點並移動地圖
     setState(() => _selected = bs);
     _getAnimatedMap().animateTo(LatLng(bs.lat, bs.lng), 18.0);
+  }
+
+  void _scheduleRealtimeForScreen() {
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    if (!config.useMapStatusMarkers) return;
+
+    // 只在非聚合模式下才對畫面內站點請求（只有個別圖釘才看得到狀態標記）
+    // disableClusteringAtZoom 設為 16，>= 16 時所有圖釘都是個別的
+    if (widget.mapController.camera.zoom < 16.0) return;
+
+    _realtimeScreenDebounce?.cancel();
+    _realtimeScreenDebounce = Timer(const Duration(milliseconds: 300), () {
+      _fetchRealtimeForScreen();
+    });
+  }
+
+  void _fetchRealtimeForScreen() {
+    final bikeVm = Provider.of<BikeStationViewModel>(context, listen: false);
+    final all = bikeVm.allBikes;
+    if (all.isEmpty) return;
+
+    final camera = widget.mapController.camera;
+    final bounds = camera.visibleBounds;
+
+    // 只取可視範圍內的 YouBike 站點，上限 30 避免縮小地圖時爆炸
+    const maxStations = 30;
+    final visibleYB = <BikeStation>[];
+    for (final b in all) {
+      if (b.source != BikeStationSource.youbike) continue;
+      if (!bounds.contains(LatLng(b.lat, b.lng))) continue;
+      visibleYB.add(b);
+      if (visibleYB.length >= maxStations) break;
+    }
+
+    if (visibleYB.isEmpty) return;
+    bikeVm.fetchRealtimeForVisible(visibleYB);
   }
 
   TileUpdateTransformer _animatedMoveTransformer() {
@@ -332,6 +408,7 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _realtimeScreenDebounce?.cancel();
     if (widget.animatedMap == null) {
       _animatedMap?.dispose();
     }

@@ -60,6 +60,11 @@ class BikeStationViewModel extends ChangeNotifier {
   // ── Observable ──────────────────────────────────────
 
   /// 全量站池 — 地圖圖釘餵此池。
+  /// 每當即時數據寫入後遞增，供 UI 層判斷是否需要重建 markers（不複製 list）。
+  int _dataVersion = 0;
+
+  /// 給 ClusteredMarkerLayer 精確偵測即時數據變動。
+  int get dataVersion => _dataVersion;
   List<BikeStation> _fullBikes = [];
   List<BikeStation> get allBikes => _fullBikes;
 
@@ -91,6 +96,10 @@ class BikeStationViewModel extends ChangeNotifier {
   late bool _wasUseLocation;
   late bool _wasUseMoovo;
   Set<String> _lastPinnedIds = {};
+
+  /// 站點級即時請求 TTL 快取：記錄每個站點最後一次 fetchRealtimeForVisible 的時間。
+  /// key = station id, value = last fetch DateTime。30 秒內不會重複請求同一站點。
+  final Map<String, DateTime> _lastRealtimeFetch = {};
 
   LatLng _refPoint() => _mapVm?.getEffectiveLocation() ?? _regionCenter();
 
@@ -163,13 +172,7 @@ class BikeStationViewModel extends ChangeNotifier {
     if (rawYB.isEmpty) return;
     try {
       await _realtime.apply(rawYB, _refPoint());
-      // re-sort — keep current count, don't expand
-      _panelBikes = _sorter.sortByDistance(
-        stations: _panelBikes,
-        refPoint: _refPoint(),
-        pinnedIds: _config.pinnedStationIds,
-        limit: _activeQuery.isEmpty ? 20 : 40,
-      );
+      _dataVersion++;
       notifyListeners();
     } catch (e) {
       LogService().w('BikeVM', 'realtime failed: $e');
@@ -209,24 +212,48 @@ class BikeStationViewModel extends ChangeNotifier {
       ];
       if (rawYB.isNotEmpty) {
         await _realtime.apply(rawYB, _refPoint());
-        // re-sort — keep pinned at top, preserve current count
-        final limit = _activeQuery.isEmpty ? 20 : 40;
-        _panelBikes = _sorter.sortByDistance(
-          stations: _panelBikes,
-          refPoint: _refPoint(),
-          pinnedIds: _config.pinnedStationIds,
-          limit: limit,
-        );
       }
     } catch (e) {
       LogService().w('BikeVM', 'refresh failed: $e');
     }
 
+    _dataVersion++;
     _isLoading = false;
     notifyListeners();
 
     if (moveTo != null) {
       _trigger.fire(moveTo);
+    }
+  }
+
+  /// 給 MapView 在畫面穩定後，對可視範圍內的非聚合圖釘站點請求即時狀態。
+  /// 僅在 `useMapStatusMarkers` 啟用時才應呼叫。
+  Future<void> fetchRealtimeForVisible(List<BikeStation> visibleYB) async {
+    final now = DateTime.now();
+    final staleIds = <String>[];
+    for (final b in visibleYB) {
+      final last = _lastRealtimeFetch[b.id];
+      if (last == null || now.difference(last).inSeconds >= 30) {
+        staleIds.add(b.id);
+      }
+    }
+    if (staleIds.isEmpty) return;
+
+    final rawYB = visibleYB
+        .where((b) => staleIds.contains(b.id))
+        .map((b) => b.rawStation!)
+        .toList();
+    if (rawYB.isEmpty) return;
+
+    try {
+      await _realtime.apply(rawYB, _refPoint());
+      for (final id in staleIds) {
+        _lastRealtimeFetch[id] = now;
+      }
+      _dataVersion++;
+      notifyListeners();
+    } catch (e) {
+      LogService().w('BikeVM', 'realtime visible failed: $e');
     }
   }
 
@@ -243,6 +270,7 @@ class BikeStationViewModel extends ChangeNotifier {
       // 僅針對該站點發送即時數據請求
       await _realtime.apply([bs.rawStation!], _refPoint());
       // 通知 UI 更新（彈窗會重新讀取 bs 的最新數值）
+      _dataVersion++;
       notifyListeners();
     } catch (e) {
       LogService().w('BikeVM', 'single station refresh failed');

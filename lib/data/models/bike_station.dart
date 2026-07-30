@@ -38,6 +38,9 @@ abstract class BikeStation {
   int? get bikeCount;
   int? get eBikeCount;
   int? get emptySpaces;
+  int? get parkingSpaces;
+  int? get forbiddenSpaces;
+  int? get status; // 1=正常, 2=暫停營運
 
   /// 距離 (公尺),由排序階段依參考點計算後回填。
   double get distance;
@@ -80,6 +83,12 @@ class _StationBikeStation implements BikeStation {
   @override
   int? get emptySpaces => _s.emptySpaces;
   @override
+  int? get parkingSpaces => _s.parkingSpaces;
+  @override
+  int? get forbiddenSpaces => _s.forbiddenSpaces;
+  @override
+  int? get status => _s.status;
+  @override
   double get distance => _s.distance;
   @override
   set distance(double v) => _s.distance = v;
@@ -120,6 +129,12 @@ class _MoovoBikeStation implements BikeStation {
   int? get eBikeCount => _s.ebikeCount;
   @override
   int? get emptySpaces => _s.emptySpaces;
+  @override
+  int? get parkingSpaces => null;
+  @override
+  int? get forbiddenSpaces => null;
+  @override
+  int? get status => null; // Moovo 無此欄位
   @override
   double get distance => _s.distance;
   @override

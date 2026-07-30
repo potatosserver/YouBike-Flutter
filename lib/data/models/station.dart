@@ -11,6 +11,9 @@ class Station {
   int? availableBikes;
   int? availableElectricBikes;
   int? emptySpaces;
+  int? parkingSpaces;
+  int? forbiddenSpaces;
+  int? status; // 1=正常, 2=暫停營運
   double distance;
   LatLng? visualPosition; // Added for visual offsetting
 
@@ -25,6 +28,9 @@ class Station {
     this.availableBikes,
     this.availableElectricBikes,
     this.emptySpaces,
+    this.parkingSpaces,
+    this.forbiddenSpaces,
+    this.status,
     this.distance = 0.0,
   });
 
@@ -40,6 +46,9 @@ class Station {
       "availableBikes": availableBikes,
       "availableElectricBikes": availableElectricBikes,
       "emptySpaces": emptySpaces,
+      "parkingSpaces": parkingSpaces,
+      "forbiddenSpaces": forbiddenSpaces,
+      "status": status,
     };
   }
 
@@ -55,6 +64,9 @@ class Station {
       availableBikes: _parseInt(json["available_bikes"]),
       availableElectricBikes: _parseInt(json["available_electric_bikes"]),
       emptySpaces: _parseInt(json["empty_spaces"]),
+      parkingSpaces: _parseInt(json["parking_spaces"]),
+      forbiddenSpaces: _parseInt(json["forbidden_spaces"]),
+      status: _parseInt(json["status"]),
     );
   }
 
