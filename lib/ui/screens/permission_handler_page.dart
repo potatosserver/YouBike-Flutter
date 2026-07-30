@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -9,8 +10,27 @@ import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/data/services/permission_service.dart';
 import 'package:youbike/ui/widgets/base/confirm_dialog.dart';
 
+/// 權限類型：location 或 notification
+enum PermissionType { location, notification }
+
+class PermissionPageEntry {
+  /// 建立定位權限頁
+  const PermissionPageEntry.location() : type = PermissionType.location;
+
+  /// 建立通知權限頁
+  const PermissionPageEntry.notification()
+      : type = PermissionType.notification;
+
+  final PermissionType type;
+}
+
 class PermissionHandlerPage extends StatefulWidget {
-  const PermissionHandlerPage({super.key});
+  const PermissionHandlerPage({
+    super.key,
+    this.type = PermissionType.location,
+  });
+
+  final PermissionType type;
 
   @override
   State<PermissionHandlerPage> createState() => _PermissionHandlerPageState();
@@ -18,6 +38,21 @@ class PermissionHandlerPage extends StatefulWidget {
 
 class _PermissionHandlerPageState extends State<PermissionHandlerPage>
     with WidgetsBindingObserver {
+  /// 略過標記的 prefs key，依權限類型區分。集中於 [PermissionPrefKeys]。
+  String get _skipKey => widget.type == PermissionType.location
+      ? PermissionPrefKeys.skipLocation
+      : PermissionPrefKeys.skipNotification;
+
+  /// 通知權限「已處理」標記（授予或略過都算），
+  /// 與 [_skipKey] 不同：後者代表「使用者點略過」，前者代表「已處理過」。
+  /// 兩者分離是為了避免 Android 13 彈系統對話框後 resume 觸發
+  /// _checkPermission → _readGranted=false + _isSkipped=true →
+  /// UI 錯把授予後狀態顯示為「暫時略過」。
+  static const String _notificationHandledKey = 'notification_handled';
+
+  /// 通知權限：使用者是否點過「授予」按鈕（含 OS 拒絕但我們視為已互動過）。
+  bool _notificationGranted = false;
+
   final PermissionService _perm = PermissionService();
 
   bool _permissionGranted = false;
@@ -27,6 +62,13 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
   @override
   void initState() {
     super.initState();
+    // Web 平台不支援通知權限，直接跳至首頁
+    if (kIsWeb && widget.type == PermissionType.notification) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/');
+      });
+      return;
+    }
     WidgetsBinding.instance.addObserver(this);
     _checkPermission();
   }
@@ -45,7 +87,7 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
   }
 
   Future<void> _checkPermission() async {
-    final granted = await _perm.readLocationStatus();
+    final granted = await _readGranted();
     final skip = await _isSkipped();
     if (!mounted) return;
     setState(() {
@@ -53,19 +95,57 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
       _permissionSkipped = skip;
       _checked = true;
     });
+
+    // 通知頁面：檢查是否已處理過（從 _notificationHandledKey 讀取）
+    if (widget.type == PermissionType.notification) {
+      final prefs = await SharedPreferences.getInstance();
+      _notificationGranted = prefs.getBool(_notificationHandledKey) ?? false;
+      if (_notificationGranted && mounted) {
+        setState(() => _permissionGranted = true);
+      }
+    }
+  }
+
+  /// 讀取目前權限狀態是否為已授權 — 集中於 PermissionService
+  /// （其內部已處理 Web 走 Geolocator、Native 走 permission_handler 的分流）。
+  ///
+  /// 通知權限特殊處理：Android 12 以下 OS 會自動回 granted，
+  /// 但我們希望使用者明確操作過才視為已處理。
+  Future<bool> _readGranted() async {
+    switch (widget.type) {
+      case PermissionType.location:
+        return _perm.readLocationStatus();
+      case PermissionType.notification:
+        // 通知：不以 OS 狀態為準。若已處理過就回 true，
+        // 否則回 false 讓 UI 顯示請求按鈕。
+        final prefs = await SharedPreferences.getInstance();
+        return prefs.getBool(_notificationHandledKey) ?? false;
+    }
   }
 
   Future<bool> _isSkipped() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(PermissionPrefKeys.skipLocation) ?? false;
+    return prefs.getBool(_skipKey) ?? false;
   }
 
   Future<void> _setSkipped(bool v) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(PermissionPrefKeys.skipLocation, v);
+    await prefs.setBool(_skipKey, v);
   }
 
   Future<void> _requestPermission() async {
+    switch (widget.type) {
+      case PermissionType.location:
+        await _requestLocation();
+        break;
+      case PermissionType.notification:
+        await _requestNotification();
+        break;
+    }
+  }
+
+  Future<void> _requestLocation() async {
+    // Web / Native 分流集中於 PermissionService 內部 — 此處只需處理 granted 分支。
     final result = await _perm.requestLocationOnce();
     if (!mounted) return;
     switch (result) {
@@ -81,12 +161,43 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
     }
   }
 
+  Future<void> _requestNotification() async {
+    final result = await _perm.requestOsNotificationOnce();
+    if (!mounted) return;
+
+    switch (result) {
+      case NotificationRequestResult.granted:
+        _notificationGranted = true;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_notificationHandledKey, true);
+        setState(() => _permissionGranted = true);
+        return;
+      case NotificationRequestResult.permanentlyDenied:
+        _perm.showPermanentlyDeniedDialog(context);
+        return;
+      case NotificationRequestResult.denied:
+        return;
+      case NotificationRequestResult.unavailable:
+        _notificationGranted = true;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_notificationHandledKey, true);
+        setState(() => _permissionGranted = true);
+        return;
+    }
+  }
+
   void _showSkipWarningDialog() {
     final l10n = AppLocalizations.of(context);
+    final skipTitle = widget.type == PermissionType.location
+        ? l10n.skip_location_title
+        : l10n.skip_notification_title;
+    final skipDesc = widget.type == PermissionType.location
+        ? l10n.skip_location_desc
+        : l10n.skip_notification_desc;
     ConfirmDialog.show(
       context,
-      title: l10n.skip_location_title,
-      content: l10n.skip_location_desc,
+      title: skipTitle,
+      content: skipDesc,
       confirmLabel: l10n.skip_permission_confirm,
       cancelLabel: l10n.cancel,
       danger: true,
@@ -95,14 +206,24 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
   }
 
   Future<void> _performSkip() async {
-    final config = Provider.of<AppConfigService>(context, listen: false);
-    config.setUseLocation(false);
+    if (widget.type == PermissionType.location) {
+      final config = Provider.of<AppConfigService>(context, listen: false);
+      config.setUseLocation(false);
+    } else {
+      final config = Provider.of<AppConfigService>(context, listen: false);
+      config.setUseNotification(false);
+    }
     await _setSkipped(true);
     if (mounted) setState(() => _permissionSkipped = true);
   }
 
   void _goNext() {
-    if (mounted) context.go('/');
+    // 定位與通知各自獨立：略過定位不代表略過通知，讓使用者自行決定通知。
+    if (widget.type == PermissionType.location && !kIsWeb) {
+      if (mounted) context.go('/permission/notification');
+    } else {
+      if (mounted) context.go('/');
+    }
   }
 
   @override
@@ -121,6 +242,16 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
       );
     }
 
+    final iconData = widget.type == PermissionType.location
+        ? Icons.location_on_rounded
+        : Icons.notifications_active_rounded;
+    final title = widget.type == PermissionType.location
+        ? l10n.permission_location_title
+        : l10n.permission_notification_title;
+    final desc = widget.type == PermissionType.location
+        ? l10n.permission_location_desc
+        : l10n.permission_notification_desc;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarIconBrightness: isLight ? Brightness.dark : Brightness.light,
@@ -138,11 +269,10 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.location_on_rounded,
-                          size: 64, color: cs.primary),
+                      Icon(iconData, size: 64, color: cs.primary),
                       const SizedBox(height: 24),
                       Text(
-                        l10n.permission_location_title,
+                        title,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: cs.onSurface,
@@ -151,7 +281,7 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        l10n.permission_location_desc,
+                        desc,
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),
@@ -185,6 +315,17 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                           child: Icon(Icons.check_circle,
                               color: BrandColors.success, size: 32),
                         ),
+                      if (_permissionSkipped)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            l10n.skip_permission_label,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -200,7 +341,9 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                       shape: const StadiumBorder(),
                     ),
                     child: Text(
-                      l10n.setup_complete,
+                      (widget.type == PermissionType.location && !kIsWeb)
+                          ? l10n.setup_continue
+                          : l10n.setup_complete,
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold),
                     ),

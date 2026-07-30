@@ -56,7 +56,7 @@ void main() async {
     log.w('APP_START', 'Firebase/AppCheck 初始化失敗: $e');
   }
 
-  // 3. 註冊 FCM 訊息監聽
+  // 3. 註冊 FCM 訊息監聽（通知權限由 permission_handler_page 流程處理）
   await FcmMessageHandler.instance.registerListeners();
 
   log.i('APP_START',

@@ -5,11 +5,14 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+// permission_handler 保留僅用於 openAppSettings()（其餘權限流程已集中於 PermissionService）。
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youbike/core/config/app_environment.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
 import 'package:youbike/core/services/update_checker_service.dart';
 import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/data/services/permission_service.dart';
 import 'package:youbike/ui/widgets/setting_group_card.dart';
 import 'package:youbike/ui/widgets/changelog_dialog.dart';
 import 'package:youbike/ui/widgets/base/confirm_dialog.dart';
@@ -24,6 +27,9 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen>
     with WidgetsBindingObserver {
+  /// 統一權限讀取與請求入口。
+  final PermissionService _perm = PermissionService();
+
   String _version = '...';
 
   @override
@@ -39,11 +45,79 @@ class _SettingsScreenState extends State<SettingsScreen>
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 從系統設定返回 App 時，用 OS 真實通知狀態回寫 pref
+    if (state == AppLifecycleState.resumed) {
+      _syncNotificationPrefFromSystem();
+    }
+  }
+
+  Future<void> _syncNotificationPrefFromSystem() async {
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    final granted = await _perm.readSystemNotificationStatus();
+    if (!mounted) return;
+    if (config.useNotification != granted) {
+      config.setUseNotification(granted);
+    }
+  }
+
   Future<void> _initVersion() async {
     // AppConfigService.init() 已 cache 好 appVersion；直接讀並剝掉 buildNumber。
     final config = Provider.of<AppConfigService>(context, listen: false);
     final version = config.appVersion.split('+').first;
     if (mounted) setState(() => _version = version.isEmpty ? '0.0.0' : version);
+  }
+
+  /// 通知服務開關處理：
+  /// - 開啟：若 OS 還未授權，直接請求通知權限；請求成功則寫入 true，失敗仍保留偏好為 true
+  ///         （使用者可在系統設定重新授予，亦可由 splash 重新檢查）
+  /// - 關閉：先回滾開關狀態，彈 dialog；使用者按「開啟設定」後跳到系統設定頁，
+  ///         回到 App 時 didChangeAppLifecycleState 會以 OS 真實狀態回寫 pref。
+  void _onNotificationServiceChanged(bool val) {
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    if (val) {
+      config.setUseNotification(true);
+      _requestOsNotificationPermissionIfNeeded();
+      return;
+    }
+    _showDisableNotificationDialog(config);
+  }
+
+  /// 若 OS 還未授予通知權限，主動請求一次（一次性原則，集中於 PermissionService）
+  Future<void> _requestOsNotificationPermissionIfNeeded() async {
+    final result = await _perm.requestOsNotificationOnce();
+    if (!mounted) return;
+    if (result == NotificationRequestResult.permanentlyDenied) {
+      _perm.showPermanentlyDeniedDialog(context);
+    }
+  }
+
+  Future<void> _showDisableNotificationDialog(AppConfigService config) async {
+    final l10n = AppLocalizations.of(context);
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.notification_service_disable_title),
+        content: Text(l10n.notification_service_disable_content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.open_settings),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (accepted != true) {
+      config.setUseNotification(true);
+      return;
+    }
+    await openAppSettings();
   }
 
   @override
@@ -55,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final channel = AppEnvironment.updateChannel.toLowerCase();
     final showUpdateButton =
         channel == 'google_play' || channel == 'github' || channel == 'test';
-    const showGooglePlayButton = true;
+    final showGooglePlayButton = channel == 'google_play' || channel == 'web';
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -120,6 +194,18 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ),
                   onTap: null,
                 ),
+                if (!kIsWeb)
+                  _buildItem(
+                    icon: Icons.notifications_active_outlined,
+                    title: l10n.settings_notification_service,
+                    trailing: Switch(
+                      value: config.useNotification,
+                      onChanged: _onNotificationServiceChanged,
+                      activeTrackColor: cs.primary,
+                      activeThumbColor: cs.onPrimary,
+                    ),
+                    onTap: null,
+                  ),
               ],
             ),
 
@@ -165,11 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     trailing: Icon(Icons.open_in_new,
                         size: 20, color: cs.onSurfaceVariant),
                     onTap: () async {
-                      if (channel == 'google_play') {
-                        await _openGooglePlayStore();
-                      } else {
-                        _showCbtGuideDialog();
-                      }
+                      await _openGooglePlayStore();
                     },
                   ),
                 _buildItem(
@@ -219,7 +301,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   }) {
     final cs = Theme.of(context).colorScheme;
     return ListTile(
-      leading: leading ?? Icon(icon, color: iconColor ?? cs.onSurfaceVariant, size: 22),
+      leading:
+          leading ?? Icon(icon, color: iconColor ?? cs.onSurfaceVariant, size: 22),
       title: Text(
         title,
         style: TextStyle(
@@ -331,50 +414,17 @@ class _SettingsScreenState extends State<SettingsScreen>
       'https://play.google.com/store/apps/details?id=$packageName',
     );
 
-    // On web, directly open the Google Play web page in a new tab.
-    // url_launcher_web only supports platformDefault mode and http/https schemes.
     if (kIsWeb) {
       await launchUrl(webUri, mode: LaunchMode.platformDefault);
       return;
     }
 
-    // On Android, try market:// scheme first, fallback to web URL
     final marketUri = Uri.parse('market://details?id=$packageName');
     if (await canLaunchUrl(marketUri)) {
       await launchUrl(marketUri, mode: LaunchMode.externalApplication);
     } else {
       await launchUrl(webUri, mode: LaunchMode.externalApplication);
     }
-  }
-
-  void _showCbtGuideDialog() {
-    final l10n = AppLocalizations.of(context);
-    final cbtUrl = Uri.parse('https://youbike.pages.dev/CBT_Guide');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.cbt_guide_title),
-        content: Text(l10n.cbt_guide_content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.close),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await launchUrl(cbtUrl,
-                    mode: LaunchMode.externalApplication);
-              } catch (e) {
-                debugPrint('Error launching CBT Guide URL: $e');
-              }
-            },
-            child: Text(l10n.cbt_guide_open),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showAboutDialog() {
@@ -402,7 +452,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   text: l10n.version_label(_version)),
               const SizedBox(height: 12),
               _buildAboutRow(
-                  icon: Icons.network_check, text: 'Channel: ${AppEnvironment.displayChannel}'),
+                  icon: Icons.network_check,
+                  text: 'Channel: ${AppEnvironment.displayChannel}'),
             ],
           ),
         ),

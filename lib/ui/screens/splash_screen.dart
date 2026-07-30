@@ -31,13 +31,24 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    // 非首次：檢查定位權限是否已處理（授權或略過）
+    // 非首次：依序檢查定位、通知權限是否已處理（授權或略過）
     final skipLoc = prefs.getBool(PermissionPrefKeys.skipLocation) ?? false;
+    final skipNotif =
+        prefs.getBool(PermissionPrefKeys.skipNotification) ?? false;
+    final notifHandled = prefs.getBool('notification_handled') ?? false;
 
     final locGranted = await _perm.readLocationStatus();
     if (!mounted) return;
     if (!locGranted && !skipLoc) {
       context.go('/permission');
+      return;
+    }
+
+    // 通知權限：不以 OS 狀態為準（Android 12 以下會自動 granted）。
+    // 檢查 notification_handled（已授予過）或 skipNotification（略過過）。
+    // Web 跳過通知頁。
+    if (!_perm.isWeb && !notifHandled && !skipNotif) {
+      context.go('/permission/notification');
       return;
     }
 

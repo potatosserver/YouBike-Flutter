@@ -10,9 +10,11 @@ class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 
   Future<void> _onGetStarted(BuildContext context) async {
-    // 清除略過記錄，強制重新走定位權限流程
+    // 清除略過記錄，強制重新走完整權限流程（定位 + 通知）
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(PermissionPrefKeys.skipLocation);
+    await prefs.remove(PermissionPrefKeys.skipNotification);
+    await prefs.remove('notification_handled');
     if (context.mounted) {
       context.go('/permission');
     }
