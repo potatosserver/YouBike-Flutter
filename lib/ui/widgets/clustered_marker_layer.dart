@@ -118,8 +118,10 @@ class _ClusteredMarkerLayerState<T> extends State<ClusteredMarkerLayer<T>> {
   @override
   void didUpdateWidget(covariant ClusteredMarkerLayer<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 長度或 dataVersion 變化 → 重建 markers（不複製 list）
+    // 長度、statusManager、realtimeKeyOf 或 dataVersion 變化 → 重建 markers（不複製 list）
     if (oldWidget.items.length != widget.items.length ||
+        oldWidget.statusManager != widget.statusManager ||
+        oldWidget.realtimeKeyOf != widget.realtimeKeyOf ||
         _lastVersion == -1 ||
         _lastVersion != widget.dataVersion) {
       _rebuild();

@@ -33,6 +33,7 @@ class BikeStationViewModel extends ChangeNotifier {
         _trigger = trigger ?? MapMoveTrigger() {
     _wasUseLocation = config.useLocation;
     _wasUseMoovo = config.useMoovo;
+    _wasUseMapStatusMarkers = config.useMapStatusMarkers;
     _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
     config.addListener(_onConfigChanged);
     _startCountdown();
@@ -105,6 +106,7 @@ class BikeStationViewModel extends ChangeNotifier {
   Timer? _countdownTimer;
   late bool _wasUseLocation;
   late bool _wasUseMoovo;
+  late bool _wasUseMapStatusMarkers;
   Set<String> _lastPinnedIds = {};
 
   /// 站點級即時請求 TTL 快取：記錄每個站點最後一次 fetchRealtimeForVisible 的時間。
@@ -359,9 +361,19 @@ class BikeStationViewModel extends ChangeNotifier {
     final locChanged = _config.useLocation != _wasUseLocation;
     final pinChanged = !_setEquals(_config.pinnedStationIds, _lastPinnedIds);
     final moovoChanged = _config.useMoovo != _wasUseMoovo;
+    final statusMarkerChanged = _config.useMapStatusMarkers != _wasUseMapStatusMarkers;
     _wasUseLocation = _config.useLocation;
     _wasUseMoovo = _config.useMoovo;
+    _wasUseMapStatusMarkers = _config.useMapStatusMarkers;
     _lastPinnedIds = Set<String>.from(_config.pinnedStationIds);
+
+    if (statusMarkerChanged) {
+      if (_config.useMapStatusMarkers) {
+        _lastRealtimeFetch.clear(); // 啟用時清除歷史快取鎖定，確保立即抓取即時數據
+      }
+      _dataVersion++;
+      notifyListeners();
+    }
 
     if (locChanged) {
       if (_config.useLocation) {
