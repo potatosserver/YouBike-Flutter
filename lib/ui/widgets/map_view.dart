@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:youbike/core/services/realtime_status_manager.dart';
 import 'package:youbike/providers/map_view_model.dart';
 import 'package:youbike/ui/widgets/map_markers.dart';
 import 'package:youbike/ui/widgets/pulse_marker.dart';
@@ -46,10 +47,10 @@ class MapView extends StatefulWidget {
 
 class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   Timer? _mapMoveDebounceTimer;
-  Timer? _realtimeScreenDebounce;
 
   BikeStation? _selected;
   AnimatedMapController? _animatedMap;
+  RealtimeStatusManager? _realtimeManager;
 
   AnimatedMapController _getAnimatedMap() {
     if (widget.animatedMap != null) return widget.animatedMap!;
@@ -101,7 +102,9 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
           if (event is MapEventMoveEnd) {
             _log("PERF",
                 "Map stable at Zoom: ${widget.mapController.camera.zoom.toStringAsFixed(2)}");
-            _scheduleRealtimeForScreen();
+            // 方案 4 — 移動/縮放結束後,把當前所有已註冊的 unclustered marker
+            // 一次性 flush 出去,確保最後一次 unregister 清空時不漏單。
+            _realtimeManager?.flush();
           }
         },
       ),
@@ -126,23 +129,35 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                 .toList();
             final mo =
                 all.where((b) => b.source == BikeStationSource.moovo).toList();
+
+            // 方案 4 — manager lazy init (此 widget 只在 home_screen 有用到,單例 OK)
+            // 用 useMapStatusMarkers 旗標決定是否啟用即時 lifecycle hook。
+            // 旗標關閉時,marker 退化成純 RoadSignMarker,行為等同舊版。
+            final config = Provider.of<AppConfigService>(context, listen: false);
+            final useStatus = config.useMapStatusMarkers;
+            _realtimeManager ??= RealtimeStatusManager(
+              onBatchFetch: bikeVm.fetchRealtimeForIds,
+            );
+
             return Stack(children: [
               if (yb.isNotEmpty)
                 ClusteredMarkerLayer<BikeStation>(
                   items: yb,
                   pointOf: (b) => LatLng(b.lat, b.lng),
                   keyOf: (b) => b.sourceKey,
-                  markerChild: (b) => _buildYoubikeMarker(b),
+                  markerChild: (ctx, b) => _buildYoubikeMarker(ctx, b),
                   clusterBuilder: (n) => ClusterMarker(count: n),
                   onMarkerTap: (b) => _animateToStation(b),
                   dataVersion: bikeVm.dataVersion,
+                  statusManager: useStatus ? _realtimeManager : null,
+                  realtimeKeyOf: useStatus ? (b) => b.id : null,
                 ),
               if (mo.isNotEmpty)
                 ClusteredMarkerLayer<BikeStation>(
                   items: mo,
                   pointOf: (b) => LatLng(b.lat, b.lng),
                   keyOf: (b) => b.sourceKey,
-                  markerChild: (_) => const MoovoPinMarker(),
+                  markerChild: (ctx, _) => const MoovoPinMarker(),
                   clusterBuilder: (n) => ClusterMarker(
                     count: n,
                     color: BrandColors.markerMoovoGreen,
@@ -322,8 +337,12 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
 
   /// 根據站點即時數據建立帶狀態標記的 YouBike 圖釘。
   /// 狀態標記由 `useMapStatusMarkers` beta 開關控制，預設為關閉（顯示原始圖釘）。
-  Widget _buildYoubikeMarker(BikeStation b) {
-    final config = Provider.of<AppConfigService>(context, listen: false);
+  ///
+  /// 簽名升級為 `(BuildContext, BikeStation)` — 由 [ClusteredMarkerLayer.markerChild]
+  /// 在 `ListenableBuilder<BikeStationViewModel>` 的 builder 內呼叫,
+  /// 保證 station 物件已是最新即時資料。
+  Widget _buildYoubikeMarker(BuildContext ctx, BikeStation b) {
+    final config = Provider.of<AppConfigService>(ctx, listen: false);
     if (!config.useMapStatusMarkers) return const RoadSignMarker();
     final eBikeCount = b.eBikeCount ?? 0;
     final bikes = b.bikeCount ?? 0;
@@ -355,7 +374,7 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   }
 
   void _animateToStation(BikeStation bs) {
-    // 1. 觸發單站即時更新（beta 模式已由畫面範圍請求覆蓋，跳過節省流量）
+    // 1. 觸發單站即時更新（beta 模式已由 RealtimeStatusManager 接管，跳過節省流量）
     final config = Provider.of<AppConfigService>(context, listen: false);
     if (!config.useMapStatusMarkers) {
       Provider.of<BikeStationViewModel>(context, listen: false).refreshStation(bs);
@@ -366,49 +385,14 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
     _getAnimatedMap().animateTo(LatLng(bs.lat, bs.lng), 18.0);
   }
 
-  void _scheduleRealtimeForScreen() {
-    final config = Provider.of<AppConfigService>(context, listen: false);
-    if (!config.useMapStatusMarkers) return;
-
-    // 只在非聚合模式下才對畫面內站點請求（只有個別圖釘才看得到狀態標記）
-    // disableClusteringAtZoom 設為 16，>= 16 時所有圖釘都是個別的
-    if (widget.mapController.camera.zoom < 16.0) return;
-
-    _realtimeScreenDebounce?.cancel();
-    _realtimeScreenDebounce = Timer(const Duration(milliseconds: 300), () {
-      _fetchRealtimeForScreen();
-    });
-  }
-
-  void _fetchRealtimeForScreen() {
-    final bikeVm = Provider.of<BikeStationViewModel>(context, listen: false);
-    final all = bikeVm.allBikes;
-    if (all.isEmpty) return;
-
-    final camera = widget.mapController.camera;
-    final bounds = camera.visibleBounds;
-
-    // 只取可視範圍內的 YouBike 站點，上限 30 避免縮小地圖時爆炸
-    const maxStations = 30;
-    final visibleYB = <BikeStation>[];
-    for (final b in all) {
-      if (b.source != BikeStationSource.youbike) continue;
-      if (!bounds.contains(LatLng(b.lat, b.lng))) continue;
-      visibleYB.add(b);
-      if (visibleYB.length >= maxStations) break;
-    }
-
-    if (visibleYB.isEmpty) return;
-    bikeVm.fetchRealtimeForVisible(visibleYB);
-  }
-
   TileUpdateTransformer _animatedMoveTransformer() {
     return _getAnimatedMap().tileUpdateTransformer;
   }
 
   @override
   void dispose() {
-    _realtimeScreenDebounce?.cancel();
+    _realtimeManager?.dispose();
+    _realtimeManager = null;
     if (widget.animatedMap == null) {
       _animatedMap?.dispose();
     }

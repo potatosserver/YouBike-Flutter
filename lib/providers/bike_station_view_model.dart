@@ -9,6 +9,7 @@ import 'package:youbike/core/services/map_move_trigger.dart';
 import 'package:youbike/core/services/realtime_updater.dart';
 import 'package:youbike/core/utils/log_service.dart';
 import 'package:youbike/data/models/bike_station.dart';
+import 'package:youbike/data/models/station.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/data/services/bike_station_repository.dart';
 import 'package:youbike/providers/map_view_model.dart';
@@ -67,6 +68,15 @@ class BikeStationViewModel extends ChangeNotifier {
   int get dataVersion => _dataVersion;
   List<BikeStation> _fullBikes = [];
   List<BikeStation> get allBikes => _fullBikes;
+
+  /// O(N) 線性搜尋 — 給 [RealtimeStatusManager] 把 station id 反查回 [BikeStation]。
+  /// 站池規模約數百,線性搜尋成本遠低於建表維護成本,維持簡單。
+  BikeStation? byId(String id) {
+    for (final b in _fullBikes) {
+      if (b.id == id) return b;
+    }
+    return null;
+  }
 
   // 當前顯示列表 — 面板用 (限筆）
   List<BikeStation> _panelBikes = [];
@@ -223,6 +233,51 @@ class BikeStationViewModel extends ChangeNotifier {
 
     if (moveTo != null) {
       _trigger.fire(moveTo);
+    }
+  }
+
+  /// 給 [RealtimeStatusManager] 用的 id-only 入口 —
+  /// 由 marker 自我宣告「我現在是 unclustered」後,manager 集滿一批 id 後呼叫本方法。
+  ///
+  /// 與 [fetchRealtimeForVisible] 的差異:
+  /// - 不再依賴「地圖層幫我算 visibleBounds」
+  /// - 不再依賴「zoom>=16 才呼叫」 — 即使 zoom=10,只要某 marker 是孤立的,
+  ///   它就會被 mount 並註冊,進而拿到自己的即時狀態。
+  /// - 一律走 30s TTL + 上限 30 站,避免極端情況爆量。
+  Future<void> fetchRealtimeForIds(List<String> ids) async {
+    if (ids.isEmpty) return;
+
+    final now = DateTime.now();
+    final staleIds = <String>[];
+    for (final id in ids) {
+      final last = _lastRealtimeFetch[id];
+      if (last == null || now.difference(last).inSeconds >= 30) {
+        staleIds.add(id);
+      }
+    }
+    if (staleIds.isEmpty) return;
+
+    // 把 id 翻成 raw Station — 沒有 rawStation 代表該站已被池子移除(罕見但可能)。
+    final rawStations = <Station>[];
+    for (final id in staleIds) {
+      final b = byId(id);
+      if (b == null) continue;
+      if (b.source != BikeStationSource.youbike) continue;
+      if (b.rawStation == null) continue;
+      rawStations.add(b.rawStation!);
+      if (rawStations.length >= 30) break; // 防爆 — 與舊版 visibleYB 行為一致
+    }
+    if (rawStations.isEmpty) return;
+
+    try {
+      await _realtime.apply(rawStations, _refPoint());
+      for (final id in staleIds) {
+        _lastRealtimeFetch[id] = now;
+      }
+      _dataVersion++;
+      notifyListeners();
+    } catch (e) {
+      LogService().w('BikeVM', 'realtime ids fetch failed: $e');
     }
   }
 
