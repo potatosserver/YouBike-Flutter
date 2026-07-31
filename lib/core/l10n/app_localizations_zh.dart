@@ -391,7 +391,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get beta_moovo_subtitle => '啟用後將陸續加入 Moovo 站點支援，目前處於實驗階段，可能造成不穩定。';
 
   @override
-  String get beta_map_status_markers => '地圖狀態標記';
+  String get beta_map_status_markers => '站點圖釘狀態標記';
 
   @override
   String get beta_map_status_markers_subtitle =>

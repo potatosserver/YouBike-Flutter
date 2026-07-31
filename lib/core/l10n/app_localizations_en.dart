@@ -398,7 +398,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enables upcoming Moovo station support. Currently experimental and may be unstable.';
 
   @override
-  String get beta_map_status_markers => 'Map Status Markers';
+  String get beta_map_status_markers => 'Station Pin Status Markers';
 
   @override
   String get beta_map_status_markers_subtitle =>

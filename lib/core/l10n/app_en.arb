@@ -278,7 +278,7 @@
     "@beta_moovo_provider": {},
     "beta_moovo_subtitle": "Enables upcoming Moovo station support. Currently experimental and may be unstable.",
     "@beta_moovo_subtitle": {},
-    "beta_map_status_markers": "Map Status Markers",
+    "beta_map_status_markers": "Station Pin Status Markers",
     "@beta_map_status_markers": {},
     "beta_map_status_markers_subtitle": "Shows colored status indicators around map pins: green dot for electric bikes, red ring when no bikes available, orange ring when full, gray overlay when suspended.",
     "@beta_map_status_markers_subtitle": {},

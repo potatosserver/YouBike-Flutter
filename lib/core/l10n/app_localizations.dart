@@ -827,7 +827,7 @@ abstract class AppLocalizations {
   /// No description provided for @beta_map_status_markers.
   ///
   /// In en, this message translates to:
-  /// **'Map Status Markers'**
+  /// **'Station Pin Status Markers'**
   String get beta_map_status_markers;
 
   /// No description provided for @beta_map_status_markers_subtitle.
