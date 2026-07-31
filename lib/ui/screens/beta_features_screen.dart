@@ -41,7 +41,12 @@ class BetaFeaturesScreen extends StatelessWidget {
                   subtitle: l10n.beta_moovo_subtitle,
                   trailing: Switch(
                     value: config.useMoovo,
-                    onChanged: (val) => config.setUseMoovo(val),
+                    onChanged: (val) => _handleBetaToggle(
+                      context,
+                      currentValue: config.useMoovo,
+                      newValue: val,
+                      onConfirm: () => config.setUseMoovo(val),
+                    ),
                     activeTrackColor: cs.primary,
                     activeThumbColor: cs.onPrimary,
                   ),
@@ -53,7 +58,12 @@ class BetaFeaturesScreen extends StatelessWidget {
                   subtitle: l10n.beta_map_status_markers_subtitle,
                   trailing: Switch(
                     value: config.useMapStatusMarkers,
-                    onChanged: (val) => config.setUseMapStatusMarkers(val),
+                    onChanged: (val) => _handleBetaToggle(
+                      context,
+                      currentValue: config.useMapStatusMarkers,
+                      newValue: val,
+                      onConfirm: () => config.setUseMapStatusMarkers(val),
+                    ),
                     activeTrackColor: cs.primary,
                     activeThumbColor: cs.onPrimary,
                   ),
@@ -64,6 +74,43 @@ class BetaFeaturesScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _handleBetaToggle(
+    BuildContext context, {
+    required bool currentValue,
+    required bool newValue,
+    required VoidCallback onConfirm,
+  }) async {
+    if (!newValue) {
+      onConfirm();
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.beta_features_page_title),
+        content: const Text(
+          '此功能還在實驗中，開啟此 Beta 功能可能導致多餘的網路流量或造成卡頓。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+
+    if (accepted == true) {
+      onConfirm();
+    }
   }
 
   Widget _buildItem({
