@@ -218,12 +218,49 @@ class BikeStationViewModel extends ChangeNotifier {
         _sortPanel();
       }
 
+      // 1. 更新 YouBike 即時數據
       final rawYB = [
         for (final b in _panelBikes)
           if (b.source == BikeStationSource.youbike) b.rawStation!,
       ];
       if (rawYB.isNotEmpty) {
         await _realtime.apply(rawYB, _refPoint());
+      }
+
+      // 2. 更新 Moovo 站點與數量 (每 60s 或手動刷新時同步執行)
+      if (_config.useMoovo) {
+        final freshMo = await _repo.fetchMoovoStations();
+        if (freshMo != null) {
+          // 將最新 Moovo 站點更新回全量池 (替換舊站點)
+          final moIds = freshMo.map((m) => m.id).toSet();
+          _fullBikes = [
+            for (final b in _fullBikes)
+              if (b.source == BikeStationSource.moovo && moIds.contains(b.id))
+                // 這裡需要一種方式將 freshMo 中的新對象替換進去
+                // 但因為 BikeStation 是不可變的，我們直接過濾掉舊的，再補入新的
+                null 
+              else b,
+          ].whereType<BikeStation>().toList();
+          _fullBikes.addAll(freshMo.where((m) => !_fullBikes.any((b) => b.id == m.id)));
+          
+          // 重新計算面板排序
+          if (_activeQuery.isEmpty) {
+            _sortPanel();
+          } else {
+            // 搜尋模式下重新篩選一次以包含更新後的 Moovo
+            final hits = _fullBikes.where(
+              (s) => s.nameTw.contains(_activeQuery) || s.nameEn.contains(_activeQuery),
+            ).toList();
+            if (hits.isNotEmpty) {
+              _panelBikes = _sorter.sortByDistance(
+                stations: hits,
+                refPoint: _refPoint(),
+                pinnedIds: _config.pinnedStationIds,
+                limit: 40,
+              );
+            }
+          }
+        }
       }
     } catch (e) {
       LogService().w('BikeVM', 'refresh failed: $e');
