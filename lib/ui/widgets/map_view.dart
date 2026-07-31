@@ -352,12 +352,11 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
 
     // 是否已收到即時資料（parkingSpaces 被寫入即為真）
     final hasRealtime = parking != null;
-    final p = parking ?? 0;
 
     // 暫停營運判定：
     //   1) API status=2
-    //   2) 已收到即時資料 且 parking/available/empty 全為 0
-    final suspended = st == 2 || (hasRealtime && p == 0 && bikes == 0 && empty == 0);
+    //   2) 已收到即時資料 且 available_spaces(車輛) + empty_spaces(空位) 全為 0
+    final suspended = st == 2 || (hasRealtime && bikes == 0 && empty == 0);
     // 有電輔車
     final hasElectric = eBikeCount > 0;
     // 車位滿載：無空格但仍有車可借
