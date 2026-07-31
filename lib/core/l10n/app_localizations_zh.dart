@@ -395,7 +395,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get beta_map_status_markers_subtitle =>
-      '啟用後圖釘外圍顯示狀態顏色：有電輔車右上角綠色圓點、車位滿載紅色外圈、無車可借橘色外圈、暫停營運灰色覆蓋。';
+      '啟用後圖釘外圍顯示狀態顏色：有電輔車右上角綠色圓點、無車可借紅色外圈、無位可還橘色外圈、暫停營運灰色覆蓋。';
 
   @override
   String get check_for_updates => '檢查更新';

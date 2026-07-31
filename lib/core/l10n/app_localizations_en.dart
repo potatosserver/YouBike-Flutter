@@ -402,7 +402,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get beta_map_status_markers_subtitle =>
-      'Shows colored status indicators around map pins: green dot for electric bikes, red ring when full, orange ring when no bikes, gray overlay when suspended.';
+      'Shows colored status indicators around map pins: green dot for electric bikes, red ring when no bikes available, orange ring when full, gray overlay when suspended.';
 
   @override
   String get check_for_updates => 'Check for Updates';

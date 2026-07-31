@@ -833,7 +833,7 @@ abstract class AppLocalizations {
   /// No description provided for @beta_map_status_markers_subtitle.
   ///
   /// In en, this message translates to:
-  /// **'Shows colored status indicators around map pins: green dot for electric bikes, red ring when full, orange ring when no bikes, gray overlay when suspended.'**
+  /// **'Shows colored status indicators around map pins: green dot for electric bikes, red ring when no bikes available, orange ring when full, gray overlay when suspended.'**
   String get beta_map_status_markers_subtitle;
 
   /// No description provided for @check_for_updates.

@@ -10,8 +10,8 @@ import 'package:youbike/core/theme/brand_colors.dart';
 ///
 /// 狀態標記（僅 YouBike 使用，置於圖釘外圍）：
 /// - [hasElectric]: 右上角綠色圓點
-/// - [isFull]: 外圈改為紅色（車位滿載）
-/// - [noBikes]: 外圈改為橘色（無車可借）
+/// - [isFull]: 外圈改為橘色（車位滿載 / 無位可還）
+/// - [noBikes]: 外圈改為紅色（無車可借）
 /// - [isSuspended]: 灰色半透明覆蓋層（暫停營運）
 class BikePinMarker extends StatelessWidget {
   final Color color;
@@ -20,10 +20,10 @@ class BikePinMarker extends StatelessWidget {
   /// 有電輔車 — 右上角綠色圓點。
   final bool hasElectric;
 
-  /// 車位滿載 — 外圈紅色。
+  /// 車位滿載 (無位可還) — 外圈橘色。
   final bool isFull;
 
-  /// 無車可借 — 外圈橘色。
+  /// 無車可借 — 外圈紅色。
   final bool noBikes;
 
   /// 暫停營運 — 灰色覆蓋。
@@ -50,21 +50,22 @@ class BikePinMarker extends StatelessWidget {
         active = false;
 
   /// 給 Moovo 使用的便利 constructor — 綠色。
-  const BikePinMarker.moovo({super.key})
-      : color = BrandColors.markerMoovoGreen,
-        active = false,
-        hasElectric = false,
-        isFull = false,
-        noBikes = false,
-        isSuspended = false;
+  const BikePinMarker.moovo({
+    super.key,
+    this.hasElectric = false,
+    this.isFull = false,
+    this.noBikes = false,
+    this.isSuspended = false,
+  })  : color = BrandColors.markerMoovoGreen,
+        active = false;
 
   @override
   Widget build(BuildContext context) {
-    // 決定外圈顏色：full(紅) > noBikes(橘) > 預設白
-    final ringColor = isFull
-        ? BrandColors.markerFullRing
-        : noBikes
-            ? BrandColors.markerNoBikeRing
+    // 決定外圈顏色：noBikes(紅) > isFull(橘) > 預設白
+    final ringColor = noBikes
+        ? BrandColors.markerNoBikeRing
+        : isFull
+            ? BrandColors.markerFullRing
             : Colors.white;
 
     const size = 40.0; // 容器大小

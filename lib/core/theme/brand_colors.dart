@@ -31,11 +31,11 @@ class BrandColors {
     /// 有電輔車 — 右上角綠色圓點。
     static const Color markerElectricDot = Color(0xFF4CAF50);
 
-    /// 車位滿載 — 外圈紅色。
-    static const Color markerFullRing = Color(0xFFE53935);
+    /// 車位滿載 (無位可還) — 外圈橘色。
+    static const Color markerFullRing = Color(0xFFFF9800);
 
-    /// 無車可借 — 外圈橘色。
-    static const Color markerNoBikeRing = Color(0xFFFF9800);
+    /// 無車可借 — 外圈紅色。
+    static const Color markerNoBikeRing = Color(0xFFE53935);
 
     /// 暫停營運 — 灰色覆蓋。
     static const Color markerSuspendedOverlay = Color(0x88000000);

@@ -157,7 +157,7 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                   items: mo,
                   pointOf: (b) => LatLng(b.lat, b.lng),
                   keyOf: (b) => b.sourceKey,
-                  markerChild: (ctx, _) => const MoovoPinMarker(),
+                  markerChild: (ctx, b) => _buildMoovoMarker(ctx, b),
                   clusterBuilder: (n) => ClusterMarker(
                     count: n,
                     color: BrandColors.markerMoovoGreen,
@@ -353,22 +353,48 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
     // 是否已收到即時資料（parkingSpaces 被寫入即為真）
     final hasRealtime = parking != null;
 
+    // 總可借車輛數 (普通車 2.0 + 電輔車 2.0E)
+    final totalBikes = bikes + eBikeCount;
+
     // 暫停營運判定：
     //   1) API status=2
-    //   2) 已收到即時資料 且 available_spaces(車輛) + empty_spaces(空位) 全為 0
-    final suspended = st == 2 || (hasRealtime && bikes == 0 && empty == 0);
+    //   2) 已收到即時資料 且 總車輛數與空位全為 0
+    final suspended = st == 2 || (hasRealtime && totalBikes == 0 && empty == 0);
     // 有電輔車
     final hasElectric = eBikeCount > 0;
-    // 車位滿載：無空格但仍有車可借
-    final isFull = hasRealtime && !suspended && empty == 0 && bikes > 0;
-    // 無車可借：無車但有空格
-    final noBikes = hasRealtime && !suspended && bikes == 0 && empty > 0;
+    // 無位可還 (車位滿載)：無空格但仍有車可借
+    final isFull = hasRealtime && !suspended && empty == 0 && totalBikes > 0;
+    // 無車可借：普通車與電輔車皆為 0（兩者皆無），且有空格可還
+    final noBikes = hasRealtime && !suspended && totalBikes == 0 && empty > 0;
 
     return BikePinMarker.youbike(
       hasElectric: hasElectric,
       isFull: isFull,
       noBikes: noBikes,
       isSuspended: suspended,
+    );
+  }
+
+  /// 根據站點即時數據建立帶狀態標記的 Moovo 圖釘。
+  Widget _buildMoovoMarker(BuildContext ctx, BikeStation b) {
+    final config = Provider.of<AppConfigService>(ctx, listen: false);
+    if (!config.useMapStatusMarkers) return const MoovoPinMarker();
+    final eBikeCount = b.eBikeCount ?? 0;
+    final bikes = b.bikeCount ?? 0;
+    final empty = b.emptySpaces ?? 0;
+    final totalBikes = bikes + eBikeCount;
+
+    // 無車可借：普通車與電輔車皆為 0（兩者皆無）
+    final noBikes = totalBikes == 0;
+    // 無位可還 (車位滿載)：無空格但仍有車可借
+    final isFull = empty == 0 && totalBikes > 0;
+    // 有電輔車
+    final hasElectric = eBikeCount > 0;
+
+    return BikePinMarker.moovo(
+      hasElectric: hasElectric,
+      isFull: isFull,
+      noBikes: noBikes,
     );
   }
 
