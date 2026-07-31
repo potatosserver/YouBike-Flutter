@@ -69,14 +69,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final l10n = AppLocalizations.of(context);
 
     try {
-      Fluttertoast.showToast(msg: l10n.checking_for_updates);
+      if (!kIsWeb) {
+        Fluttertoast.showToast(msg: l10n.checking_for_updates);
+      }
       final result = await service.checkForUpdate(currentVersion: versionOnly);
       // Fluttertoast plugin 在 Web 平台未實作 cancel()，呼叫會拋 PlatformException。
       if (!kIsWeb) Fluttertoast.cancel();
       if (!mounted) return;
       
       if (result.isLatest) {
-        Fluttertoast.showToast(msg: l10n.latest_version_installed);
+        if (!kIsWeb) Fluttertoast.showToast(msg: l10n.latest_version_installed);
       } else {
         final latestRelease = await service.getLatestGithubRelease();
         if (latestRelease != null && mounted) {

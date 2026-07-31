@@ -336,7 +336,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         config.appVersion.split('+').first; // '1.0.1+2' → '1.0.1'
 
     try {
-      Fluttertoast.showToast(msg: l10n.checking_for_updates);
+      if (!kIsWeb) {
+        Fluttertoast.showToast(msg: l10n.checking_for_updates);
+      }
       final result = await service.checkForUpdate(currentVersion: versionOnly);
       // Fluttertoast plugin 在 Web 平台未實作 cancel()，呼叫會拋 PlatformException。
       if (!kIsWeb) Fluttertoast.cancel();
@@ -344,9 +346,11 @@ class _SettingsScreenState extends State<SettingsScreen>
       await _handleUpdateResult(result, l10n);
     } catch (error) {
       if (!mounted) return;
-      Fluttertoast.showToast(
-        msg: '${l10n.update_check_failed}: ${error.toString()}',
-      );
+      if (!kIsWeb) {
+        Fluttertoast.showToast(
+          msg: '${l10n.update_check_failed}: ${error.toString()}',
+        );
+      }
     }
   }
 
@@ -363,9 +367,11 @@ class _SettingsScreenState extends State<SettingsScreen>
             '',
           ) ??
           l10n.update_check_failed;
-      Fluttertoast.showToast(
-        msg: '${l10n.update_check_failed}: $errorMessage',
-      );
+      if (!kIsWeb) {
+        Fluttertoast.showToast(
+          msg: '${l10n.update_check_failed}: $errorMessage',
+        );
+      }
       return;
     }
 
@@ -375,7 +381,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
 
     if (result.isLatest) {
-      Fluttertoast.showToast(msg: l10n.latest_version_installed);
+      if (!kIsWeb) Fluttertoast.showToast(msg: l10n.latest_version_installed);
       return;
     }
 
