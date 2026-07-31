@@ -58,4 +58,36 @@ class MoovoStation {
   bool get hasEbike => ebikeCount > 0;
 
   String displayName(String lang) => lang.startsWith('en') ? nameEn : nameTw;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nameTw': nameTw,
+      'nameEn': nameEn,
+      'lat': lat,
+      'lon': lon,
+      'radius': radius,
+      'bikeCount': bikeCount,
+      'ebikeCount': ebikeCount,
+      'maxCapacity': maxCapacity,
+      'maxCapacityIsFallback': maxCapacityIsFallback,
+      'address': address,
+    };
+  }
+
+  factory MoovoStation.fromJson(Map<String, dynamic> json) {
+    return MoovoStation(
+      id: json['id'] as String,
+      nameTw: json['nameTw'] as String,
+      nameEn: json['nameEn'] as String,
+      lat: (json['lat'] as num).toDouble(),
+      lon: (json['lon'] as num).toDouble(),
+      radius: (json['radius'] as num).toDouble(),
+      bikeCount: json['bikeCount'] as int,
+      ebikeCount: json['ebikeCount'] as int,
+      maxCapacity: json['maxCapacity'] as int,
+      maxCapacityIsFallback: json['maxCapacityIsFallback'] as bool,
+      address: json['address'] as String?,
+    );
+  }
 }

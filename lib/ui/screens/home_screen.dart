@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -70,7 +71,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       Fluttertoast.showToast(msg: l10n.checking_for_updates);
       final result = await service.checkForUpdate(currentVersion: versionOnly);
-      Fluttertoast.cancel();
+      // Fluttertoast plugin 在 Web 平台未實作 cancel()，呼叫會拋 PlatformException。
+      if (!kIsWeb) Fluttertoast.cancel();
       if (!mounted) return;
       
       if (result.isLatest) {

@@ -338,7 +338,8 @@ class _SettingsScreenState extends State<SettingsScreen>
     try {
       Fluttertoast.showToast(msg: l10n.checking_for_updates);
       final result = await service.checkForUpdate(currentVersion: versionOnly);
-      Fluttertoast.cancel();
+      // Fluttertoast plugin 在 Web 平台未實作 cancel()，呼叫會拋 PlatformException。
+      if (!kIsWeb) Fluttertoast.cancel();
       if (!mounted) return;
       await _handleUpdateResult(result, l10n);
     } catch (error) {
@@ -380,6 +381,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     // 這裡原本是顯示簡單的 AlertDialog，現在改用統一的 GithubUpdateAlertDialog
     final latestRelease = await service.getLatestGithubRelease();
+    if (!localContext.mounted) return;
     if (latestRelease != null) {
       await GithubUpdateAlertDialog.show(localContext, latestRelease);
     } else {

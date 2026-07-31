@@ -18,14 +18,13 @@ class ApiService {
 
   // 全局 API 超時設定
   static const Duration defaultTimeout = Duration(seconds: 10);
-  // 基礎數據量大 (4MB+)，給予更寬裕的超時
-  static const Duration baseDataTimeout = Duration(seconds: 30);
-
+  // 基礎數據量大 (4MB+)，啟動時無快取情境不能有超時 — 否則圖釘會全部不見。
+  // 不傳 timeout 即為無上限。
   Future<List<Station>> fetchAllStations() async {
     try {
-      // 使用更長的超時時間以應對大文件下載
+      // 啟動時強制下載：4MB 必須完整取得，不設超時。
       final response =
-          await _client.get(Uri.parse(stationsUrl)).timeout(baseDataTimeout);
+          await _client.get(Uri.parse(stationsUrl)).timeout(const Duration(days: 365));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data
