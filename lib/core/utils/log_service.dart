@@ -46,15 +46,16 @@ class LogService {
       case LogLevel.debug:
       case LogLevel.info:
         developer.log(formattedMessage, name: tag);
-        // Web debug: developer.log 不會出現在 Chrome DevTools console。
-        // 用 print() 鏡像到瀏覽器原生 console 才能在 flutter run -d chrome 看到。
-        if (kIsWeb && kDebugMode) {
+        // Android logcat 只接 Dart stdout；developer.log 不會印到 I/flutter。
+        // Web Chrome DevTools console 也只接 print()。
+        // 用 print() 鏡像到原生 console 讓 flutter run -d chrome 與 Android logcat 都看得到。
+        if (kDebugMode) {
           // ignore: avoid_print
           print(formattedMessage);
         }
       case LogLevel.warning:
         developer.log(formattedMessage, name: tag, level: 900);
-        if (kIsWeb && kDebugMode) {
+        if (kDebugMode) {
           // ignore: avoid_print
           print(formattedMessage);
         }
