@@ -163,6 +163,8 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                     color: BrandColors.markerMoovoGreen,
                   ),
                   onMarkerTap: (b) => _animateToStation(b),
+                  statusManager: useStatus ? _realtimeManager : null,
+                  realtimeKeyOf: useStatus ? (b) => b.id : null,
                 ),
             ]);
           },
@@ -379,21 +381,16 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   Widget _buildMoovoMarker(BuildContext ctx, BikeStation b) {
     final config = Provider.of<AppConfigService>(ctx, listen: false);
     if (!config.useMapStatusMarkers) return const MoovoPinMarker();
-    final eBikeCount = b.eBikeCount ?? 0;
+    
+    // 根據要求：僅依靠 bikeCount (對應 Moovo 的 nearbyBikeCount) 判斷
     final bikes = b.bikeCount ?? 0;
-    final empty = b.emptySpaces ?? 0;
-    final totalBikes = bikes + eBikeCount;
-
-    // 無車可借：普通車與電輔車皆為 0（兩者皆無）
-    final noBikes = totalBikes == 0;
-    // 無位可還 (車位滿載)：無空格但仍有車可借
-    final isFull = empty == 0 && totalBikes > 0;
-    // 有電輔車
-    final hasElectric = eBikeCount > 0;
-
+    
+    // 只支援「無車」顯示
+    final noBikes = bikes == 0;
+    
     return BikePinMarker.moovo(
-      hasElectric: hasElectric,
-      isFull: isFull,
+      hasElectric: false, // 不再判斷電輔車
+      isFull: false,      // 不再判斷滿載
       noBikes: noBikes,
     );
   }
