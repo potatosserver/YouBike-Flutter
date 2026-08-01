@@ -10,7 +10,24 @@ class BikeStationSorter {
   const BikeStationSorter({DistanceCalculator? distanceCalculator})
       : _calc = distanceCalculator ?? const DistanceCalculator();
 
-  /// 對於一批 [BikeStation]，計算各站的距離、依距離升序、釘選置頂、
+  /// 對一批 [BikeStation] 計算並寫回 `distance` 欄位。
+  /// 純距離計算,不排序、不分流;給需要在分流前先算距離的場景使用
+  /// (例: `_sortPanel()` 在 pinned/rest 分組前,確保 pinned 站點也有新鮮距離)。
+  void calculateDistance({
+    required List<BikeStation> stations,
+    required LatLng refPoint,
+  }) {
+    for (final s in stations) {
+      s.distance = _calc.haversine(
+        refPoint.latitude,
+        refPoint.longitude,
+        s.lat,
+        s.lng,
+      );
+    }
+  }
+
+  /// 對於一批 [BikeStation],計算各站的距離、依距離升序、釘選置頂、
   /// 主力取前 [limit] 名。
   ///
   /// [refPoint] 為參考點（GPS or region default），釘選者不計入 limit 名限量。

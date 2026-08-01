@@ -231,6 +231,15 @@ class BikeStationViewModel extends ChangeNotifier {
   }
 
   void _sortPanel() {
+    // 先對全量站池算距離 — 必須在 pinned/rest 分流前。
+    // 原因: `_fullBikes` 在 boot 時(`fetchBaseData`)是 repo 回傳的全新
+    // immutable BikeStation 物件,`distance` 為建構子預設 0。若只算 `rest`,
+    // pinned 那一群永遠不會被 `_calc.haversine` 碰到 → 重啟 App 後被釘選的
+    // 站點在卡片上顯示距離 0。補這一步確保任何時候被釘選進 panel 的站點都有
+    // 新鮮距離(不論 boot 還是 60s refresh)。
+    final refPoint = _refPoint();
+    _sorter.calculateDistance(stations: _fullBikes, refPoint: refPoint);
+
     final pinned = <BikeStation>[];
     final rest = <BikeStation>[];
     final pinnedIds = _config.pinnedStationIds;
@@ -241,12 +250,12 @@ class BikeStationViewModel extends ChangeNotifier {
         rest.add(b);
       }
     }
-    // pinned 優先，再從 rest 補到總共 20
+    // pinned 優先,再從 rest 補到總共 20
     _panelBikes = [
       ...pinned,
       for (final b in _sorter.sortByDistance(
             stations: rest,
-            refPoint: _refPoint(),
+            refPoint: refPoint,
             pinnedIds: {},
             limit: 20 - pinned.length,
           ))
