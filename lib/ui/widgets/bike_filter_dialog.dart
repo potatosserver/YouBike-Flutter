@@ -54,7 +54,11 @@ class _BikeFilterDialogState extends State<BikeFilterDialog> {
             ),
             RadioGroup<BikeFilterMode>(
               groupValue: _tempMode,
-              onChanged: (val) => setState(() => _tempMode = val!),
+              onChanged: (val) => setState(() {
+                _tempMode = val!;
+                // 切換車種模式時重置車輛門檻（不同模式門檻語意不同）
+                _tempMinBike = 0;
+              }),
               child: const Column(
                 children: [
                   RadioListTile<BikeFilterMode>(
@@ -73,9 +77,9 @@ class _BikeFilterDialogState extends State<BikeFilterDialog> {
               ),
             ),
             const SizedBox(height: 16),
-            // 最低車輛數
+            // 最低車輛數 — label 依模式變動
             _buildNumberStepper(
-              label: '最低車輛數',
+              label: _bikeLabelForMode(_tempMode),
               value: _tempMinBike,
               onChanged: (val) => setState(() => _tempMinBike = val),
             ),
@@ -115,6 +119,17 @@ class _BikeFilterDialogState extends State<BikeFilterDialog> {
         ),
       ],
     );
+  }
+
+  String _bikeLabelForMode(BikeFilterMode mode) {
+    switch (mode) {
+      case BikeFilterMode.regularOnly:
+        return '最低一般車數';
+      case BikeFilterMode.electricOnly:
+        return '最低電輔車數';
+      case BikeFilterMode.all:
+        return '最低車輛數（一般+電輔）';
+    }
   }
 
   Widget _buildNumberStepper({
