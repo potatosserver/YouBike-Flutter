@@ -164,9 +164,13 @@ class BikeStationViewModel extends ChangeNotifier {
       case BikeFilterMode.all:
         break;
     }
-    // 總車輛數下限
-    final total = (b.bikeCount ?? 0) + (b.eBikeCount ?? 0);
-    if (total < _minBikeCount) return false;
+    // 車輛數下限：依當前篩選模式決定檢查哪個欄位
+    final bikeToCheck = switch (_filterMode) {
+      BikeFilterMode.regularOnly => (b.bikeCount ?? 0),
+      BikeFilterMode.electricOnly => (b.eBikeCount ?? 0),
+      BikeFilterMode.all => (b.bikeCount ?? 0) + (b.eBikeCount ?? 0),
+    };
+    if (bikeToCheck < _minBikeCount) return false;
     // 空位數下限
     if ((b.emptySpaces ?? 0) < _minEmptySpaces) return false;
     return true;
