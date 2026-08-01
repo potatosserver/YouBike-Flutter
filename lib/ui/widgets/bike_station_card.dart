@@ -140,6 +140,14 @@ class BikeStationCard extends StatelessWidget {
             // 距離跨 km 轉換 (跟 YouBike `StationFormatHelper.distance()` 同規則):
             // < 1000m → 公尺 + 「公尺」單位; ≥ 1000m → km + 「公里」單位 (一位小數)。
             _infoRow(l10n.distance, _formatDistance(item.distance, l10n), cs),
+            // 地址:只在 YouBike 來源顯示。
+            // - YouBike:`item.address` 已由 `BikeStationMixer` 依當前語系
+            //   (lang.startsWith('en') ? addressEn : addressTw) 挑好單一字串。
+            // - Moovo:不顯示地址行(無 addressTw/addressEn 切換、`address` 多為空)。
+            if (!_isMoovo && (item.address ?? '').isNotEmpty) ...[
+              const SizedBox(height: 4),
+              _infoRow(l10n.address, item.address!, cs),
+            ],
             // Moovo: 只留「距離」和「可借車輛數」,隱藏電輔 / 空位。
             // YouBike: 沿用舊 layout — 保留全部欄位,避免破壞既有 YouBike 使用者。
             if (_isMoovo) ...[
