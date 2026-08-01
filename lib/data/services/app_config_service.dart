@@ -16,6 +16,8 @@ class AppConfigService with ChangeNotifier {
   /// 預設關閉，啟用後圖釘外圍會顯示電輔車綠點、滿載紅圈、無車橘圈、暫停灰覆蓋。
   /// 儲存於 SharedPreferences (key `useMapStatusMarkers`)，預設 `false`。
   bool useMapStatusMarkers = false;
+  /// 站點搜尋篩選器開關 (Beta)
+  bool useStationFilter = false;
   Set<String> pinnedStationIds = {};
   SharedPreferences? _prefs;
   String _appVersion = '0.0.0+0';
@@ -49,6 +51,7 @@ class AppConfigService with ChangeNotifier {
     useNotification = _prefs?.getBool('useNotification') ?? true;
     useMoovo = _prefs?.getBool('useMoovo') ?? false;
     useMapStatusMarkers = _prefs?.getBool('useMapStatusMarkers') ?? false;
+    useStationFilter = _prefs?.getBool('useStationFilter') ?? false;
     final pinnedList = _prefs?.getStringList('pinnedStations') ?? [];
     pinnedStationIds = pinnedList.map((id) => id.trim()).toSet();
     // 集中讀取 PackageInfo — 取代原本散落 3 處的 PackageInfo.fromPlatform() 呼叫。
@@ -97,6 +100,12 @@ class AppConfigService with ChangeNotifier {
   void setUseMapStatusMarkers(bool use) {
     useMapStatusMarkers = use;
     _prefs?.setBool('useMapStatusMarkers', use);
+    notifyListeners();
+  }
+
+  void setUseStationFilter(bool use) {
+    useStationFilter = use;
+    _prefs?.setBool('useStationFilter', use);
     notifyListeners();
   }
 

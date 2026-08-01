@@ -405,6 +405,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Shows colored status indicators around map pins: green dot for electric bikes, red ring when no bikes available, orange ring when full, gray overlay when suspended.';
 
   @override
+  String get beta_station_filter => 'Search Filters';
+
+  @override
+  String get beta_station_filter_subtitle =>
+      'Adds a filter icon next to the search box, letting you narrow station cards by bike type, minimum available bikes, and minimum available docks.';
+
+  @override
   String get check_for_updates => 'Check for Updates';
 
   @override

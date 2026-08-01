@@ -398,6 +398,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '啟用後圖釘外圍顯示狀態顏色：有電輔車右上角綠色圓點、無車可借紅色外圈、無位可還橘色外圈、暫停營運灰色覆蓋。';
 
   @override
+  String get beta_station_filter => '搜尋篩選器';
+
+  @override
+  String get beta_station_filter_subtitle =>
+      '啟用後搜尋框右側會出現篩選圖示，可依車種、最低車輛數與最低空位數過濾站點卡片。';
+
+  @override
   String get check_for_updates => '檢查更新';
 
   @override

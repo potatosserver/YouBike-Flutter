@@ -68,6 +68,23 @@ class BetaFeaturesScreen extends StatelessWidget {
                     activeThumbColor: cs.onPrimary,
                   ),
                 ),
+                _buildItem(
+                  context: context,
+                  icon: Icons.tune,
+                  title: l10n.beta_station_filter,
+                  subtitle: l10n.beta_station_filter_subtitle,
+                  trailing: Switch(
+                    value: config.useStationFilter,
+                    onChanged: (val) => _handleBetaToggle(
+                      context,
+                      currentValue: config.useStationFilter,
+                      newValue: val,
+                      onConfirm: () => config.setUseStationFilter(val),
+                    ),
+                    activeTrackColor: cs.primary,
+                    activeThumbColor: cs.onPrimary,
+                  ),
+                ),
               ],
             ),
           ],

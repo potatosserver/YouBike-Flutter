@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/providers/bike_station_view_model.dart';
 import 'package:youbike/ui/widgets/route_detail_panel.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
@@ -9,6 +10,7 @@ import 'package:youbike/ui/widgets/bike_station_card.dart';
 import 'package:youbike/ui/widgets/electric_bike_modal.dart';
 import 'package:youbike/core/services/bike_station_mixer.dart';
 import 'package:youbike/data/models/bike_station.dart';
+import 'package:youbike/ui/widgets/bike_filter_dialog.dart';
 
 class SearchPanel extends StatefulWidget {
   final bool isWide;
@@ -60,7 +62,9 @@ class _SearchPanelState extends State<SearchPanel> {
 
   void _clearSearch() {
     _searchController.clear();
-    Provider.of<BikeStationViewModel>(context, listen: false).setQuery('');
+    final vm = Provider.of<BikeStationViewModel>(context, listen: false);
+    vm.setQuery('');
+    vm.resetFilter();
     _searchFocusNode.requestFocus();
   }
 
@@ -71,6 +75,7 @@ class _SearchPanelState extends State<SearchPanel> {
     return Consumer<BikeStationViewModel>(
       builder: (context, bikeVm, child) {
         final l10n = AppLocalizations.of(context);
+        final config = Provider.of<AppConfigService>(context);
         return Column(
           children: [
             if (!widget.isWide)
@@ -151,7 +156,7 @@ class _SearchPanelState extends State<SearchPanel> {
                             contentPadding:
                                 const EdgeInsets.symmetric(vertical: 0),
                             suffixIcon: SizedBox(
-                              width: 64,
+                              width: 84,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 mainAxisSize: MainAxisSize.min,
@@ -172,7 +177,24 @@ class _SearchPanelState extends State<SearchPanel> {
                                           color: cs.onSurfaceVariant, size: 24),
                                     ),
                                   ),
-                                ],
+                                  const SizedBox(width: 8),
+                                  if (config.useStationFilter) 
+                                    GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (ctx) => const BikeFilterDialog(),
+                                        );
+                                      },
+                                      child: Icon(
+                                        Icons.tune,
+                                        color: bikeVm.isFilterActive
+                                            ? cs.primary
+                                            : cs.onSurfaceVariant,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  ],
                               ),
                             ),
                           ),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart' hide DistanceCalculator;
 
+import 'package:youbike/core/models/bike_filter_mode.dart';
 import 'package:youbike/core/services/bike_station_mixer.dart';
 import 'package:youbike/core/services/bike_station_sorter.dart';
 import 'package:youbike/core/services/map_move_trigger.dart';
@@ -101,6 +102,76 @@ class BikeStationViewModel extends ChangeNotifier {
   String _activeQuery = '';
   String get activeQuery => _activeQuery;
 
+  // ── 篩選狀態（beta：站點搜尋篩選器）──────────────────────────────────
+  BikeFilterMode _filterMode = BikeFilterMode.all;
+  BikeFilterMode get filterMode => _filterMode;
+  int _minBikeCount = 0;
+  int get minBikeCount => _minBikeCount;
+  int _minEmptySpaces = 0;
+  int get minEmptySpaces => _minEmptySpaces;
+  bool _applyFilterToSearch = false;
+  bool get applyFilterToSearch => _applyFilterToSearch;
+
+  /// 篩選是否有任何非預設值（即使用者改過）。
+  bool get isFilterActive =>
+      _filterMode != BikeFilterMode.all ||
+      _minBikeCount > 0 ||
+      _minEmptySpaces > 0;
+
+  /// 一次設定所有篩選參數並立即套用。
+  void setFilter({
+    required BikeFilterMode mode,
+    required int minBike,
+    required int minSpace,
+    required bool applyToSearch,
+  }) {
+    _filterMode = mode;
+    _minBikeCount = minBike;
+    _minEmptySpaces = minSpace;
+    _applyFilterToSearch = applyToSearch;
+    _applyFiltersAndNotify();
+  }
+
+  /// 重設篩選為預設值。
+  void resetFilter() {
+    _filterMode = BikeFilterMode.all;
+    _minBikeCount = 0;
+    _minEmptySpaces = 0;
+    _applyFilterToSearch = false;
+    _applyFiltersAndNotify();
+  }
+
+  /// 套用篩選到 _panelBikes（原地過濾），然後通知 UI。
+  void _applyFiltersAndNotify() {
+    final shouldFilter = _activeQuery.isEmpty || _applyFilterToSearch;
+    if (shouldFilter && isFilterActive) {
+      _panelBikes = _panelBikes.where(_matchFilter).toList();
+      // 若過濾後不足基本數（非搜尋模式），補底
+      if (_activeQuery.isEmpty) {
+        _ensureMinimumPanel();
+      }
+    }
+    notifyListeners();
+  }
+
+  bool _matchFilter(BikeStation b) {
+    // 車種
+    switch (_filterMode) {
+      case BikeFilterMode.regularOnly:
+        if ((b.bikeCount ?? 0) <= 0) return false;
+      case BikeFilterMode.electricOnly:
+        if ((b.eBikeCount ?? 0) <= 0) return false;
+      case BikeFilterMode.all:
+        break;
+    }
+    // 總車輛數下限
+    final total = (b.bikeCount ?? 0) + (b.eBikeCount ?? 0);
+    if (total < _minBikeCount) return false;
+    // 空位數下限
+    if ((b.emptySpaces ?? 0) < _minEmptySpaces) return false;
+    return true;
+  }
+
   // ── Private ──────────────────────────────────────────────────
 
   Timer? _countdownTimer;
@@ -177,6 +248,30 @@ class BikeStationViewModel extends ChangeNotifier {
           ))
         b,
     ];
+    // 套用篩選（無搜尋模式永遠套用）
+    if (isFilterActive) {
+      _panelBikes = _panelBikes.where(_matchFilter).toList();
+      _ensureMinimumPanel();
+    }
+  }
+
+  /// 若 _panelBikes 少於 10 且尚有未入列的站點，補足到至少 10 筆。
+  void _ensureMinimumPanel() {
+    if (_panelBikes.length >= 10) return;
+    final alreadyIn = _panelBikes.map((b) => b.id).toSet();
+    final pinnedIds = _config.pinnedStationIds;
+    final candidates = _fullBikes.where((b) =>
+        !alreadyIn.contains(b.id) && !pinnedIds.contains(b.id)).toList();
+    if (candidates.isEmpty) return;
+    final sorted = _sorter.sortByDistance(
+      stations: candidates,
+      refPoint: _refPoint(),
+      pinnedIds: {},
+      limit: 10 - _panelBikes.length,
+    );
+    // 補入的也要過濾
+    final fill = sorted.where(_matchFilter).toList();
+    _panelBikes = [..._panelBikes, ...fill];
   }
 
   Future<void> _fillRealtimeBg() async {
@@ -213,6 +308,10 @@ class BikeStationViewModel extends ChangeNotifier {
             pinnedIds: _config.pinnedStationIds,
             limit: 40, // 和 setQuery 一致
           );
+          // 搜尋時若啟用也套用篩選
+          if (_applyFilterToSearch && isFilterActive) {
+            _panelBikes = _panelBikes.where(_matchFilter).toList();
+          }
         } // 若 hits 空 — 保持目前的 panelBikes（如果之前有結果）或空白
       } else {
         _sortPanel();
@@ -258,6 +357,10 @@ class BikeStationViewModel extends ChangeNotifier {
                 pinnedIds: _config.pinnedStationIds,
                 limit: 40,
               );
+              // 搜尋時若啟用也套用篩選
+              if (_applyFilterToSearch && isFilterActive) {
+                _panelBikes = _panelBikes.where(_matchFilter).toList();
+              }
             }
           }
         }
@@ -388,7 +491,15 @@ class BikeStationViewModel extends ChangeNotifier {
       return;
     }
     _panelBikes = _sorter.sortByDistance(
-      stations: hits, refPoint: _refPoint(), pinnedIds: _config.pinnedStationIds, limit: 20);
+      stations: hits,
+      refPoint: _refPoint(),
+      pinnedIds: _config.pinnedStationIds,
+      limit: 40, // 搜尋上限 40，不補底
+    );
+    // 若搜尋時也套用篩選
+    if (_applyFilterToSearch && isFilterActive) {
+      _panelBikes = _panelBikes.where(_matchFilter).toList();
+    }
     _fillRealtimeBg();
   }
 
