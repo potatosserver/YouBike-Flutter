@@ -170,6 +170,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                   onTap: () => context.push('/language-selection'),
                 ),
                 _buildItem(
+                  icon: Icons.data_saver_on_outlined,
+                  title: l10n.data_saver_title,
+                  trailing: Icon(Icons.chevron_right,
+                      size: 22, color: cs.onSurfaceVariant),
+                  onTap: () => context.push('/data-saver'),
+                ),
+                _buildItem(
                   icon: Icons.science_outlined,
                   title: l10n.beta_features_page_title,
                   trailing: Icon(Icons.chevron_right,

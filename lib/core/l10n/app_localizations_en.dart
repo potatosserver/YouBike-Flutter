@@ -510,4 +510,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get get_started => 'Get Started';
+
+  @override
+  String get data_saver_title => 'Data Saver Mode';
+
+  @override
+  String get data_saver_subtitle =>
+      'When enabled, network traffic is limited by the sub-options below.';
+
+  @override
+  String get data_saver_options_title => 'Data Saver Options';
+
+  @override
+  String get data_saver_ds_skip_cache_refresh_title =>
+      'Skip Background Cache Refresh';
+
+  @override
+  String get data_saver_ds_skip_cache_refresh_subtitle =>
+      'When enabled, the app will not silently re-download the 4MB station data in the background. Data updates only on manual refresh or when the cache expires.';
+
+  @override
+  String get data_saver_ds_disable_moovo_title => 'Disable Moovo Bike System';
+
+  @override
+  String get data_saver_ds_disable_moovo_subtitle =>
+      'When enabled, the Moovo bike system is automatically turned off and its network requests are stopped.';
+
+  @override
+  String get data_saver_ds_skip_moovo_realtime_title =>
+      'Disable Moovo Realtime Updates';
+
+  @override
+  String get data_saver_ds_skip_moovo_realtime_subtitle =>
+      'When enabled, Moovo station realtime data is no longer refreshed every 60 seconds.';
+
+  @override
+  String get data_saver_ds_disable_status_markers_title =>
+      'Disable Station Pin Status Markers';
+
+  @override
+  String get data_saver_ds_disable_status_markers_subtitle =>
+      'When enabled, the app no longer sends realtime requests for each map pin to update its status color. Pin colors rely on the 60-second polling data instead.';
+
+  @override
+  String get data_saver_needs_moovo => 'Please enable Moovo Bike System first';
+
+  @override
+  String get data_saver_needs_status_markers =>
+      'Please enable Station Pin Status Markers first';
+
+  @override
+  String get data_saver_cellular_only_title => 'Cellular Data Only';
+
+  @override
+  String get data_saver_cellular_only_subtitle =>
+      'Data saver only takes effect on cellular connections, not Wi-Fi.';
 }

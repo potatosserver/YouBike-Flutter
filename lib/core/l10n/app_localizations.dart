@@ -1027,6 +1027,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get Started'**
   String get get_started;
+
+  /// No description provided for @data_saver_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Saver Mode'**
+  String get data_saver_title;
+
+  /// No description provided for @data_saver_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, network traffic is limited by the sub-options below.'**
+  String get data_saver_subtitle;
+
+  /// No description provided for @data_saver_options_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Saver Options'**
+  String get data_saver_options_title;
+
+  /// No description provided for @data_saver_ds_skip_cache_refresh_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip Background Cache Refresh'**
+  String get data_saver_ds_skip_cache_refresh_title;
+
+  /// No description provided for @data_saver_ds_skip_cache_refresh_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, the app will not silently re-download the 4MB station data in the background. Data updates only on manual refresh or when the cache expires.'**
+  String get data_saver_ds_skip_cache_refresh_subtitle;
+
+  /// No description provided for @data_saver_ds_disable_moovo_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable Moovo Bike System'**
+  String get data_saver_ds_disable_moovo_title;
+
+  /// No description provided for @data_saver_ds_disable_moovo_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, the Moovo bike system is automatically turned off and its network requests are stopped.'**
+  String get data_saver_ds_disable_moovo_subtitle;
+
+  /// No description provided for @data_saver_ds_skip_moovo_realtime_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable Moovo Realtime Updates'**
+  String get data_saver_ds_skip_moovo_realtime_title;
+
+  /// No description provided for @data_saver_ds_skip_moovo_realtime_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, Moovo station realtime data is no longer refreshed every 60 seconds.'**
+  String get data_saver_ds_skip_moovo_realtime_subtitle;
+
+  /// No description provided for @data_saver_ds_disable_status_markers_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable Station Pin Status Markers'**
+  String get data_saver_ds_disable_status_markers_title;
+
+  /// No description provided for @data_saver_ds_disable_status_markers_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, the app no longer sends realtime requests for each map pin to update its status color. Pin colors rely on the 60-second polling data instead.'**
+  String get data_saver_ds_disable_status_markers_subtitle;
+
+  /// No description provided for @data_saver_needs_moovo.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enable Moovo Bike System first'**
+  String get data_saver_needs_moovo;
+
+  /// No description provided for @data_saver_needs_status_markers.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enable Station Pin Status Markers first'**
+  String get data_saver_needs_status_markers;
+
+  /// No description provided for @data_saver_cellular_only_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Cellular Data Only'**
+  String get data_saver_cellular_only_title;
+
+  /// No description provided for @data_saver_cellular_only_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data saver only takes effect on cellular connections, not Wi-Fi.'**
+  String get data_saver_cellular_only_subtitle;
 }
 
 class _AppLocalizationsDelegate

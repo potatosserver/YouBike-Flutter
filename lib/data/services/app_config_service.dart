@@ -18,6 +18,33 @@ class AppConfigService with ChangeNotifier {
   bool useMapStatusMarkers = false;
   /// 站點搜尋篩選器開關 (Beta)
   bool useStationFilter = false;
+
+  // ── 流量節省模式 ───────────────────────────────────────
+
+  /// 流量節省模式總開關（設定 → 系統設定）。
+  /// 儲存於 SharedPreferences (key `useDataSaver`)，預設 `false`。
+  bool useDataSaver = false;
+
+  /// 流量節省子選項：跳過背景快取刷新。
+  /// 儲存於 SharedPreferences (key `dsSkipCacheRefresh`)，預設 `true`。
+  bool dsSkipCacheRefresh = true;
+
+  /// 流量節省子選項：關閉 Moovo 自行車系統。
+  /// 儲存於 SharedPreferences (key `dsDisableMoovo`)，預設 `false`。
+  bool dsDisableMoovo = false;
+
+  /// 流量節省子選項：關閉 Moovo 即時數據更新。
+  /// 儲存於 SharedPreferences (key `dsSkipMoovoRealtime`)，預設 `true`。
+  bool dsSkipMoovoRealtime = true;
+
+  /// 流量節省子選項：關閉站點圖釘狀態標記。
+  /// 儲存於 SharedPreferences (key `dsDisableStatusMarkers`)，預設 `true`。
+  bool dsDisableStatusMarkers = true;
+
+  /// 流量節省子選項：僅在行動數據時生效。
+  /// 儲存於 SharedPreferences (key `dsCellularOnly`)，預設 `true`。
+  bool dsCellularOnly = true;
+
   Set<String> pinnedStationIds = {};
   SharedPreferences? _prefs;
   String _appVersion = '0.0.0+0';
@@ -52,6 +79,12 @@ class AppConfigService with ChangeNotifier {
     useMoovo = _prefs?.getBool('useMoovo') ?? false;
     useMapStatusMarkers = _prefs?.getBool('useMapStatusMarkers') ?? false;
     useStationFilter = _prefs?.getBool('useStationFilter') ?? false;
+    useDataSaver = _prefs?.getBool('useDataSaver') ?? false;
+    dsSkipCacheRefresh = _prefs?.getBool('dsSkipCacheRefresh') ?? true;
+    dsDisableMoovo = _prefs?.getBool('dsDisableMoovo') ?? false;
+    dsSkipMoovoRealtime = _prefs?.getBool('dsSkipMoovoRealtime') ?? true;
+    dsDisableStatusMarkers = _prefs?.getBool('dsDisableStatusMarkers') ?? true;
+    dsCellularOnly = _prefs?.getBool('dsCellularOnly') ?? true;
     final pinnedList = _prefs?.getStringList('pinnedStations') ?? [];
     pinnedStationIds = pinnedList.map((id) => id.trim()).toSet();
     // 集中讀取 PackageInfo — 取代原本散落 3 處的 PackageInfo.fromPlatform() 呼叫。
@@ -106,6 +139,48 @@ class AppConfigService with ChangeNotifier {
   void setUseStationFilter(bool use) {
     useStationFilter = use;
     _prefs?.setBool('useStationFilter', use);
+    notifyListeners();
+  }
+
+  /// 設定流量節省模式總開關 — 與其他 setter 相同 Pattern。
+  void setUseDataSaver(bool use) {
+    useDataSaver = use;
+    _prefs?.setBool('useDataSaver', use);
+    notifyListeners();
+  }
+
+  /// 設定「跳過背景快取刷新」子開關。
+  void setDsSkipCacheRefresh(bool use) {
+    dsSkipCacheRefresh = use;
+    _prefs?.setBool('dsSkipCacheRefresh', use);
+    notifyListeners();
+  }
+
+  /// 設定「關閉 Moovo 自行車系統」子開關。
+  void setDsDisableMoovo(bool use) {
+    dsDisableMoovo = use;
+    _prefs?.setBool('dsDisableMoovo', use);
+    notifyListeners();
+  }
+
+  /// 設定「關閉 Moovo 即時數據更新」子開關。
+  void setDsSkipMoovoRealtime(bool use) {
+    dsSkipMoovoRealtime = use;
+    _prefs?.setBool('dsSkipMoovoRealtime', use);
+    notifyListeners();
+  }
+
+  /// 設定「關閉站點圖釘狀態標記」子開關。
+  void setDsDisableStatusMarkers(bool use) {
+    dsDisableStatusMarkers = use;
+    _prefs?.setBool('dsDisableStatusMarkers', use);
+    notifyListeners();
+  }
+
+  /// 設定「僅在行動數據時生效」子開關。
+  void setDsCellularOnly(bool use) {
+    dsCellularOnly = use;
+    _prefs?.setBool('dsCellularOnly', use);
     notifyListeners();
   }
 

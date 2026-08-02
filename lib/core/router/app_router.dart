@@ -9,6 +9,7 @@ import 'package:youbike/ui/screens/theme_selection_screen.dart';
 import 'package:youbike/ui/screens/region_selection_screen.dart';
 import 'package:youbike/ui/screens/language_selection_screen.dart';
 import 'package:youbike/ui/screens/beta_features_screen.dart';
+import 'package:youbike/ui/screens/data_saver_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -57,6 +58,10 @@ class AppRouter {
       GoRoute(
         path: '/beta-features',
         builder: (context, state) => const BetaFeaturesScreen(),
+      ),
+      GoRoute(
+        path: '/data-saver',
+        builder: (context, state) => const DataSaverScreen(),
       ),
     ],
     errorBuilder: (context, state) => const HomeScreen(),

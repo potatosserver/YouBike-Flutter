@@ -494,4 +494,53 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get get_started => '開始使用';
+
+  @override
+  String get data_saver_title => '流量節省模式';
+
+  @override
+  String get data_saver_subtitle => '啟用後依照下方子項目限制網路流量。';
+
+  @override
+  String get data_saver_options_title => '流量節省選項';
+
+  @override
+  String get data_saver_ds_skip_cache_refresh_title => '跳過背景快取刷新';
+
+  @override
+  String get data_saver_ds_skip_cache_refresh_subtitle =>
+      '啟用後每次開 App 不會在背景自動重拉 4MB 站點資料,僅在使用者手動刷新或快取過期時更新。';
+
+  @override
+  String get data_saver_ds_disable_moovo_title => '關閉 Moovo 自行車系統';
+
+  @override
+  String get data_saver_ds_disable_moovo_subtitle =>
+      '啟用後會自動關閉 Moovo 自行車系統並停止其網路請求。';
+
+  @override
+  String get data_saver_ds_skip_moovo_realtime_title => '關閉 Moovo 即時數據更新';
+
+  @override
+  String get data_saver_ds_skip_moovo_realtime_subtitle =>
+      '啟用後不再每 60 秒重抓 Moovo 站點的即時車輛數。';
+
+  @override
+  String get data_saver_ds_disable_status_markers_title => '關閉站點圖釘標記';
+
+  @override
+  String get data_saver_ds_disable_status_markers_subtitle =>
+      '啟用後不再為了圖釘狀態顏色而對每個圖釘發送即時數據請求,改為依賴每 60 秒輪詢的數據。';
+
+  @override
+  String get data_saver_needs_moovo => '請先啟用 Moovo 自行車系統';
+
+  @override
+  String get data_saver_needs_status_markers => '請先啟用站點圖釘標記';
+
+  @override
+  String get data_saver_cellular_only_title => '僅在行動數據時生效';
+
+  @override
+  String get data_saver_cellular_only_subtitle => 'Wi-Fi 連線時不受流量節省模式影響。';
 }

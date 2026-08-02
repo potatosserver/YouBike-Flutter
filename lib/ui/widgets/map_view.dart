@@ -15,6 +15,8 @@ import 'package:youbike/core/services/map_animated_move.dart';
 import 'package:youbike/data/models/bike_station.dart';
 import 'package:youbike/providers/bike_station_view_model.dart';
 import 'package:youbike/data/services/app_config_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:youbike/core/utils/connectivity_checker.dart';
 
 class MapView extends StatefulWidget {
   final MapController mapController;
@@ -52,6 +54,11 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   AnimatedMapController? _animatedMap;
   RealtimeStatusManager? _realtimeManager;
 
+  /// 流量節省模式 + 連線類型共同決定的 useStatus。
+  /// 預設 false（保守），initState 與 config / 連線變動時重算並 setState。
+  bool _effectiveUseStatus = false;
+  StreamSubscription? _connSub;
+
   AnimatedMapController _getAnimatedMap() {
     if (widget.animatedMap != null) return widget.animatedMap!;
     _animatedMap ??= AnimatedMapController(
@@ -66,6 +73,55 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
     final timestamp =
         "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}.${now.millisecond.toString().padLeft(3, '0')}";
     debugPrint("[$timestamp] [$tag] $message");
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _recomputeEffectiveUseStatus();
+    // 監聽連線變化，重算 useStatus
+    _connSub = Connectivity().onConnectivityChanged.listen((_) {
+      if (!mounted) return;
+      _recomputeEffectiveUseStatus();
+    });
+    // 監聽 config 變化（dsDisableStatusMarkers / useMapStatusMarkers / dsCellularOnly / useDataSaver）
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    config.addListener(_recomputeOnConfig);
+  }
+
+  @override
+  void dispose() {
+    _connSub?.cancel();
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    config.removeListener(_recomputeOnConfig);
+    _realtimeManager?.dispose();
+    _realtimeManager = null;
+    if (widget.animatedMap == null) {
+      _animatedMap?.dispose();
+    }
+    super.dispose();
+  }
+
+  void _recomputeOnConfig() {
+    if (!mounted) return;
+    _recomputeEffectiveUseStatus();
+  }
+
+  Future<void> _recomputeEffectiveUseStatus() async {
+    if (!mounted) return;
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    bool result = config.useMapStatusMarkers;
+    if (config.useDataSaver && config.dsDisableStatusMarkers) {
+      result = false;
+    }
+    if (config.useDataSaver && config.dsCellularOnly) {
+      final onCellular = await const ConnectivityChecker().isCellular();
+      if (!mounted) return;
+      result = result && onCellular;
+    }
+    if (result != _effectiveUseStatus) {
+      setState(() => _effectiveUseStatus = result);
+    }
   }
 
   @override
@@ -133,8 +189,9 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
             // 方案 4 — manager lazy init (此 widget 只在 home_screen 有用到,單例 OK)
             // 用 useMapStatusMarkers 旗標決定是否啟用即時 lifecycle hook。
             // 旗標關閉時,marker 退化成純 RoadSignMarker,行為等同舊版。
-            final config = Provider.of<AppConfigService>(context, listen: false);
-            final useStatus = config.useMapStatusMarkers;
+            // 流量節省模式：總開關 + 子開關「關閉站點圖釘標記」皆 ON 時，停止 marker 即時請求
+            // 連線偵測由 _effectiveUseStatus 統一管理（initState/連線/config 變動時重算）
+            final useStatus = _effectiveUseStatus;
             _realtimeManager ??= RealtimeStatusManager(
               onBatchFetch: bikeVm.fetchRealtimeForIds,
             );
@@ -409,16 +466,6 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
 
   TileUpdateTransformer _animatedMoveTransformer() {
     return _getAnimatedMap().tileUpdateTransformer;
-  }
-
-  @override
-  void dispose() {
-    _realtimeManager?.dispose();
-    _realtimeManager = null;
-    if (widget.animatedMap == null) {
-      _animatedMap?.dispose();
-    }
-    super.dispose();
   }
 }
 

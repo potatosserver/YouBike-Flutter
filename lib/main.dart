@@ -78,7 +78,7 @@ void main() async {
         ChangeNotifierProvider<BikeStationViewModel>(
           create: (ctx) => BikeStationViewModel(
             config: configService,
-            repository: BikeStationRepository(),
+            repository: BikeStationRepository(config: configService),
             mapVm: ctx.read<MapViewModel>(),
           ),
         ),

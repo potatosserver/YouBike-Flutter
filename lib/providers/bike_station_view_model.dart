@@ -8,6 +8,7 @@ import 'package:youbike/core/services/bike_station_mixer.dart';
 import 'package:youbike/core/services/bike_station_sorter.dart';
 import 'package:youbike/core/services/map_move_trigger.dart';
 import 'package:youbike/core/services/realtime_updater.dart';
+import 'package:youbike/core/utils/connectivity_checker.dart';
 import 'package:youbike/core/utils/log_service.dart';
 import 'package:youbike/data/models/bike_station.dart';
 import 'package:youbike/data/models/station.dart';
@@ -34,6 +35,9 @@ class BikeStationViewModel extends ChangeNotifier {
         _trigger = trigger ?? MapMoveTrigger() {
     _wasUseLocation = config.useLocation;
     _wasUseMoovo = config.useMoovo;
+    _wasEffectiveUseMoovo = (config.useDataSaver && config.dsDisableMoovo)
+        ? false
+        : config.useMoovo;
     _wasUseMapStatusMarkers = config.useMapStatusMarkers;
     _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
     config.addListener(_onConfigChanged);
@@ -182,6 +186,7 @@ class BikeStationViewModel extends ChangeNotifier {
   late bool _wasUseLocation;
   late bool _wasUseMoovo;
   late bool _wasUseMapStatusMarkers;
+  late bool _wasEffectiveUseMoovo;
   Set<String> _lastPinnedIds = {};
 
   /// 站點級即時請求 TTL 快取：記錄每個站點最後一次 fetchRealtimeForVisible 的時間。
@@ -207,7 +212,8 @@ class BikeStationViewModel extends ChangeNotifier {
 
     try {
       final yb = await _repo.fetchYouBikeStations();
-      final mo = (_config.useMoovo) ? await _repo.fetchMoovoStations() : null;
+      final mo =
+          (await _effectiveUseMoovo()) ? await _repo.fetchMoovoStations() : null;
 
       final all = <BikeStation>{ if (yb != null) ...yb, if (mo != null) ...mo };
       _fullBikes = all.toList();
@@ -340,7 +346,8 @@ class BikeStationViewModel extends ChangeNotifier {
       }
 
       // 2. 更新 Moovo 站點與數量 (每 60s 或手動刷新時同步執行)
-      if (_config.useMoovo) {
+      // 流量節省模式：dsDisableMoovo 或 dsSkipMoovoRealtime 均跳過
+      if (_config.useMoovo && (await _shouldUpdateMoovo())) {
         final freshMo = await _repo.fetchMoovoStations();
         if (freshMo != null) {
           // 將最新 Moovo 站點更新回全量池 (替換舊站點)
@@ -519,12 +526,18 @@ class BikeStationViewModel extends ChangeNotifier {
   // ═══════════════ Config 監聽 ══════════════════════════════════
 
   void _onConfigChanged() {
+    _onConfigChangedAsync();
+  }
+
+  Future<void> _onConfigChangedAsync() async {
     final locChanged = _config.useLocation != _wasUseLocation;
     final pinChanged = !_setEquals(_config.pinnedStationIds, _lastPinnedIds);
     final moovoChanged = _config.useMoovo != _wasUseMoovo;
     final statusMarkerChanged = _config.useMapStatusMarkers != _wasUseMapStatusMarkers;
+    final effectiveMoovo = await _effectiveUseMoovo();
     _wasUseLocation = _config.useLocation;
     _wasUseMoovo = _config.useMoovo;
+    _wasEffectiveUseMoovo = effectiveMoovo;
     _wasUseMapStatusMarkers = _config.useMapStatusMarkers;
     _lastPinnedIds = Set<String>.from(_config.pinnedStationIds);
 
@@ -547,11 +560,11 @@ class BikeStationViewModel extends ChangeNotifier {
       }
       return;
     }
-    if (moovoChanged) {
-      if (_config.useMoovo && _bootDone) {
+    if (moovoChanged || effectiveMoovo != _wasEffectiveUseMoovo) {
+      if (effectiveMoovo && _bootDone) {
         unawaited(_loadMoovoIntoPool());
-      } else if (_config.useMoovo) {
-        // boot hasn't finished yet — boot will read the new useMoovo value
+      } else if (effectiveMoovo) {
+        // boot hasn't finished yet — boot will read the new effective value
       } else {
         _removeMoovoFromPool();
       }
@@ -611,6 +624,35 @@ class BikeStationViewModel extends ChangeNotifier {
     _fullBikes = _fullBikes.where((b) => b.source != BikeStationSource.moovo).toList();
     _sortPanel();
     notifyListeners();
+  }
+
+  /// 流量節省模式是否在目前連線環境下應該生效（異步）。
+  /// 總開關 OFF 或 dsCellularOnly ON + 目前非行動數據 → false。
+  Future<bool> _isDataSaverActive() async {
+    if (!_config.useDataSaver) return false;
+    if (_config.dsCellularOnly) {
+      final onCellular =
+          await const ConnectivityChecker().isCellular();
+      if (!onCellular) return false;
+    }
+    return true;
+  }
+
+  /// 流量節省模式下是否需要更新 Moovo 即時數據（異步）。
+  /// `useDataSaver` ON 且 (`dsDisableMoovo` 或 `dsSkipMoovoRealtime`) 任一 ON → 跳過。
+  Future<bool> _shouldUpdateMoovo() async {
+    if (!await _isDataSaverActive()) return _config.useMoovo;
+    if (_config.dsDisableMoovo) return false;
+    if (_config.dsSkipMoovoRealtime) return false;
+    return _config.useMoovo;
+  }
+
+  /// 流量節省模式下的「有效」Moovo 開關（異步）。
+  /// 總開關 ON + dsDisableMoovo ON → 視同關閉（即便 useMoovo 仍為 true）。
+  Future<bool> _effectiveUseMoovo() async {
+    if (!await _isDataSaverActive()) return _config.useMoovo;
+    if (_config.dsDisableMoovo) return false;
+    return _config.useMoovo;
   }
 
   @override
