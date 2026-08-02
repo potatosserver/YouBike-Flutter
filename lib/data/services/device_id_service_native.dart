@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:io';
+import 'package:android_id/android_id.dart';
 import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 /// 裝置唯一識別碼產生器（Android 原生）
-/// Web 使用 device_id_service_stub.dart，此檔案由條件 import 排除。
 class DeviceIdHelper {
+  static const _androidIdPlugin = AndroidId();
+
   /// 取得裝置的安全 ID 與型號資訊
   static Future<Map<String, String>> getDeviceInfo() async {
     String secureId = "fallback_${DateTime.now().millisecondsSinceEpoch}";
@@ -13,16 +16,19 @@ class DeviceIdHelper {
 
     try {
       final deviceInfo = DeviceInfoPlugin();
+      // ⭕ 修正 1：正確 await 取得 AndroidDeviceInfo 物件
       final androidInfo = await deviceInfo.androidInfo;
-
-      // Android ID → SHA256 作為裝置唯一碼
-      final rawId = androidInfo.id;
-      if (rawId.isNotEmpty) {
-        secureId = _toSha256(rawId);
-      }
 
       // 裝置型號（品牌 + 型號）
       model = "${androidInfo.brand} ${androidInfo.model}";
+
+      // ⭕ 修正 2：改用 android_id 套件拿真正的 Settings.Secure.ANDROID_ID
+      if (Platform.isAndroid) {
+        final String? rawAndroidId = await _androidIdPlugin.getId();
+        if (rawAndroidId != null && rawAndroidId.isNotEmpty) {
+          secureId = _toSha256(rawAndroidId);
+        }
+      }
     } catch (e) {
       developer.log('取得裝置資訊失敗: $e', name: 'DeviceIdHelper');
     }

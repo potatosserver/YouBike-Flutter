@@ -42,6 +42,7 @@ dependencies:
   # Notification
   flutter_local_notifications: ^22.0.1
   firebase_app_check: ^0.4.5+2
+  android_id: ^0.5.2+1
 
 dev_dependencies:
   flutter_test:
