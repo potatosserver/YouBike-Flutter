@@ -1091,7 +1091,7 @@ abstract class AppLocalizations {
   /// No description provided for @data_saver_ds_disable_status_markers_subtitle.
   ///
   /// In en, this message translates to:
-  /// **'When enabled, the app no longer sends realtime requests for each map pin to update its status color. Pin colors rely on the 60-second polling data instead.'**
+  /// **'When enabled, the app no longer sends realtime requests to update pin statuses. Only nearby stations are refreshed.'**
   String get data_saver_ds_disable_status_markers_subtitle;
 
   /// No description provided for @data_saver_needs_moovo.

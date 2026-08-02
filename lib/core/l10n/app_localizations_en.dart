@@ -550,7 +550,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get data_saver_ds_disable_status_markers_subtitle =>
-      'When enabled, the app no longer sends realtime requests for each map pin to update its status color. Pin colors rely on the 60-second polling data instead.';
+      'When enabled, the app no longer sends realtime requests to update pin statuses. Only nearby stations are refreshed.';
 
   @override
   String get data_saver_needs_moovo => 'Please enable Moovo Bike System first';

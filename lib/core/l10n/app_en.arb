@@ -366,7 +366,7 @@
     "@data_saver_ds_skip_moovo_realtime_subtitle": {},
     "data_saver_ds_disable_status_markers_title": "Disable Station Pin Status Markers",
     "@data_saver_ds_disable_status_markers_title": {},
-    "data_saver_ds_disable_status_markers_subtitle": "When enabled, the app no longer sends realtime requests for each map pin to update its status color. Pin colors rely on the 60-second polling data instead.",
+    "data_saver_ds_disable_status_markers_subtitle": "When enabled, the app no longer sends realtime requests to update pin statuses. Only nearby stations are refreshed.",
     "@data_saver_ds_disable_status_markers_subtitle": {},
     "data_saver_needs_moovo": "Please enable Moovo Bike System first",
     "@data_saver_needs_moovo": {},

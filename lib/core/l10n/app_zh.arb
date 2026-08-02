@@ -366,7 +366,7 @@
     "@data_saver_ds_skip_moovo_realtime_subtitle": {},
     "data_saver_ds_disable_status_markers_title": "關閉站點圖釘標記",
     "@data_saver_ds_disable_status_markers_title": {},
-    "data_saver_ds_disable_status_markers_subtitle": "啟用後不再為了圖釘狀態顏色而對每個圖釘發送即時數據請求,改為依賴每 60 秒輪詢的數據。",
+    "data_saver_ds_disable_status_markers_subtitle": "啟用後不再為了圖釘狀態發送即時數據請求,僅更新附近的站點。",
     "@data_saver_ds_disable_status_markers_subtitle": {},
     "data_saver_needs_moovo": "請先啟用 Moovo 自行車系統",
     "@data_saver_needs_moovo": {},

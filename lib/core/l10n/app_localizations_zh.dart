@@ -530,7 +530,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get data_saver_ds_disable_status_markers_subtitle =>
-      '啟用後不再為了圖釘狀態顏色而對每個圖釘發送即時數據請求,改為依賴每 60 秒輪詢的數據。';
+      '啟用後不再為了圖釘狀態發送即時數據請求,僅更新附近的站點。';
 
   @override
   String get data_saver_needs_moovo => '請先啟用 Moovo 自行車系統';
