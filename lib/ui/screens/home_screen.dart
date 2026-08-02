@@ -15,6 +15,7 @@ import 'package:youbike/ui/widgets/home_update_button.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/data/services/firebase_service.dart';
 import 'package:youbike/core/services/map_animated_move.dart';
+import 'package:latlong2/latlong.dart' show Distance, LengthUnit;
 import 'package:youbike/ui/widgets/github_update_alert_dialog.dart';
 import 'package:youbike/core/services/update_checker_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -257,9 +258,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         const gps = GpsRequester();
                         final bikeVm = Provider.of<BikeStationViewModel>(context,
                             listen: false);
-                        final pos = await gps.requestOrFallback(_mapVm);
+                        // 上次的定位位置（可能為 null，例如首次進入或權限剛被拒）。
+                        // 若有，馬上把地圖滑過去 — 給使用者即時視覺回饋，不必等 GPS。
+                        final cached = _mapVm.lastKnownLocation;
+                        if (cached != null && _animatedMap != null) {
+                          _animatedMap!.animateTo(cached, 18.0);
+                        }
+                        // 等 GPS 拿到新位置後再 fire 一次。
+                        // 使用 request() 而非 requestOrFallback() — 失敗回傳 null，
+                        // 此時不要硬把地圖移走（避免覆蓋 cached 的位置）。
+                        final pos = await gps.request(_mapVm);
                         if (!mounted) return;
-                        bikeVm.refresh(moveTo: pos);
+                        if (pos != null && _animatedMap != null) {
+                          // 若新位置與上次相差 < 50m，視為同一點，不觸發第二次動畫
+                          // （否則會打斷剛剛那段動畫造成畫面抖動）。
+                          final movedFar = cached == null ||
+                              const Distance()
+                                      .as(LengthUnit.Meter, cached, pos) >
+                                  50;
+                          if (movedFar) {
+                            _animatedMap!.animateTo(pos, 18.0);
+                          }
+                        }
+                        // 刷新即時車輛數據；camera 移動由上面手動控制，不傳 moveTo。
+                        bikeVm.refresh();
                       },
                     ),
                   ),
