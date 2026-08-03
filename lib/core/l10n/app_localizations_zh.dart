@@ -543,4 +543,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get data_saver_cellular_only_subtitle => 'Wi-Fi 連線時不受流量節省模式影響。';
+
+  @override
+  String get data_saver_cellular_only_web_subtitle => '請下載 APP 體驗完整功能';
 }

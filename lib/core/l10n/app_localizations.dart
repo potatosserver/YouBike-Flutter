@@ -1117,6 +1117,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data saver only takes effect on cellular connections, not Wi-Fi.'**
   String get data_saver_cellular_only_subtitle;
+
+  /// No description provided for @data_saver_cellular_only_web_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the app for full functionality'**
+  String get data_saver_cellular_only_web_subtitle;
 }
 
 class _AppLocalizationsDelegate

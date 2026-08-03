@@ -565,4 +565,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get data_saver_cellular_only_subtitle =>
       'Data saver only takes effect on cellular connections, not Wi-Fi.';
+
+  @override
+  String get data_saver_cellular_only_web_subtitle =>
+      'Download the app for full functionality';
 }
