@@ -35,14 +35,19 @@ class _SearchPanelState extends State<SearchPanel> {
   final TextEditingController _searchController = TextEditingController();
   bool _isFocused = false;
   bool _hasText = false;
-  double _dragBase = 0.0;
+
+  // 移動橫條拖曳用的「本次手勢起點」狀態。
+  // 真正的 panel 高度來自 widget.panelHeight（父層唯一真相），這裡只記錄
+  // drag 開始那一瞬間的高度與指標位置，避免使用累積型 _dragBase 導致
+  // 父層第一次回寫 panelHeight 後 _dragBase 沒跟上、第一次更新就瞬間跳位。
+  double? _dragStartHeight;
+  double? _dragStartGlobalY;
 
   @override
   void initState() {
     super.initState();
     _searchFocusNode.addListener(_handleFocusChange);
     _searchController.addListener(_handleTextChange);
-    _dragBase = widget.panelHeight ?? 0.0;
   }
 
   void _handleFocusChange() {
@@ -81,12 +86,30 @@ class _SearchPanelState extends State<SearchPanel> {
             if (!widget.isWide)
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
+                onVerticalDragStart: (details) {
+                  // 起點高度取「父層目前持有的 panelHeight」；
+                  // 第一次碰觸時若父層尚未回寫，沿用預設 35%。
+                  _dragStartHeight = widget.panelHeight ??
+                      MediaQuery.of(context).size.height * 0.35;
+                  _dragStartGlobalY = details.globalPosition.dy;
+                },
                 onVerticalDragUpdate: (details) {
                   final screenHeight = MediaQuery.of(context).size.height;
-                  _dragBase -= details.delta.dy;
-                  final newHeight = _dragBase.clamp(
-                      screenHeight * 0.2, screenHeight * 0.8);
+                  final startHeight = _dragStartHeight;
+                  final startY = _dragStartGlobalY;
+                  if (startHeight == null || startY == null) return;
+                  final newHeight = (startHeight -
+                          (details.globalPosition.dy - startY))
+                      .clamp(screenHeight * 0.2, screenHeight * 0.8);
                   widget.onHeightChanged(newHeight);
+                },
+                onVerticalDragEnd: (_) {
+                  _dragStartHeight = null;
+                  _dragStartGlobalY = null;
+                },
+                onVerticalDragCancel: () {
+                  _dragStartHeight = null;
+                  _dragStartGlobalY = null;
                 },
                 child: Container(
                   width: double.infinity,
