@@ -35,13 +35,19 @@ class BikeStationViewModel extends ChangeNotifier {
         _trigger = trigger ?? MapMoveTrigger() {
     _wasUseLocation = config.useLocation;
     _wasUseMoovo = config.useMoovo;
-    _wasEffectiveUseMoovo = (config.useDataSaver && config.dsDisableMoovo)
-        ? false
-        : config.useMoovo;
+    _wasUseDataSaver = config.useDataSaver;
+    _wasDsCellularOnly = config.dsCellularOnly;
+    _wasDsDisableMoovo = config.dsDisableMoovo;
+    _wasDsSkipMoovoRealtime = config.dsSkipMoovoRealtime;
+    _wasDsDisableStatusMarkers = config.dsDisableStatusMarkers;
     _wasUseMapStatusMarkers = config.useMapStatusMarkers;
     _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
     config.addListener(_onConfigChanged);
     _startCountdown();
+    // 異步補完 _wasEffectiveUseMoovo — 建構子內無法 await。
+    _effectiveUseMoovo().then((effective) {
+      _wasEffectiveUseMoovo = effective;
+    });
   }
 
   /// 外部 (home / splash) 在使用前呼喚,讓資料與 GPS 先準備好。
@@ -187,6 +193,11 @@ class BikeStationViewModel extends ChangeNotifier {
   late bool _wasUseMoovo;
   late bool _wasUseMapStatusMarkers;
   late bool _wasEffectiveUseMoovo;
+  late bool _wasUseDataSaver;
+  late bool _wasDsCellularOnly;
+  late bool _wasDsDisableMoovo;
+  late bool _wasDsSkipMoovoRealtime;
+  late bool _wasDsDisableStatusMarkers;
   Set<String> _lastPinnedIds = {};
 
   /// 站點級即時請求 TTL 快取：記錄每個站點最後一次 fetchRealtimeForVisible 的時間。
@@ -534,11 +545,21 @@ class BikeStationViewModel extends ChangeNotifier {
     final pinChanged = !_setEquals(_config.pinnedStationIds, _lastPinnedIds);
     final moovoChanged = _config.useMoovo != _wasUseMoovo;
     final statusMarkerChanged = _config.useMapStatusMarkers != _wasUseMapStatusMarkers;
+    final dsChanged = _config.useDataSaver != _wasUseDataSaver ||
+        _config.dsCellularOnly != _wasDsCellularOnly ||
+        _config.dsDisableMoovo != _wasDsDisableMoovo ||
+        _config.dsSkipMoovoRealtime != _wasDsSkipMoovoRealtime ||
+        _config.dsDisableStatusMarkers != _wasDsDisableStatusMarkers;
     final effectiveMoovo = await _effectiveUseMoovo();
     _wasUseLocation = _config.useLocation;
     _wasUseMoovo = _config.useMoovo;
     _wasEffectiveUseMoovo = effectiveMoovo;
     _wasUseMapStatusMarkers = _config.useMapStatusMarkers;
+    _wasUseDataSaver = _config.useDataSaver;
+    _wasDsCellularOnly = _config.dsCellularOnly;
+    _wasDsDisableMoovo = _config.dsDisableMoovo;
+    _wasDsSkipMoovoRealtime = _config.dsSkipMoovoRealtime;
+    _wasDsDisableStatusMarkers = _config.dsDisableStatusMarkers;
     _lastPinnedIds = Set<String>.from(_config.pinnedStationIds);
 
     if (statusMarkerChanged) {
@@ -560,7 +581,7 @@ class BikeStationViewModel extends ChangeNotifier {
       }
       return;
     }
-    if (moovoChanged || effectiveMoovo != _wasEffectiveUseMoovo) {
+    if (moovoChanged || dsChanged || effectiveMoovo != _wasEffectiveUseMoovo) {
       if (effectiveMoovo && _bootDone) {
         unawaited(_loadMoovoIntoPool());
       } else if (effectiveMoovo) {

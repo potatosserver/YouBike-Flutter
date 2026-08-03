@@ -15,7 +15,6 @@ import 'package:youbike/core/services/map_animated_move.dart';
 import 'package:youbike/data/models/bike_station.dart';
 import 'package:youbike/providers/bike_station_view_model.dart';
 import 'package:youbike/data/services/app_config_service.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:youbike/core/utils/connectivity_checker.dart';
 
 class MapView extends StatefulWidget {
@@ -57,6 +56,7 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   /// 流量節省模式 + 連線類型共同決定的 useStatus。
   /// 預設 false（保守），initState 與 config / 連線變動時重算並 setState。
   bool _effectiveUseStatus = false;
+  bool _dsCheckPending = false;
   StreamSubscription? _connSub;
 
   AnimatedMapController _getAnimatedMap() {
@@ -78,15 +78,19 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _recomputeEffectiveUseStatus();
+    // 先用同步可得的 config 值初始化 _effectiveUseStatus，
+    // 不 await isCellular()，確保 build() 不看到 stale state。
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    _effectiveUseStatus = _computeStatusSync(config);
     // 監聽連線變化，重算 useStatus
-    _connSub = Connectivity().onConnectivityChanged.listen((_) {
+    _connSub = const ConnectivityChecker().onConnectivityChanged.listen((_) {
       if (!mounted) return;
       _recomputeEffectiveUseStatus();
     });
     // 監聽 config 變化（dsDisableStatusMarkers / useMapStatusMarkers / dsCellularOnly / useDataSaver）
-    final config = Provider.of<AppConfigService>(context, listen: false);
     config.addListener(_recomputeOnConfig);
+    // 異步補完：isCellular() 可能變更 _effectiveUseStatus，完成後 setState。
+    _recomputeEffectiveUseStatus();
   }
 
   @override
@@ -107,20 +111,40 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
     _recomputeEffectiveUseStatus();
   }
 
-  Future<void> _recomputeEffectiveUseStatus() async {
-    if (!mounted) return;
-    final config = Provider.of<AppConfigService>(context, listen: false);
+  /// 同步版本 — 只用 config 值計算，不跑 isCellular()。
+  /// 用於 initState 初始化，避免 build() 看到 stale false。
+  bool _computeStatusSync(AppConfigService config) {
     bool result = config.useMapStatusMarkers;
     if (config.useDataSaver && config.dsDisableStatusMarkers) {
       result = false;
     }
+    // dsCellularOnly 在同步版無法判斷，保守設 false（等異步補完）
     if (config.useDataSaver && config.dsCellularOnly) {
-      final onCellular = await const ConnectivityChecker().isCellular();
-      if (!mounted) return;
-      result = result && onCellular;
+      result = false;
     }
-    if (result != _effectiveUseStatus) {
-      setState(() => _effectiveUseStatus = result);
+    return result;
+  }
+
+  Future<void> _recomputeEffectiveUseStatus() async {
+    if (!mounted || _dsCheckPending) return;
+    _dsCheckPending = true;
+    try {
+      final config = Provider.of<AppConfigService>(context, listen: false);
+      bool result = config.useMapStatusMarkers;
+      if (config.useDataSaver && config.dsDisableStatusMarkers) {
+        result = false;
+      }
+      if (config.useDataSaver && config.dsCellularOnly) {
+        final onCellular = await const ConnectivityChecker().isCellular();
+        if (!mounted) return;
+        result = result && onCellular;
+      }
+      if (!mounted) return;
+      if (result != _effectiveUseStatus) {
+        setState(() => _effectiveUseStatus = result);
+      }
+    } finally {
+      if (mounted) _dsCheckPending = false;
     }
   }
 
