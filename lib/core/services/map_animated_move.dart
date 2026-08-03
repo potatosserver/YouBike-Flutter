@@ -78,14 +78,44 @@ class AnimatedMapController implements MapMoveStrategy {
 
   /// 指定目標點與 zoom-level
   void animateTo(LatLng destCenter, double destZoom) {
+    // ── Guards must run BEFORE any compute/state mutation (including
+    // _disposeAndReset and fast-path `mapController.move`).  Otherwise
+    // NaN/Infinity values that pass through either the zero-duration
+    // fast-path or escape the animation branch land inside flutter_map's
+    // `pixelBounds` → `floor()` / `toInt()` → `Unsupported operation:
+    // Infinity or NaN toInt` → cascading rebuild cycle → OOM (52s jank).
+    // ──────────────────────────────────────────────────────────────────
+    final latFinite = destCenter.latitude.isFinite;
+    final lonFinite = destCenter.longitude.isFinite;
+    final zoomFinite = destZoom.isFinite;
+    if (!latFinite || !lonFinite || !zoomFinite) {
+      // Fall back to instant move at a sane zoom (default 16 if destZoom was
+      // bad) so we never feed NaN into the camera.
+      final safeLat = latFinite ? destCenter.latitude : 22.631442;
+      final safeLon = lonFinite ? destCenter.longitude : 120.301890;
+      final safeZoom = zoomFinite ? destZoom : 16.0;
+      mapController.move(LatLng(safeLat, safeLon), safeZoom);
+      return;
+    }
+
+    // ── Safe from here on ──
+
     final camera = mapController.camera;
     final startCenter = camera.center;
     final startZoom = camera.zoom;
 
+    // Guard the *current* camera too — if it's somehow NaN, fall through to
+    // instant move rather than building a NaN-begin tween.
+    if (!startCenter.latitude.isFinite ||
+        !startCenter.longitude.isFinite ||
+        !startZoom.isFinite) {
+      mapController.move(destCenter, destZoom);
+      return;
+    }
+
     final meters = MapAnimatedMove.metersBetween(startCenter, destCenter);
     final duration = MapAnimatedMove.durationForMeters(meters);
     if (duration == Duration.zero) {
-      // 離太遠不滑，直接跳
       mapController.move(destCenter, destZoom);
       return;
     }
@@ -101,28 +131,6 @@ class AnimatedMapController implements MapMoveStrategy {
     _controller = AnimationController(duration: duration, vsync: vsync);
     final animation =
         CurvedAnimation(parent: _controller!, curve: Curves.fastOutSlowIn);
-
-    // ── Guard: any non-finite value → instant move (skips animation + this ID).
-    //
-    // Otherwise the ID embeds something like "NaN" or "Infinity" and the
-    // matching `tileUpdateTransformer` below calls `loadOnly` with NaN values,
-    // which crashes flutter_map with `Unsupported operation: Infinity or NaN
-    // toInt` inside `DiscreteTileRange.fromPixelBounds`.  This happens during
-    // rapid/pinch zoom when downstream `MapViewModel.center` resolves to a
-    // bad LatLng, or when `destZoom` arrives as NaN from a stale cache.
-    final latFinite = destCenter.latitude.isFinite;
-    final lonFinite = destCenter.longitude.isFinite;
-    final zoomFinite = destZoom.isFinite;
-    if (!latFinite || !lonFinite || !zoomFinite) {
-      // Don't dispatch through animation. Fall back to instant move at a sane
-      // zoom (default 16 if destZoom was bad) so we don't leave the camera in
-      // an undefined state.
-      final safeLat = latFinite ? destCenter.latitude : 0.0;
-      final safeLon = lonFinite ? destCenter.longitude : 0.0;
-      final safeZoom = zoomFinite ? destZoom : 16.0;
-      mapController.move(LatLng(safeLat, safeLon), safeZoom);
-      return;
-    }
 
     final startIdWithTarget =
         '$_startedId#${destCenter.latitude},${destCenter.longitude},$destZoom';

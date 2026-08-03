@@ -69,10 +69,38 @@ class MapMoveTrigger {
   MapMoveStrategy? _strategy;
 
   void fire(LatLng position, {double zoom = 18.0}) {
+    // Defensive NaN/Infinity guard at the boundary. Without this, callers
+    // like BikeStationViewModel.focusStation() / refresh({moveTo}) feed
+    // whatever LatLng they have straight into MapController.move — bypassing
+    // the guard inside AnimatedMapController.animateTo entirely (we never
+    // call attachStrategy here, so `_strategy` is always null and fire()
+    // always takes the direct `_controller.move()` path).
+    //
+    // Moovo beta in particular doubles the station pool, which means a single
+    // bad LatLng from one malformed API row (e.g. `lat: null` deserialized
+    // into 0.0, or an upstream NaN slipping past the parser) immediately
+    // poisons the camera state and propagates through flutter_map's
+    // pixelBounds.floor() → cascade rebuild → OOM.
+    final latFinite = position.latitude.isFinite;
+    final lonFinite = position.longitude.isFinite;
+    final zoomFinite = zoom.isFinite;
+    if (!latFinite || !lonFinite || !zoomFinite) {
+      debugPrint(
+        '[MapMoveTrigger.fire] DROPPED non-finite move request '
+        'lat=${position.latitude} lon=${position.longitude} zoom=$zoom '
+        '— caller trace:',
+      );
+      final trace = StackTrace.current;
+      debugPrint(trace.toString().split('\n').take(10).join('\n'));
+      return;
+    }
     if (_strategy != null) {
       _strategy!.moveTo(position, zoom: zoom);
       return;
     }
+    debugPrint(
+        '[MapMoveTrigger.fire] OK lat=${position.latitude.toStringAsFixed(5)},'
+        'lon=${position.longitude.toStringAsFixed(5)}, zoom=$zoom');
     _controller?.move(position, zoom);
   }
 }

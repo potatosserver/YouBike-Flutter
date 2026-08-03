@@ -20,6 +20,7 @@ import 'package:youbike/ui/widgets/github_update_alert_dialog.dart';
 import 'package:youbike/core/services/update_checker_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
+import 'package:youbike/core/services/safe_map_controller.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,7 +29,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  final MapController _mapController = MapController();
+  // SafeMapController drops non-finite moveRaw inputs at the boundary,
+  // so NaN never reaches the camera state during flutter_map fling /
+  // pinch animations. See safe_map_controller.dart for the rationale.
+  final MapController _mapController = SafeMapController();
   double? _panelHeight;
   bool _isMapReady = false;
   AnimatedMapController? _animatedMap;
@@ -140,7 +144,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       if (_animatedMap != null) {
                         _animatedMap!.animateTo(pos, zoom);
                       } else {
-                        _mapController.move(pos, zoom);
+                        // Direct fallback when _animatedMap isn't built yet
+                        // (postFrame not yet fired). Guard against NaN at
+                        // this site so we don't bypass every other layer.
+                        if (pos.latitude.isFinite &&
+                            pos.longitude.isFinite &&
+                            zoom.isFinite) {
+                          _mapController.move(pos, zoom);
+                        }
                       }
                     },
                     animatedMap: _animatedMap,
@@ -165,7 +176,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       if (_animatedMap != null) {
                         _animatedMap!.animateTo(pos, zoom);
                       } else {
-                        _mapController.move(pos, zoom);
+                        // Direct fallback when _animatedMap isn't built yet
+                        // (postFrame not yet fired). Guard against NaN at
+                        // this site so we don't bypass every other layer.
+                        if (pos.latitude.isFinite &&
+                            pos.longitude.isFinite &&
+                            zoom.isFinite) {
+                          _mapController.move(pos, zoom);
+                        }
                       }
                     },
                     animatedMap: _animatedMap,

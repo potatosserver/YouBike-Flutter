@@ -170,6 +170,27 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
         },
         onPositionChanged: (position, hasMoved) {
           if (!hasMoved) return;
+          // Defensive: if the live camera is somehow NaN/Infinity (e.g. a
+          // previous bad animateTo left the controller in an undefined
+          // state), snap it back to the Kaohsiung fallback center and stop
+          // processing this position event. Without this guard flutter_map
+          // keeps emitting NaN-bearing MapEventMove events → its
+          // `pixelBounds.floor()` throws → cascade of jank + heap churn.
+          final liveLat = position.center.latitude;
+          final liveLon = position.center.longitude;
+          final liveZoom = position.zoom;
+          if (!liveLat.isFinite || !liveLon.isFinite || !liveZoom.isFinite) {
+            _log("MAP-CAMERA-NAN",
+                "Live camera non-finite (lat=$liveLat, lon=$liveLon, zoom=$liveZoom). Source trace follows.");
+            // Print a short stack trace so we can pin down which caller
+            // poisoned the camera. Captured here rather than at the source
+            // because we don't yet know which source — the stack at
+            // emit time names the offender.
+            final trace = StackTrace.current;
+            debugPrint(trace.toString().split('\n').take(8).join('\n'));
+            widget.mapController.move(const LatLng(22.631442, 120.301890), 16.0);
+            return;
+          }
           _mapMoveDebounceTimer?.cancel();
           _mapMoveDebounceTimer = Timer(const Duration(milliseconds: 100), () {
             final center = position.center;
