@@ -60,6 +60,16 @@ class UpdateCheckerService {
     final channel = AppEnvironment.updateChannel.toLowerCase();
 
     try {
+      // Web build 不檢查更新：沒有原生的 in-app update 流程，
+      // 也不應透過 GitHub API 提示使用者跳轉。
+      if (channel == 'web') {
+        return UpdateCheckResult(
+          isLatest: true,
+          currentVersion: currentVersion,
+          latestVersion: currentVersion,
+        );
+      }
+
       if (channel == 'google_play') {
         final playUpdateInfo = await checkForGooglePlayUpdate();
         return UpdateCheckResult(

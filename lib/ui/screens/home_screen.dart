@@ -18,6 +18,7 @@ import 'package:youbike/core/services/map_animated_move.dart';
 import 'package:latlong2/latlong.dart' show Distance, LengthUnit;
 import 'package:youbike/ui/widgets/github_update_alert_dialog.dart';
 import 'package:youbike/core/services/update_checker_service.dart';
+import 'package:youbike/core/config/app_environment.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
 import 'package:youbike/core/services/safe_map_controller.dart';
@@ -68,6 +69,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _hasCheckedStartupUpdate = false;
 
   Future<void> _checkStartupUpdate() async {
+    // Web build 不檢查更新（沒有原生 in-app update 流程，也不跳轉到 GitHub）。
+    if (kIsWeb || AppEnvironment.updateChannel.toLowerCase() == 'web') {
+      return;
+    }
+
     final service = UpdateCheckerService();
     final config = Provider.of<AppConfigService>(context, listen: false);
     final versionOnly = config.appVersion.split('+').first;
@@ -81,7 +87,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // Fluttertoast plugin 在 Web 平台未實作 cancel()，呼叫會拋 PlatformException。
       if (!kIsWeb) Fluttertoast.cancel();
       if (!mounted) return;
-      
+
+      // Google Play 版的更新走 Play Store in-app update，
+      // service 層已分流；這裡再守衛一次，避免任何 fallback 路徑誤觸 GitHub 提示。
+      if (AppEnvironment.updateChannel.toLowerCase() == 'google_play') {
+        return;
+      }
+
       if (result.isLatest) {
         if (!kIsWeb) Fluttertoast.showToast(msg: l10n.latest_version_installed);
       } else {

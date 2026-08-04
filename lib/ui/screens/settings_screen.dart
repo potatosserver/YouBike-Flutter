@@ -387,6 +387,13 @@ class _SettingsScreenState extends State<SettingsScreen>
       return;
     }
 
+    // Google Play 與 Web 不應顯示 GitHub 跳轉提示；
+    // Google Play 走 Play Store in-app update；Web 不檢查更新（service 層已分流，這裡雙保險）。
+    final channel = AppEnvironment.updateChannel.toLowerCase();
+    if (channel == 'google_play' || channel == 'web') {
+      return;
+    }
+
     if (result.isLatest) {
       if (!kIsWeb) Fluttertoast.showToast(msg: l10n.latest_version_installed);
       return;
