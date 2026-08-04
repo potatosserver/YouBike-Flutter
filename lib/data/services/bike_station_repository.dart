@@ -98,11 +98,8 @@ class BikeStationRepository {
     final cachedJson = await _cache.loadMoovo();
     if (cachedJson != null) {
       LogService().i('MoovoRepo', 'Moovo cache HIT (${cachedJson.length} stations)');
-      if (await _shouldSkipBgRefresh()) {
-        LogService().i('MoovoRepo', 'Moovo background refresh SKIPPED (data saver)');
-      } else {
-        _scheduleBackgroundRefresh(_refreshMoovo);
-      }
+      // Moovo 不受 dsSkipCacheRefresh 限制 — 該開關僅限制 YouBike。
+      _scheduleBackgroundRefresh(_refreshMoovo);
       return _deserializeMoovo(cachedJson);
     }
     LogService().i('MoovoRepo', 'Moovo cache MISS — fetching from API');
