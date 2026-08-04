@@ -52,10 +52,10 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   /// Cluster 聚合半徑（pixel）— 兩來源獨立設定，未來可依觀察再各自調整。
   /// YouBike 站點密集 → 半徑放寬；Moovo 站點稀疏 → 半徑縮短。
   static const _ybClusterRadius = 180;
-  static const _moovoClusterRadius = 120;
+  static const _moovoClusterRadius = 100;
 
   /// Cluster 展開門檻（zoom ≥ 此值不聚合）— 兩來源統一維持 16。
-  static const _disableClusteringAtZoom = 16;
+  static const _disableClusteringAtZoom = 17;
 
   BikeStation? _selected;
   AnimatedMapController? _animatedMap;
