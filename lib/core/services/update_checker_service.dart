@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:http/http.dart' as http;
 import 'package:youbike/core/config/app_environment.dart';
@@ -57,12 +56,11 @@ class UpdateCheckerService {
   Future<UpdateCheckResult> checkForUpdate({required String currentVersion}) async {
     // 從 caller 注入 currentVersion，避免本檔再呼叫 PackageInfo.fromPlatform() —
     // 版號資訊統一由 AppConfigService.init 期間讀取並 cache。
-    final channel = AppEnvironment.updateChannel.toLowerCase();
 
     try {
       // Web build 不檢查更新：沒有原生的 in-app update 流程，
       // 也不應透過 GitHub API 提示使用者跳轉。
-      if (channel == 'web') {
+      if (AppEnvironment.isWeb) {
         return UpdateCheckResult(
           isLatest: true,
           currentVersion: currentVersion,
@@ -70,7 +68,7 @@ class UpdateCheckerService {
         );
       }
 
-      if (channel == 'google_play') {
+      if (AppEnvironment.isGooglePlay) {
         final playUpdateInfo = await checkForGooglePlayUpdate();
         return UpdateCheckResult(
           isLatest: playUpdateInfo == null,
@@ -80,7 +78,7 @@ class UpdateCheckerService {
         );
       }
 
-      if (channel == 'test') {
+      if (AppEnvironment.isTest) {
         return UpdateCheckResult(
           isLatest: true,
           currentVersion: currentVersion,
@@ -100,7 +98,7 @@ class UpdateCheckerService {
   }
 
   Future<AppUpdateInfo?> checkForGooglePlayUpdate() async {
-    if (kIsWeb || !Platform.isAndroid) {
+    if (AppEnvironment.isWeb || !Platform.isAndroid) {
       return null;
     }
 

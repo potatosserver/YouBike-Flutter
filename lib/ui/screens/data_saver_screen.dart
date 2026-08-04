@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:youbike/core/config/app_environment.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/ui/widgets/setting_group_card.dart';
@@ -49,8 +49,8 @@ class _DataSaverScreenState extends State<DataSaverScreen> {
           return true;
         case 3: // 關閉站點圖釘標記
           return statusMarkersAvailable;
-        case 4: // 僅在行動數據時生效 (Web 上強制灰化)
-          return !kIsWeb;
+        case 4: // 僅在行動數據時生效 (Web build 強制灰化：無行動數據 API)
+          return !AppEnvironment.isWeb;
         default:
           return true;
       }
@@ -92,12 +92,13 @@ class _DataSaverScreenState extends State<DataSaverScreen> {
                   context: context,
                   icon: Icons.signal_cellular_alt,
                   title: l10n.data_saver_cellular_only_title,
-                  subtitle: kIsWeb
+                  // Web build 無行動數據偵測 API，副標與預設值需獨立呈現。
+                  subtitle: AppEnvironment.isWeb
                       ? l10n.data_saver_cellular_only_web_subtitle
                       : l10n.data_saver_cellular_only_subtitle,
                   enabled: itemEnabled(4),
                   trailing: Switch(
-                    value: kIsWeb ? false : config.dsCellularOnly,
+                    value: AppEnvironment.isWeb ? false : config.dsCellularOnly,
                     onChanged: itemEnabled(4)
                         ? (val) => config.setDsCellularOnly(val)
                         : null,

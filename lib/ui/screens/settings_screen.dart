@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -126,10 +125,11 @@ class _SettingsScreenState extends State<SettingsScreen>
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final channel = AppEnvironment.updateChannel.toLowerCase();
-    final showUpdateButton =
-        channel == 'google_play' || channel == 'github' || channel == 'test';
-    final showGooglePlayButton = channel == 'google_play' || channel == 'web';
+    final showUpdateButton = AppEnvironment.isGooglePlay ||
+        AppEnvironment.isGithub ||
+        AppEnvironment.isTest;
+    final showGooglePlayButton =
+        AppEnvironment.isGooglePlay || AppEnvironment.isWeb;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -201,7 +201,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ),
                   onTap: null,
                 ),
-                if (!kIsWeb)
+                // 通知服務設定：Web build 不顯示（沒有 OS 通知概念）
+                if (!AppEnvironment.isWeb)
                   _buildItem(
                     icon: Icons.notifications_active_outlined,
                     title: l10n.settings_notification_service,
@@ -343,17 +344,17 @@ class _SettingsScreenState extends State<SettingsScreen>
         config.appVersion.split('+').first; // '1.0.1+2' → '1.0.1'
 
     try {
-      if (!kIsWeb) {
+      // Fluttertoast plugin 在 Web 平台未實作，呼叫會拋 PlatformException。
+      if (!AppEnvironment.isWeb) {
         Fluttertoast.showToast(msg: l10n.checking_for_updates);
       }
       final result = await service.checkForUpdate(currentVersion: versionOnly);
-      // Fluttertoast plugin 在 Web 平台未實作 cancel()，呼叫會拋 PlatformException。
-      if (!kIsWeb) Fluttertoast.cancel();
+      if (!AppEnvironment.isWeb) Fluttertoast.cancel();
       if (!mounted) return;
       await _handleUpdateResult(result, l10n);
     } catch (error) {
       if (!mounted) return;
-      if (!kIsWeb) {
+      if (!AppEnvironment.isWeb) {
         Fluttertoast.showToast(
           msg: '${l10n.update_check_failed}: ${error.toString()}',
         );
@@ -374,7 +375,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             '',
           ) ??
           l10n.update_check_failed;
-      if (!kIsWeb) {
+      if (!AppEnvironment.isWeb) {
         Fluttertoast.showToast(
           msg: '${l10n.update_check_failed}: $errorMessage',
         );
@@ -389,13 +390,14 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     // Google Play 與 Web 不應顯示 GitHub 跳轉提示；
     // Google Play 走 Play Store in-app update；Web 不檢查更新（service 層已分流，這裡雙保險）。
-    final channel = AppEnvironment.updateChannel.toLowerCase();
-    if (channel == 'google_play' || channel == 'web') {
+    if (AppEnvironment.isGooglePlay || AppEnvironment.isWeb) {
       return;
     }
 
     if (result.isLatest) {
-      if (!kIsWeb) Fluttertoast.showToast(msg: l10n.latest_version_installed);
+      if (!AppEnvironment.isWeb) {
+        Fluttertoast.showToast(msg: l10n.latest_version_installed);
+      }
       return;
     }
 
@@ -436,7 +438,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       'https://play.google.com/store/apps/details?id=$packageName',
     );
 
-    if (kIsWeb) {
+    // Web build 沒有原生 market:// scheme，走瀏覽器開 Play Store 網頁版。
+    if (AppEnvironment.isWeb) {
       await launchUrl(webUri, mode: LaunchMode.platformDefault);
       return;
     }

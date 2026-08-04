@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:youbike/core/config/app_environment.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
 import 'package:youbike/core/theme/brand_colors.dart';
 import 'package:youbike/data/services/app_config_service.dart';
@@ -62,8 +62,8 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
   @override
   void initState() {
     super.initState();
-    // Web 平台不支援通知權限，直接跳至首頁
-    if (kIsWeb && widget.type == PermissionType.notification) {
+    // Web build 不支援通知權限（permission_handler 不可用），直接跳至首頁。
+    if (AppEnvironment.isWeb && widget.type == PermissionType.notification) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.go('/');
       });
@@ -219,7 +219,8 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
 
   void _goNext() {
     // 定位與通知各自獨立：略過定位不代表略過通知，讓使用者自行決定通知。
-    if (widget.type == PermissionType.location && !kIsWeb) {
+    // Web build 沒有通知頁要走，所以定位完成後直接回首頁。
+    if (widget.type == PermissionType.location && !AppEnvironment.isWeb) {
       if (mounted) context.go('/permission/notification');
     } else {
       if (mounted) context.go('/');
@@ -341,7 +342,9 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                       shape: const StadiumBorder(),
                     ),
                     child: Text(
-                      (widget.type == PermissionType.location && !kIsWeb)
+                      // Web build 沒有通知頁可走，定位完成後按鈕文案顯示「完成」。
+                      (widget.type == PermissionType.location &&
+                              !AppEnvironment.isWeb)
                           ? l10n.setup_continue
                           : l10n.setup_complete,
                       style: const TextStyle(

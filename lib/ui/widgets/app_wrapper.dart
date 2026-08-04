@@ -65,7 +65,7 @@ class _AppWrapperState extends State<AppWrapper> {
 
       // Only use updateChannel for runtime update behavior.
       // FLAVOR is not involved in this app initialization flow.
-      if (AppEnvironment.updateChannel == 'google_play') {
+      if (AppEnvironment.isGooglePlay) {
         await _checkGooglePlayUpdate();
       }
     } catch (e) {

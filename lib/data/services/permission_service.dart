@@ -2,15 +2,16 @@
 //
 // 目前服務對象：Android + Web（暫不考慮 iOS）。
 // - Android：permission_handler (POST_NOTIFICATIONS) 為主
-// - Web：無 OS 通知概念，permission_handler 也不可用；以 kIsWeb 短路並回 true（保守視為開啟）
+// - Web：無 OS 通知概念，permission_handler 也不可用；以 AppEnvironment.isWeb
+//   短路並回 true（保守視為開啟）。
 //
 // 集中原本散落於 splash / permission_handler_page / settings_screen 的
 // 「讀取 / 請求 / 永久拒絕 dialog」三重複邏輯。
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:youbike/core/config/app_environment.dart';
 import 'package:youbike/core/utils/log_service.dart';
 import 'package:youbike/ui/widgets/base/permission_denied_dialog.dart';
 
@@ -43,8 +44,9 @@ class PermissionService {
   factory PermissionService() => _instance;
   PermissionService._internal();
 
-  /// 是否處於 Web 平台 — 權限流程需短路（Web 沒 OS 通知）。
-  bool get isWeb => kIsWeb;
+  /// 是否處於 Web build（`--dart-define=UPDATE_CHANNEL=web`）。
+  /// 權限流程需短路：Web 沒有 OS 通知 / 定位概念。
+  bool get isWeb => AppEnvironment.isWeb;
 
   // ── 通知權限 ──
 
@@ -52,7 +54,7 @@ class PermissionService {
   /// - Android 13+ 走 permission_handler（POST_NOTIFICATIONS）
   /// - Web：回傳 true（Web 沒有 OS 通知概念，避免誤關閉）
   Future<bool> readSystemNotificationStatus() async {
-    if (kIsWeb) return true;
+    if (AppEnvironment.isWeb) return true;
     try {
       final s = await Permission.notification.status;
       return s.isGranted || s.isLimited;
@@ -66,7 +68,7 @@ class PermissionService {
   /// 已授予直接回 granted；永久拒絕回 permanentlyDenied 不重彈系統框。
   /// 暫時性拒絕（使用者按拒絕）回 denied，呼叫端不再二次請求。
   Future<NotificationRequestResult> requestOsNotificationOnce() async {
-    if (kIsWeb) return NotificationRequestResult.unavailable;
+    if (AppEnvironment.isWeb) return NotificationRequestResult.unavailable;
     try {
       final s = await Permission.notification.status;
       if (s.isGranted) return NotificationRequestResult.granted;
@@ -93,7 +95,7 @@ class PermissionService {
   ///        避免「重設權限後仍誤判 granted」。
   /// - Native：permission_handler。
   Future<bool> readLocationStatus() async {
-    if (kIsWeb) {
+    if (AppEnvironment.isWeb) {
       try {
         final p = await Geolocator.checkPermission();
         return p == LocationPermission.always ||
@@ -111,7 +113,7 @@ class PermissionService {
   /// Web：先檢查 permissions API；若尚未 grant/deny，再走 Geolocator.requestPermission()
   /// （對應 navigator.geolocation 觸發瀏覽器原生詢問框）。
   Future<LocationRequestResult> requestLocationOnce() async {
-    if (kIsWeb) {
+    if (AppEnvironment.isWeb) {
       try {
         final p = await Geolocator.checkPermission();
         // 已 granted 不再二次詢問
