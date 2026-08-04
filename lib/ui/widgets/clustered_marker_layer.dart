@@ -6,36 +6,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:youbike/core/services/realtime_status_manager.dart';
 import 'package:youbike/ui/widgets/realtime_binding_marker.dart';
 
-/// 共用 helper:把一群帶 (lat,lng) 的資料項目畫成「聚合 Marker Layer」。
-///
-/// 複用既有 `flutter_map_marker_cluster` 的群集邏輯,只把
-/// `marker` 轉成 Visible Marker、把 `cluster widget` 用 Builder 指定。
-///
-/// 為什麼要這個 helper,而非讓每個來源自己寫:
-/// - YouBike 是黃色 + 40px RoadSign、Moovo 是綠色 + 40px MoovoPin
-/// - 但「聚合半徑、spiderfy 距離、cluster tap」這些幾乎全一致
-/// - 一旦 即時數據版本變動 vs 內部快取版本不一致 → 重建 markers。
-///
-/// 即時狀態 hook(方案 4 - Widget Lifecycle):
-/// - 當 [statusManager] 與 [realtimeKeyOf] 同時提供時,marker 的 `child` 會被
-///   包成 [RealtimeBindingMarker],由它負責 register/unregister 自己的 station id。
-/// - 任一為 null → 退回舊行為,marker child 直接等於 [markerChild] 的回傳值。
-/// - 這樣 Moovo 之類不需要即時狀態的資料源不會被 manager 拖累。
-///
-/// 用法範例:
-/// ```
-/// final layer = ClusteredMarkerLayer<Station>(
-///   items: stations,
-///   pointOf: (s) => LatLng(s.lat, s.lng),
-///   keyOf: (s) => 'st_${s.id}',
-///   markerChild: (_, s) => const RoadSignMarker(), // item-aware builder
-///   realtimeKeyOf: (s) => s.id,                    // optional
-///   statusManager: myManager,                      // optional
-///   clusterBuilder: (n) => ClusterMarker(count: n),
-///   onMarkerTap: (s) => onStationTap(s),
-///   maxClusterRadius: 180,
-/// )
-/// ```
 abstract class Clusterable {
   LatLng get clusterPoint;
 }
