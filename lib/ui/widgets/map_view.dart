@@ -506,9 +506,10 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   }
 
   void _animateToStation(BikeStation bs) {
-    // 1. 觸發單站即時更新（beta 模式已由 RealtimeStatusManager 接管，跳過節省流量）
-    final config = Provider.of<AppConfigService>(context, listen: false);
-    if (!config.useMapStatusMarkers) {
+    // 1. 觸發即時更新
+    //    - RealtimeStatusManager 啟用時由它批次接管
+    //    - 關閉時（useMapStatusMarkers OFF 或 dsDisableStatusMarkers 關閉）fallback 單獨更新
+    if (!_effectiveUseStatus) {
       Provider.of<BikeStationViewModel>(context, listen: false).refreshStation(bs);
     }
 
