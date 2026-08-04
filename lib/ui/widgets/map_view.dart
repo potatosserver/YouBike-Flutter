@@ -251,6 +251,10 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                   clusterBuilder: (n) => ClusterMarker(count: n),
                   onMarkerTap: (b) => _animateToStation(b),
                   dataVersion: bikeVm.dataVersion,
+                  // YouBike 站點密集 → 聚合半徑放寬到 180，zoom ≥ 16 才展開。
+                  // 兩個聚合參數獨立於 Moovo，未來可依觀察再各自調整。
+                  maxClusterRadius: 120,
+                  disableClusteringAtZoom: 16,
                   statusManager: useStatus ? _realtimeManager : null,
                   realtimeKeyOf: useStatus ? (b) => b.id : null,
                 ),
@@ -265,6 +269,10 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
                     color: BrandColors.markerMoovoGreen,
                   ),
                   onMarkerTap: (b) => _animateToStation(b),
+                  // Moovo 站點較稀疏 → 聚合半徑縮到 120，避免稀疏站點被黏成一團；
+                  // 展開門檻維持 16（與 YouBike 一致，未來可視觀察再拆開）。
+                  maxClusterRadius: 80,
+                  disableClusteringAtZoom: 16,
                   statusManager: useStatus ? _realtimeManager : null,
                   realtimeKeyOf: useStatus ? (b) => b.id : null,
                 ),

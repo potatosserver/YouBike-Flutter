@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -84,7 +85,9 @@ class AppConfigService with ChangeNotifier {
     dsDisableMoovo = _prefs?.getBool('dsDisableMoovo') ?? false;
     dsSkipMoovoRealtime = _prefs?.getBool('dsSkipMoovoRealtime') ?? true;
     dsDisableStatusMarkers = _prefs?.getBool('dsDisableStatusMarkers') ?? true;
-    dsCellularOnly = _prefs?.getBool('dsCellularOnly') ?? true;
+    // Web 平台不支援行動數據偵測，強制設為 false。
+    // kIsWeb 用來設「初始 default」，但仍允許已寫入 SharedPreferences 的值覆蓋。
+    dsCellularOnly = _prefs?.getBool('dsCellularOnly') ?? (kIsWeb ? false : true);
     final pinnedList = _prefs?.getStringList('pinnedStations') ?? [];
     pinnedStationIds = pinnedList.map((id) => id.trim()).toSet();
     // 集中讀取 PackageInfo — 取代原本散落 3 處的 PackageInfo.fromPlatform() 呼叫。
