@@ -546,4 +546,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get data_saver_cellular_only_web_subtitle => '請下載 APP 體驗完整功能';
+
+  @override
+  String get settings_refresh_interval => '更新間隔';
+
+  @override
+  String get settings_refresh_interval_subtitle => '自動刷新站點資料的頻率。間隔越短可能消耗越多流量。';
+
+  @override
+  String get refresh_interval_15s => '15 秒';
+
+  @override
+  String get refresh_interval_15s_warning => '15 秒間隔可能消耗過多流量，確定要繼續嗎？';
+
+  @override
+  String get refresh_interval_30s => '30 秒';
+
+  @override
+  String get refresh_interval_1m => '1 分鐘';
+
+  @override
+  String get refresh_interval_2m => '2 分鐘';
+
+  @override
+  String get refresh_interval_3m => '3 分鐘';
+
+  @override
+  String get refresh_interval_5m => '5 分鐘';
 }

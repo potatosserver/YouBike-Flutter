@@ -1123,6 +1123,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download the app for full functionality'**
   String get data_saver_cellular_only_web_subtitle;
+
+  /// No description provided for @settings_refresh_interval.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Interval'**
+  String get settings_refresh_interval;
+
+  /// No description provided for @settings_refresh_interval_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How often to automatically refresh station data. Shorter intervals may consume more data.'**
+  String get settings_refresh_interval_subtitle;
+
+  /// No description provided for @refresh_interval_15s.
+  ///
+  /// In en, this message translates to:
+  /// **'15 sec'**
+  String get refresh_interval_15s;
+
+  /// No description provided for @refresh_interval_15s_warning.
+  ///
+  /// In en, this message translates to:
+  /// **'15 seconds interval may consume excessive data. Are you sure you want to continue?'**
+  String get refresh_interval_15s_warning;
+
+  /// No description provided for @refresh_interval_30s.
+  ///
+  /// In en, this message translates to:
+  /// **'30 sec'**
+  String get refresh_interval_30s;
+
+  /// No description provided for @refresh_interval_1m.
+  ///
+  /// In en, this message translates to:
+  /// **'1 min'**
+  String get refresh_interval_1m;
+
+  /// No description provided for @refresh_interval_2m.
+  ///
+  /// In en, this message translates to:
+  /// **'2 min'**
+  String get refresh_interval_2m;
+
+  /// No description provided for @refresh_interval_3m.
+  ///
+  /// In en, this message translates to:
+  /// **'3 min'**
+  String get refresh_interval_3m;
+
+  /// No description provided for @refresh_interval_5m.
+  ///
+  /// In en, this message translates to:
+  /// **'5 min'**
+  String get refresh_interval_5m;
 }
 
 class _AppLocalizationsDelegate

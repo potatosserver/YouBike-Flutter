@@ -8,6 +8,7 @@ import 'package:youbike/ui/screens/settings_screen.dart';
 import 'package:youbike/ui/screens/theme_selection_screen.dart';
 import 'package:youbike/ui/screens/region_selection_screen.dart';
 import 'package:youbike/ui/screens/language_selection_screen.dart';
+import 'package:youbike/ui/screens/refresh_interval_selection_screen.dart';
 import 'package:youbike/ui/screens/beta_features_screen.dart';
 import 'package:youbike/ui/screens/data_saver_screen.dart';
 
@@ -54,6 +55,10 @@ class AppRouter {
       GoRoute(
         path: '/language-selection',
         builder: (context, state) => const LanguageSelectionScreen(),
+      ),
+      GoRoute(
+        path: '/refresh-interval-selection',
+        builder: (context, state) => const RefreshIntervalSelectionScreen(),
       ),
       GoRoute(
         path: '/beta-features',

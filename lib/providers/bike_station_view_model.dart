@@ -42,6 +42,7 @@ class BikeStationViewModel extends ChangeNotifier {
     _wasDsDisableStatusMarkers = config.dsDisableStatusMarkers;
     _wasUseMapStatusMarkers = config.useMapStatusMarkers;
     _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
+    _wasRefreshInterval = config.refreshInterval;
     config.addListener(_onConfigChanged);
     _startCountdown();
     // 異步補完 _wasEffectiveUseMoovo — 建構子內無法 await。
@@ -200,6 +201,8 @@ class BikeStationViewModel extends ChangeNotifier {
   late bool _wasDsDisableStatusMarkers;
   Set<String> _lastPinnedIds = {};
 
+  late int _wasRefreshInterval;
+
   /// 站點級即時請求 TTL 快取：記錄每個站點最後一次 fetchRealtimeForVisible 的時間。
   /// key = station id, value = last fetch DateTime。30 秒內不會重複請求同一站點。
   final Map<String, DateTime> _lastRealtimeFetch = {};
@@ -322,7 +325,7 @@ class BikeStationViewModel extends ChangeNotifier {
     if (_isLoading) return;
     if (_fullBikes.isEmpty) return; // 還沒 boot 完不做事
     _isLoading = true;
-    _countdown = 60;
+    _countdown = _config.refreshInterval;
     notifyListeners();
 
     try {
@@ -550,6 +553,7 @@ class BikeStationViewModel extends ChangeNotifier {
         _config.dsDisableMoovo != _wasDsDisableMoovo ||
         _config.dsSkipMoovoRealtime != _wasDsSkipMoovoRealtime ||
         _config.dsDisableStatusMarkers != _wasDsDisableStatusMarkers;
+    final refreshIntervalChanged = _config.refreshInterval != _wasRefreshInterval;
     final effectiveMoovo = await _effectiveUseMoovo();
     _wasUseLocation = _config.useLocation;
     _wasUseMoovo = _config.useMoovo;
@@ -560,6 +564,7 @@ class BikeStationViewModel extends ChangeNotifier {
     _wasDsDisableMoovo = _config.dsDisableMoovo;
     _wasDsSkipMoovoRealtime = _config.dsSkipMoovoRealtime;
     _wasDsDisableStatusMarkers = _config.dsDisableStatusMarkers;
+    _wasRefreshInterval = _config.refreshInterval;
     _lastPinnedIds = Set<String>.from(_config.pinnedStationIds);
 
     if (statusMarkerChanged) {
@@ -592,6 +597,7 @@ class BikeStationViewModel extends ChangeNotifier {
       return;
     }
     if (pinChanged) _reorderByPin();
+    if (refreshIntervalChanged) _startCountdown();
   }
 
   Future<void> _onLocationEnabled() async {
@@ -611,6 +617,7 @@ class BikeStationViewModel extends ChangeNotifier {
 
   void _startCountdown() {
     _countdownTimer?.cancel();
+    _countdown = _config.refreshInterval;
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_countdown > 0) {
         _countdown--;

@@ -20,6 +20,11 @@ class AppConfigService with ChangeNotifier {
   /// 站點搜尋篩選器開關 (Beta)
   bool useStationFilter = false;
 
+  /// 自動刷新間隔（秒），預設 60 秒。
+  /// 選項：15、30、60、120、180、300
+  /// 儲存於 SharedPreferences (key `refreshInterval`)，預設 `60`。
+  int refreshInterval = 60;
+
   // ── 流量節省模式 ───────────────────────────────────────
 
   /// 流量節省模式總開關（設定 → 系統設定）。
@@ -91,6 +96,7 @@ class AppConfigService with ChangeNotifier {
         _prefs?.getBool('dsCellularOnly') ?? (AppEnvironment.isWeb ? false : true);
     final pinnedList = _prefs?.getStringList('pinnedStations') ?? [];
     pinnedStationIds = pinnedList.map((id) => id.trim()).toSet();
+    refreshInterval = _prefs?.getInt('refreshInterval') ?? 60;
     // 集中讀取 PackageInfo — 取代原本散落 3 處的 PackageInfo.fromPlatform() 呼叫。
     try {
       final info = await PackageInfo.fromPlatform();
@@ -196,6 +202,13 @@ class AppConfigService with ChangeNotifier {
       pinnedStationIds.add(id);
     }
     _prefs?.setStringList('pinnedStations', pinnedStationIds.toList());
+    notifyListeners();
+  }
+
+  /// 設定自動刷新間隔（秒）。
+  void setRefreshInterval(int seconds) {
+    refreshInterval = seconds;
+    _prefs?.setInt('refreshInterval', seconds);
     notifyListeners();
   }
 

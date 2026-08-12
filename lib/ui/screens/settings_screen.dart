@@ -177,6 +177,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                   onTap: () => context.push('/data-saver'),
                 ),
                 _buildItem(
+                  icon: Icons.timer_outlined,
+                  title: l10n.settings_refresh_interval,
+                  trailing: Icon(Icons.chevron_right,
+                      size: 22, color: cs.onSurfaceVariant),
+                  onTap: () => context.push('/refresh-interval-selection'),
+                ),
+                _buildItem(
                   icon: Icons.science_outlined,
                   title: l10n.beta_features_page_title,
                   trailing: Icon(Icons.chevron_right,

@@ -569,4 +569,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get data_saver_cellular_only_web_subtitle =>
       'Download the app for full functionality';
+
+  @override
+  String get settings_refresh_interval => 'Refresh Interval';
+
+  @override
+  String get settings_refresh_interval_subtitle =>
+      'How often to automatically refresh station data. Shorter intervals may consume more data.';
+
+  @override
+  String get refresh_interval_15s => '15 sec';
+
+  @override
+  String get refresh_interval_15s_warning =>
+      '15 seconds interval may consume excessive data. Are you sure you want to continue?';
+
+  @override
+  String get refresh_interval_30s => '30 sec';
+
+  @override
+  String get refresh_interval_1m => '1 min';
+
+  @override
+  String get refresh_interval_2m => '2 min';
+
+  @override
+  String get refresh_interval_3m => '3 min';
+
+  @override
+  String get refresh_interval_5m => '5 min';
 }
