@@ -49,6 +49,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings_language_title => 'Language';
 
   @override
+  String get language_system_default => 'System Default';
+
+  @override
   String get lang_zh => 'Traditional Chinese';
 
   @override

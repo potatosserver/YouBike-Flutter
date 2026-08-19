@@ -26,6 +26,8 @@
     "@settings_language": {},
     "settings_language_title": "語言",
     "@settings_language_title": {},
+    "language_system_default": "系統預設",
+    "@language_system_default": {},
     "lang_zh": "繁體中文",
     "@lang_zh": {},
     "lang_en": "English",

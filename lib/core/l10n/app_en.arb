@@ -26,6 +26,8 @@
     "@settings_language": {},
     "settings_language_title": "Language",
     "@settings_language_title": {},
+    "language_system_default": "System Default",
+    "@language_system_default": {},
     "lang_zh": "Traditional Chinese",
     "@lang_zh": {},
     "lang_en": "English",

@@ -12,7 +12,7 @@ class LanguageSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final config = Provider.of<AppConfigService>(context);
-    final languageService = Provider.of<LanguageService>(context, listen: false);
+    final languageService = Provider.of<LanguageService>(context);
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -27,15 +27,20 @@ class LanguageSelectionScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         children: [
           RadioDot(
-            label: '繁體中文',
-            isSelected: config.currentLang == 'zh_TW' ||
-                config.currentLang == 'zh',
+            label: l10n.language_system_default,
+            isSelected: languageService.selectedLocale == null,
+            onTap: () => languageService.clearLocale(),
+          ),
+          const SizedBox(height: 24),
+          RadioDot(
+            label: l10n.lang_zh,
+            isSelected: languageService.selectedLocale?.languageCode == 'zh',
             onTap: () => languageService.setLanguageCode('zh', config),
           ),
           const SizedBox(height: 24),
           RadioDot(
-            label: 'English',
-            isSelected: config.currentLang == 'en',
+            label: l10n.lang_en,
+            isSelected: languageService.selectedLocale?.languageCode == 'en',
             onTap: () => languageService.setLanguageCode('en', config),
           ),
         ],

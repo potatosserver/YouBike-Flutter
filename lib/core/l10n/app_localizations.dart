@@ -176,6 +176,12 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get settings_language_title;
 
+  /// No description provided for @language_system_default.
+  ///
+  /// In en, this message translates to:
+  /// **'System Default'**
+  String get language_system_default;
+
   /// No description provided for @lang_zh.
   ///
   /// In en, this message translates to:
