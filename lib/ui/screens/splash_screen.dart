@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/data/services/permission_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -41,6 +43,13 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     if (!locGranted && !skipLoc) {
       context.go('/permission');
+      return;
+    }
+
+    // 已處理定位權限（授權或略過），但尚未選擇區域 → 導向區域選擇
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    if (!config.hasSelectedRegion) {
+      context.go('/region-selection');
       return;
     }
 
