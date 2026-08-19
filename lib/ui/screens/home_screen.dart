@@ -133,8 +133,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final availableHeight = constraints.maxHeight;
           final availableWidth = constraints.maxWidth;
 
-          final double aspectRatio = availableWidth / availableHeight;
-          final bool isWide = aspectRatio > 0.8;
+          // Use actual screen size (not viewInsets-affected constraints)
+          // to determine layout type. Keyboard should not trigger layout switch.
+          final screenSize = MediaQuery.of(context).size;
+          final double screenAspectRatio = screenSize.width / screenSize.height;
+          final bool isWide = screenAspectRatio > 0.8;
 
           final double sidebarWidth =
               isWide ? (availableWidth * 0.3).clamp(300.0, 400.0) : 0.0;

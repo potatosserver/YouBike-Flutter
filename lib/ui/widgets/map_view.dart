@@ -167,6 +167,8 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
       options: MapOptions(
         initialCenter: initialCenter,
         initialZoom: 18.0,
+        minZoom: 1.0,
+        maxZoom: 19.0,
         interactionOptions: const InteractionOptions(
           flags: InteractiveFlag.all - InteractiveFlag.rotate,
         ),
