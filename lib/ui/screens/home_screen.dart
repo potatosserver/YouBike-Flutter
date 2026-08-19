@@ -298,12 +298,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         if (cached != null && _animatedMap != null) {
                           _animatedMap!.animateTo(cached, 18.0);
                         }
-                        // 等 GPS 拿到新位置後再 fire 一次。
-                        // 使用 request() 而非 requestOrFallback() — 失敗回傳 null，
-                        // 此時不要硬把地圖移走（避免覆蓋 cached 的位置）。
-                        final pos = await gps.request(_mapVm);
+                        // 使用 requestOrFallback — GPS 失敗時回退到區域中心，確保按鈕永遠有反應。
+                        final pos = await gps.requestOrFallback(_mapVm);
                         if (!mounted) return;
-                        if (pos != null && _animatedMap != null) {
+                        // requestOrFallback 永遠回傳非 null，直接移動地圖
+                        if (_animatedMap != null) {
                           // 若新位置與上次相差 < 50m，視為同一點，不觸發第二次動畫
                           // （否則會打斷剛剛那段動畫造成畫面抖動）。
                           final movedFar = cached == null ||

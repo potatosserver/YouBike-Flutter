@@ -6,6 +6,7 @@ import 'package:youbike/core/config/app_environment.dart';
 class AppConfigService with ChangeNotifier {
   String currentLang = 'zh_TW';
   String selectedRegion = 'kaohsiung';
+  bool hasSelectedRegion = false;
   bool useLocation = true;
   bool useNotification = true;
   /// Moovo 自行車系統開關（位於設定 → 參數 → Beta 版 → 內含）。
@@ -80,6 +81,7 @@ class AppConfigService with ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     currentLang = _prefs?.getString('currentLang') ?? 'zh_TW';
     selectedRegion = _prefs?.getString('selectedRegion') ?? 'kaohsiung';
+    hasSelectedRegion = _prefs?.getBool('hasSelectedRegion') ?? false;
     useLocation = _prefs?.getBool('useLocation') ?? true;
     useNotification = _prefs?.getBool('useNotification') ?? true;
     useMoovo = _prefs?.getBool('useMoovo') ?? false;
@@ -115,7 +117,9 @@ class AppConfigService with ChangeNotifier {
 
   void setRegion(String region) {
     selectedRegion = region;
+    hasSelectedRegion = true;
     _prefs?.setString('selectedRegion', region);
+    _prefs?.setBool('hasSelectedRegion', true);
     notifyListeners();
   }
 

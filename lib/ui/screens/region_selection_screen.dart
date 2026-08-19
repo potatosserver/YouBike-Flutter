@@ -1,11 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:youbike/core/config/app_environment.dart';
 import 'package:youbike/core/l10n/app_localizations.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/ui/widgets/radio_dot.dart';
 
-class RegionSelectionScreen extends StatelessWidget {
+class RegionSelectionScreen extends StatefulWidget {
   const RegionSelectionScreen({super.key});
+
+  @override
+  State<RegionSelectionScreen> createState() => _RegionSelectionScreenState();
+}
+
+class _RegionSelectionScreenState extends State<RegionSelectionScreen> {
+  String? _selectedRegion;
+
+  void _onRegionTap(String regionId) {
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    config.setRegion(regionId);
+    setState(() => _selectedRegion = regionId);
+    // 選擇後導向下一步：通知權限頁或首頁
+    if (mounted) {
+      if (!AppEnvironment.isWeb) {
+        context.go('/permission/notification');
+      } else {
+        context.go('/');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +52,7 @@ class RegionSelectionScreen extends StatelessWidget {
           final regionId = entry.key;
           final regionKey = entry.value['name'] as String;
           final label = _lookupLabel(regionKey, l10n);
-          final isSelected = config.selectedRegion == regionId;
+          final isSelected = config.selectedRegion == regionId || _selectedRegion == regionId;
           final isLast = i == entries.length - 1;
 
           return Column(
@@ -37,7 +60,7 @@ class RegionSelectionScreen extends StatelessWidget {
               RadioDot(
                 label: label,
                 isSelected: isSelected,
-                onTap: () => config.setRegion(regionId),
+                onTap: () => _onRegionTap(regionId),
               ),
               if (!isLast) const SizedBox(height: 24),
             ],
