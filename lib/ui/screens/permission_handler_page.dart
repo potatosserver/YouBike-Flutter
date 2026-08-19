@@ -209,9 +209,9 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
     if (widget.type == PermissionType.location) {
       final config = Provider.of<AppConfigService>(context, listen: false);
       config.setUseLocation(false);
-      // 略過定位權限且尚未選擇區域 → 導向區域選擇頁
+      // 略過定位權限且尚未選擇區域 → 導向初始化專用區域選擇頁
       if (!config.hasSelectedRegion && mounted) {
-        context.go('/region-selection');
+        context.go('/onboarding-region');
         return;
       }
     } else {
@@ -227,9 +227,9 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
     // Web build 沒有通知頁要走，所以定位完成後直接回首頁。
     if (widget.type == PermissionType.location && !AppEnvironment.isWeb) {
       final config = Provider.of<AppConfigService>(context, listen: false);
-      // 首次完成定位權限且尚未選擇區域 → 導向區域選擇頁
+      // 首次完成定位權限且尚未選擇區域 → 導向初始化專用區域選擇頁
       if (!config.hasSelectedRegion) {
-        if (mounted) context.go('/region-selection');
+        if (mounted) context.go('/onboarding-region');
         return;
       }
       if (mounted) context.go('/permission/notification');

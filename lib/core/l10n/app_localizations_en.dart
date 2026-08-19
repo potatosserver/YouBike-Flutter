@@ -512,6 +512,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get get_started => 'Get Started';
 
   @override
+  String get onboarding_region_title => 'Select Your Region';
+
+  @override
+  String get onboarding_region_message =>
+      'Choose your region to find nearby YouBike stations. You can change this later in Settings.';
+
+  @override
   String get data_saver_title => 'Data Saver Mode';
 
   @override

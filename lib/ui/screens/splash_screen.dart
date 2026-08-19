@@ -41,15 +41,17 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final locGranted = await _perm.readLocationStatus();
     if (!mounted) return;
-    if (!locGranted && !skipLoc) {
-      context.go('/permission');
+
+    // 無論定位權限如何，都檢查是否已選擇區域
+    final config = Provider.of<AppConfigService>(context, listen: false);
+    if (!config.hasSelectedRegion) {
+      context.go('/onboarding-region');
       return;
     }
 
-    // 已處理定位權限（授權或略過），但尚未選擇區域 → 導向區域選擇
-    final config = Provider.of<AppConfigService>(context, listen: false);
-    if (!config.hasSelectedRegion) {
-      context.go('/region-selection');
+    // 定位權限未授權且未略過 → 走定位權限頁
+    if (!locGranted && !skipLoc) {
+      context.go('/permission');
       return;
     }
 

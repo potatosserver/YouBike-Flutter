@@ -7,6 +7,7 @@ import 'package:youbike/ui/screens/home_screen.dart';
 import 'package:youbike/ui/screens/settings_screen.dart';
 import 'package:youbike/ui/screens/theme_selection_screen.dart';
 import 'package:youbike/ui/screens/region_selection_screen.dart';
+import 'package:youbike/ui/screens/onboarding_region_selection_screen.dart';
 import 'package:youbike/ui/screens/language_selection_screen.dart';
 import 'package:youbike/ui/screens/refresh_interval_selection_screen.dart';
 import 'package:youbike/ui/screens/beta_features_screen.dart';
@@ -67,6 +68,10 @@ class AppRouter {
       GoRoute(
         path: '/data-saver',
         builder: (context, state) => const DataSaverScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding-region',
+        builder: (context, state) => const OnboardingRegionSelectionScreen(),
       ),
     ],
     errorBuilder: (context, state) => const HomeScreen(),

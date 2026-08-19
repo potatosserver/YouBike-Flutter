@@ -496,6 +496,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get get_started => '開始使用';
 
   @override
+  String get onboarding_region_title => '選擇您的地區';
+
+  @override
+  String get onboarding_region_message => '選擇地區以尋找附近的 YouBike 站點。稍後可在設定中更改。';
+
+  @override
   String get data_saver_title => '流量節省模式';
 
   @override

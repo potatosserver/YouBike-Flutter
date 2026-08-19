@@ -1028,6 +1028,18 @@ abstract class AppLocalizations {
   /// **'Get Started'**
   String get get_started;
 
+  /// No description provided for @onboarding_region_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Your Region'**
+  String get onboarding_region_title;
+
+  /// No description provided for @onboarding_region_message.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your region to find nearby YouBike stations. You can change this later in Settings.'**
+  String get onboarding_region_message;
+
   /// No description provided for @data_saver_title.
   ///
   /// In en, this message translates to:
