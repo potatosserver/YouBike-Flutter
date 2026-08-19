@@ -1040,6 +1040,12 @@ abstract class AppLocalizations {
   /// **'Choose your region to find nearby YouBike stations. You can change this later in Settings.'**
   String get onboarding_region_message;
 
+  /// No description provided for @select_region_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a region'**
+  String get select_region_hint;
+
   /// No description provided for @data_saver_title.
   ///
   /// In en, this message translates to:

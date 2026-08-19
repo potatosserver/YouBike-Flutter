@@ -224,15 +224,20 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
 
   void _goNext() {
     // 定位與通知各自獨立：略過定位不代表略過通知，讓使用者自行決定通知。
-    // Web build 沒有通知頁要走，所以定位完成後直接回首頁。
-    if (widget.type == PermissionType.location && !AppEnvironment.isWeb) {
+    // Web build 沒有通知頁可走，定位完成後直接進區域選擇。
+    if (widget.type == PermissionType.location) {
       final config = Provider.of<AppConfigService>(context, listen: false);
-      // 首次完成定位權限且尚未選擇區域 → 導向初始化專用區域選擇頁
+      // 定位權限完成（授權或略過）且尚未選擇區域 → 導向初始化專用區域選擇頁
       if (!config.hasSelectedRegion) {
         if (mounted) context.go('/onboarding-region');
         return;
       }
-      if (mounted) context.go('/permission/notification');
+      // 已選過區域：非 Web 進通知權限，Web 直接進首頁
+      if (!AppEnvironment.isWeb) {
+        if (mounted) context.go('/permission/notification');
+      } else {
+        if (mounted) context.go('/');
+      }
     } else {
       if (mounted) context.go('/');
     }
@@ -353,11 +358,8 @@ class _PermissionHandlerPageState extends State<PermissionHandlerPage>
                       shape: const StadiumBorder(),
                     ),
                     child: Text(
-                      // Web build 沒有通知頁可走，定位完成後按鈕文案顯示「完成」。
-                      (widget.type == PermissionType.location &&
-                              !AppEnvironment.isWeb)
-                          ? l10n.setup_continue
-                          : l10n.setup_complete,
+                      // 定位權限完成後按鈕文案顯示「繼續」。
+                      l10n.setup_continue,
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold),
                     ),

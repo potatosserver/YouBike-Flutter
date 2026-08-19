@@ -582,6 +582,11 @@ class BikeStationViewModel extends ChangeNotifier {
         _mapVm?.lastKnownLocation = null;
         _mapVm?.center = null;
         _mapVm?.notifyListeners();
+        // 關閉定位：移動地圖到區域中心
+        if (_mapVm != null && _trigger.animatedMap != null) {
+          final regionCenter = _mapVm.getEffectiveLocation();
+          _trigger.animatedMap!.animateTo(regionCenter, 16.0);
+        }
         refresh();
       }
       return;
@@ -602,6 +607,10 @@ class BikeStationViewModel extends ChangeNotifier {
 
   Future<void> _onLocationEnabled() async {
     await _mapVm?.requestAndCenterLocation();
+    // 開啟定位：移動地圖到 GPS 位置
+    if (_mapVm != null && _trigger.animatedMap != null && _mapVm.lastKnownLocation != null) {
+      _trigger.animatedMap!.animateTo(_mapVm.lastKnownLocation!, 18.0);
+    }
     refresh();
   }
 

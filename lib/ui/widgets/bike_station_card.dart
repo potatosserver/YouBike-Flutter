@@ -137,9 +137,9 @@ class BikeStationCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // 距離跨 km 轉換 (跟 YouBike `StationFormatHelper.distance()` 同規則):
-            // < 1000m → 公尺 + 「公尺」單位; ≥ 1000m → km + 「公里」單位 (一位小數)。
-            _infoRow(l10n.distance, _formatDistance(item.distance, l10n), cs),
+            // 距離：僅在啟用定位時顯示（關閉定位時使用預設中心，不顯示距離）
+            if (config.useLocation)
+              _infoRow(l10n.distance, _formatDistance(item.distance, l10n), cs),
             // 地址:只在 YouBike 來源顯示。
             // - YouBike:`item.address` 已由 `BikeStationMixer` 依當前語系
             //   (lang.startsWith('en') ? addressEn : addressTw) 挑好單一字串。

@@ -519,6 +519,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose your region to find nearby YouBike stations. You can change this later in Settings.';
 
   @override
+  String get select_region_hint => 'Select a region';
+
+  @override
   String get data_saver_title => 'Data Saver Mode';
 
   @override

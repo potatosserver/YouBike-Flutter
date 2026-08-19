@@ -350,6 +350,8 @@
     "@onboarding_region_title": {},
     "onboarding_region_message": "Choose your region to find nearby YouBike stations. You can change this later in Settings.",
     "@onboarding_region_message": {},
+    "select_region_hint": "Select a region",
+    "@select_region_hint": {},
     "data_saver_title": "Data Saver Mode",
     "@data_saver_title": {},
     "data_saver_subtitle": "When enabled, network traffic is limited by the sub-options below.",

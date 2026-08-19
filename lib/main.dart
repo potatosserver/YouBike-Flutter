@@ -10,6 +10,7 @@ import 'package:youbike/providers/map_view_model.dart';
 
 import 'package:youbike/providers/loading_view_model.dart';
 import 'package:youbike/providers/bike_station_view_model.dart';
+import 'package:youbike/core/services/map_move_trigger.dart';
 import 'package:youbike/ui/app.dart';
 import 'package:youbike/data/services/firebase_service.dart';
 import 'package:youbike/data/services/bike_station_repository.dart';
@@ -68,6 +69,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider.value(value: configService),
         ChangeNotifierProvider(create: (_) => LoadingViewModel()),
+        ChangeNotifierProvider(create: (_) => MapMoveTrigger()),
         ChangeNotifierProxyProvider<AppConfigService, MapViewModel>(
           create: (_) => MapViewModel(configService),
           update: (_, config, mapVm) => mapVm!..updateConfig(config),
@@ -80,6 +82,7 @@ void main() async {
             config: configService,
             repository: BikeStationRepository(config: configService),
             mapVm: ctx.read<MapViewModel>(),
+            trigger: ctx.read<MapMoveTrigger>(),
           ),
         ),
       ],

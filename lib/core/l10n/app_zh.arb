@@ -350,6 +350,8 @@
     "@onboarding_region_title": {},
     "onboarding_region_message": "選擇地區以尋找附近的 YouBike 站點。稍後可在設定中更改。",
     "@onboarding_region_message": {},
+    "select_region_hint": "選擇地區",
+    "@select_region_hint": {},
     "data_saver_title": "流量節省模式",
     "@data_saver_title": {},
     "data_saver_subtitle": "啟用後依照下方子項目限制網路流量。",

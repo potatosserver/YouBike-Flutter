@@ -49,6 +49,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       bikeVm.mapTrigger.attach(_mapController);
       _animatedMap ??=
           AnimatedMapController(mapController: _mapController, vsync: this);
+      // 將 AnimatedMapController 傳給 MapMoveTrigger，供 _onLocationEnabled 使用
+      bikeVm.mapTrigger.setAnimatedMap(_animatedMap!);
       // 若已經 boot 完成 (極慢網路, postFrame 才到)，補觸發 filter
       if (bikeVm.bootDone) {
         bikeVm.setQuery(bikeVm.activeQuery);
