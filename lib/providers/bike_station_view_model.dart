@@ -8,15 +8,16 @@ import 'package:youbike/core/services/bike_station_mixer.dart';
 import 'package:youbike/core/services/bike_station_sorter.dart';
 import 'package:youbike/core/services/map_move_trigger.dart';
 import 'package:youbike/core/services/realtime_updater.dart';
-import 'package:youbike/core/utils/connectivity_checker.dart';
 import 'package:youbike/core/utils/log_service.dart';
 import 'package:youbike/data/models/bike_station.dart';
 import 'package:youbike/data/models/station.dart';
 import 'package:youbike/data/services/app_config_service.dart';
 import 'package:youbike/data/services/bike_station_repository.dart';
+import 'package:youbike/data/services/network_connectivity_service.dart';
 import 'package:youbike/providers/map_view_model.dart';
 
 /// 統一的 ViewModel — YouBike + Moovo 共用一個 refresh cycle。
+/// 離線模式：僅使用快取資料查看、搜尋站點，不顯示、不請求車輛數量。
 ///
 /// 兩個清單:
 /// - [allBikes] 全量站池不分來源 → 地圖圖釘
@@ -27,10 +28,12 @@ class BikeStationViewModel extends ChangeNotifier {
   BikeStationViewModel({
     required AppConfigService config,
     required BikeStationRepository repository,
+    required NetworkConnectivityService connectivityService,
     MapViewModel? mapVm,
     MapMoveTrigger? trigger,
   })  : _config = config,
         _repo = repository,
+        _connectivityService = connectivityService,
         _mapVm = mapVm,
         _trigger = trigger ?? MapMoveTrigger() {
     _wasUseLocation = config.useLocation;
@@ -44,6 +47,7 @@ class BikeStationViewModel extends ChangeNotifier {
     _lastPinnedIds = Set<String>.from(config.pinnedStationIds);
     _wasRefreshInterval = config.refreshInterval;
     config.addListener(_onConfigChanged);
+    _connectivityService.addListener(_onConnectivityChanged);
     _startCountdown();
     // 異步補完 _wasEffectiveUseMoovo — 建構子內無法 await。
     _effectiveUseMoovo().then((effective) {
@@ -63,6 +67,7 @@ class BikeStationViewModel extends ChangeNotifier {
 
   final AppConfigService _config;
   final BikeStationRepository _repo;
+  final NetworkConnectivityService _connectivityService;
   final MapViewModel? _mapVm;
   final MapMoveTrigger _trigger;
 
@@ -112,6 +117,10 @@ class BikeStationViewModel extends ChangeNotifier {
 
   String _activeQuery = '';
   String get activeQuery => _activeQuery;
+
+  /// 線上/離線狀態 — 由 NetworkConnectivityService 提供
+  bool get isOffline => _connectivityService.isOffline;
+  bool get isOnline => _connectivityService.isOnline;
 
   // ── 篩選狀態（beta：站點搜尋篩選器）──────────────────────────────────
   BikeFilterMode _filterMode = BikeFilterMode.all;
@@ -225,14 +234,30 @@ class BikeStationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final yb = await _repo.fetchYouBikeStations();
-      final mo =
-          (await _effectiveUseMoovo()) ? await _repo.fetchMoovoStations() : null;
+      // 離線模式：只讀取快取，不發起網路請求
+      if (isOffline) {
+        // 直接從 repository 的快取服務讀取資料
+        // 這裡需要一個只讀快取不發網路的方法
+        // 離線時忽略 24hr 過期檢查
+        final yb = await _repo.fetchYouBikeStations(ignoreExpiry: true);
+        final mo = (await _effectiveUseMoovo()) ? await _repo.fetchMoovoStations(ignoreExpiry: true) : null;
 
-      final all = <BikeStation>{ if (yb != null) ...yb, if (mo != null) ...mo };
-      _fullBikes = all.toList();
+        final all = <BikeStation>{ if (yb != null) ...yb, if (mo != null) ...mo };
+        _fullBikes = all.toList();
 
-      _sortPanel();
+        // 離線模式下不排序距離（需要 GPS），也不填充即時數據
+        // 只做基本的 pinned 分流和面板生成
+        _sortPanelOffline();
+      } else {
+        final yb = await _repo.fetchYouBikeStations();
+        final mo =
+            (await _effectiveUseMoovo()) ? await _repo.fetchMoovoStations() : null;
+
+        final all = <BikeStation>{ if (yb != null) ...yb, if (mo != null) ...mo };
+        _fullBikes = all.toList();
+
+        _sortPanel();
+      }
     } catch (e) {
       LogService().w('BikeVM', 'base fetch failed: $e');
       // 資料拉取失敗 → 不設 bootDone，讓 HomeScreen 繼續顯示 loading。
@@ -247,7 +272,49 @@ class BikeStationViewModel extends ChangeNotifier {
     _bootDone = true;
     notifyListeners();
 
-    _fillRealtimeBg();
+    // 離線模式不填充即時數據
+    if (!isOffline) {
+      _fillRealtimeBg();
+    }
+  }
+
+  /// 離線模式下的面板排序：如有 GPS 則計算距離排序，否則只做 pinned 分流
+  void _sortPanelOffline() {
+    final refPoint = _config.useLocation && _mapVm?.lastKnownLocation != null
+        ? _refPoint()
+        : null;
+    
+    if (refPoint != null) {
+      // 有 GPS 可用：計算距離並排序
+      _sorter.calculateDistance(stations: _fullBikes, refPoint: refPoint);
+    }
+    
+    final pinned = <BikeStation>[];
+    final rest = <BikeStation>[];
+    final pinnedIds = _config.pinnedStationIds;
+    for (final b in _fullBikes) {
+      if (pinnedIds.contains(b.id)) {
+        pinned.add(b);
+      } else {
+        rest.add(b);
+      }
+    }
+    if (refPoint != null) {
+      // 有 GPS：pinned 優先，其餘依距離排序
+      _panelBikes = [
+        ...pinned,
+        ..._sorter.sortByDistance(
+          stations: rest,
+          refPoint: refPoint,
+          pinnedIds: {},
+          limit: 20 - pinned.length,
+        ),
+      ];
+    } else {
+      // 無 GPS：pinned 優先，其餘保持原順序
+      _panelBikes = [...pinned, ...rest.take(20 - pinned.length)];
+    }
+    // 離線模式不套用篩選（篩選需要車輛數量資料）
   }
 
   void _sortPanel() {
@@ -319,68 +386,60 @@ class BikeStationViewModel extends ChangeNotifier {
     }
   }
 
-  // ═══════════════ Refresh ════════════════════════════════════
-
   Future<void> refresh({LatLng? moveTo}) async {
-    if (_isLoading) return;
-    if (_fullBikes.isEmpty) return; // 還沒 boot 完不做事
-    _isLoading = true;
-    _countdown = _config.refreshInterval;
-    notifyListeners();
+        if (_isLoading) return;
+        if (_fullBikes.isEmpty) return; // 還沒 boot 完不做事
 
-    try {
-      // 搜尋模式 — 重複用 setQuery 的篩選邏輯，不跳回預設 20 張
-      if (_activeQuery.isNotEmpty) {
-        final hits = _fullBikes.where(
-          (s) => s.nameTw.contains(_activeQuery) || s.nameEn.contains(_activeQuery),
-        ).toList();
-        if (hits.isNotEmpty) {
-          _panelBikes = _sorter.sortByDistance(
-            stations: hits,
-            refPoint: _refPoint(),
-            pinnedIds: _config.pinnedStationIds,
-            limit: 40, // 和 setQuery 一致
-          );
-          // 搜尋時若啟用也套用篩選
-          if (_applyFilterToSearch && isFilterActive) {
-            _panelBikes = _panelBikes.where(_matchFilter).toList();
+        // 離線模式：不發起網路請求，只重新計算面板（如有 GPS 可重新排序距離）
+        if (isOffline) {
+          _isLoading = true;
+          _countdown = _config.refreshInterval;
+          notifyListeners();
+
+          try {
+            if (_activeQuery.isNotEmpty) {
+              final hits = _fullBikes.where(
+                (s) => s.nameTw.contains(_activeQuery) || s.nameEn.contains(_activeQuery),
+              ).toList();
+              if (hits.isNotEmpty) {
+                // 離線搜尋：如果有定位則按距離排序，否則保持原順序
+                if (_config.useLocation && _mapVm?.lastKnownLocation != null) {
+                  _panelBikes = _sorter.sortByDistance(
+                    stations: hits,
+                    refPoint: _refPoint(),
+                    pinnedIds: _config.pinnedStationIds,
+                    limit: 40,
+                  );
+                } else {
+                  _panelBikes = hits.take(40).toList();
+                }
+              }
+            } else {
+              // 離線模式下重排：如有 GPS 則計算距離排序
+              _sortPanelOffline();
+            }
+          } catch (e) {
+            LogService().w('BikeVM', 'offline refresh failed: $e');
           }
-        } // 若 hits 空 — 保持目前的 panelBikes（如果之前有結果）或空白
-      } else {
-        _sortPanel();
-      }
 
-      // 1. 更新 YouBike 即時數據
-      final rawYB = [
-        for (final b in _panelBikes)
-          if (b.source == BikeStationSource.youbike) b.rawStation!,
-      ];
-      if (rawYB.isNotEmpty) {
-        await _realtime.apply(rawYB, _refPoint());
-      }
+          _dataVersion++;
+          _isLoading = false;
+          notifyListeners();
 
-      // 2. 更新 Moovo 站點與數量 (每 60s 或手動刷新時同步執行)
-      // 流量節省模式：dsDisableMoovo 或 dsSkipMoovoRealtime 均跳過
-      if (_config.useMoovo && (await _shouldUpdateMoovo())) {
-        final freshMo = await _repo.fetchMoovoStations();
-        if (freshMo != null) {
-          // 將最新 Moovo 站點更新回全量池 (替換舊站點)
-          final moIds = freshMo.map((m) => m.id).toSet();
-          _fullBikes = [
-            for (final b in _fullBikes)
-              if (b.source == BikeStationSource.moovo && moIds.contains(b.id))
-                // 這裡需要一種方式將 freshMo 中的新對象替換進去
-                // 但因為 BikeStation 是不可變的，我們直接過濾掉舊的，再補入新的
-                null 
-              else b,
-          ].whereType<BikeStation>().toList();
-          _fullBikes.addAll(freshMo.where((m) => !_fullBikes.any((b) => b.id == m.id)));
-          
-          // 重新計算面板排序
-          if (_activeQuery.isEmpty) {
-            _sortPanel();
-          } else {
-            // 搜尋模式下重新篩選一次以包含更新後的 Moovo
+          if (moveTo != null) {
+            _trigger.fire(moveTo);
+          }
+          return;
+        }
+
+        // 線上模式
+        _isLoading = true;
+        _countdown = _config.refreshInterval;
+        notifyListeners();
+
+        try {
+          // 搜尋模式 — 重複用 setQuery 的篩選邏輯，不跳回預設 20 張
+          if (_activeQuery.isNotEmpty) {
             final hits = _fullBikes.where(
               (s) => s.nameTw.contains(_activeQuery) || s.nameEn.contains(_activeQuery),
             ).toList();
@@ -389,28 +448,78 @@ class BikeStationViewModel extends ChangeNotifier {
                 stations: hits,
                 refPoint: _refPoint(),
                 pinnedIds: _config.pinnedStationIds,
-                limit: 40,
+                limit: 40, // 和 setQuery 一致
               );
               // 搜尋時若啟用也套用篩選
               if (_applyFilterToSearch && isFilterActive) {
                 _panelBikes = _panelBikes.where(_matchFilter).toList();
               }
+            } // 若 hits 空 — 保持目前的 panelBikes（如果之前有結果）或空白
+          } else {
+            _sortPanel();
+          }
+
+          // 1. 更新 YouBike 即時數據
+          final rawYB = [
+            for (final b in _panelBikes)
+              if (b.source == BikeStationSource.youbike) b.rawStation!,
+          ];
+          if (rawYB.isNotEmpty) {
+            await _realtime.apply(rawYB, _refPoint());
+          }
+
+          // 2. 更新 Moovo 站點與數量 (每 60s 或手動刷新時同步執行)
+          // 流量節省模式：dsDisableMoovo 或 dsSkipMoovoRealtime 均跳過
+          if (_config.useMoovo && (await _shouldUpdateMoovo())) {
+            final freshMo = await _repo.fetchMoovoStations();
+            if (freshMo != null) {
+              // 將最新 Moovo 站點更新回全量池 (替換舊站點)
+              final moIds = freshMo.map((m) => m.id).toSet();
+              _fullBikes = [
+                for (final b in _fullBikes)
+                  if (b.source == BikeStationSource.moovo && moIds.contains(b.id))
+                    // 這裡需要一種方式將 freshMo 中的新對象替換進去
+                    // 但因為 BikeStation 是不可變的，我們直接過濾掉舊的，再補入新的
+                    null
+                  else b,
+              ].whereType<BikeStation>().toList();
+              _fullBikes.addAll(freshMo.where((m) => !_fullBikes.any((b) => b.id == m.id)));
+
+              // 重新計算面板排序
+              if (_activeQuery.isEmpty) {
+                _sortPanel();
+              } else {
+                // 搜尋模式下重新篩選一次以包含更新後的 Moovo
+                final hits = _fullBikes.where(
+                  (s) => s.nameTw.contains(_activeQuery) || s.nameEn.contains(_activeQuery),
+                ).toList();
+                if (hits.isNotEmpty) {
+                  _panelBikes = _sorter.sortByDistance(
+                    stations: hits,
+                    refPoint: _refPoint(),
+                    pinnedIds: _config.pinnedStationIds,
+                    limit: 40,
+                  );
+                  // 搜尋時若啟用也套用篩選
+                  if (_applyFilterToSearch && isFilterActive) {
+                    _panelBikes = _panelBikes.where(_matchFilter).toList();
+                  }
+                }
+              }
             }
           }
+        } catch (e) {
+          LogService().w('BikeVM', 'refresh failed: $e');
+        }
+
+        _dataVersion++;
+        _isLoading = false;
+        notifyListeners();
+
+        if (moveTo != null) {
+          _trigger.fire(moveTo);
         }
       }
-    } catch (e) {
-      LogService().w('BikeVM', 'refresh failed: $e');
-    }
-
-    _dataVersion++;
-    _isLoading = false;
-    notifyListeners();
-
-    if (moveTo != null) {
-      _trigger.fire(moveTo);
-    }
-  }
 
   /// 給 [RealtimeStatusManager] 用的 id-only 入口 —
   /// 由 marker 自我宣告「我現在是 unclustered」後,manager 集滿一批 id 後呼叫本方法。
@@ -510,6 +619,37 @@ class BikeStationViewModel extends ChangeNotifier {
 
   void setQuery(String q) {
     _activeQuery = q.trim();
+    
+    // 離線模式：不發起即時數據請求
+    if (isOffline) {
+      if (q.isEmpty) {
+        _sortPanelOffline();
+        return;
+      }
+      // filter from full pool
+      final hits = _fullBikes.where(
+        (s) => s.nameTw.contains(_activeQuery) || s.nameEn.contains(_activeQuery),
+      ).toList();
+      if (hits.isEmpty) {
+        _panelBikes = [];
+        notifyListeners();
+        return;
+      }
+      if (_config.useLocation && _mapVm?.lastKnownLocation != null) {
+        _panelBikes = _sorter.sortByDistance(
+          stations: hits,
+          refPoint: _refPoint(),
+          pinnedIds: _config.pinnedStationIds,
+          limit: 40, // 搜尋上限 40，不補底
+        );
+      } else {
+        _panelBikes = hits.take(40).toList();
+      }
+      // 離線模式不套用篩選（需要車輛數量）
+      notifyListeners();
+      return;
+    }
+    
     if (q.isEmpty) {
       _sortPanel();
       _fillRealtimeBg();
@@ -535,6 +675,20 @@ class BikeStationViewModel extends ChangeNotifier {
       _panelBikes = _panelBikes.where(_matchFilter).toList();
     }
     _fillRealtimeBg();
+  }
+
+  /// 連線狀態變更處理
+  void _onConnectivityChanged() {
+    if (_bootDone) {
+      // 連線狀態改變時，重新整理面板
+      if (isOffline) {
+        _sortPanelOffline();
+      } else {
+        _sortPanel();
+      }
+      _dataVersion++;
+      notifyListeners();
+    }
   }
 
   // ═══════════════ Config 監聽 ══════════════════════════════════
@@ -668,8 +822,7 @@ class BikeStationViewModel extends ChangeNotifier {
   Future<bool> _isDataSaverActive() async {
     if (!_config.useDataSaver) return false;
     if (_config.dsCellularOnly) {
-      final onCellular =
-          await const ConnectivityChecker().isCellular();
+      final onCellular = !isOnline; // 簡化：離線視為非行動數據
       if (!onCellular) return false;
     }
     return true;

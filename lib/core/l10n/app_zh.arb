@@ -403,5 +403,15 @@
     "refresh_interval_3m": "3 分鐘",
     "@refresh_interval_3m": {},
     "refresh_interval_5m": "5 分鐘",
-    "@refresh_interval_5m": {}
+    "@refresh_interval_5m": {},
+    "offlineMode": "離線模式",
+    "@offlineMode": {},
+    "offlineDataNotAvailable": "資料不可用（離線）",
+    "@offlineDataNotAvailable": {},
+    "offlineModeTitle": "離線模式",
+    "@offlineModeTitle": {},
+    "offlineModeSubtitle": "僅使用快取資料查看、搜尋站點。不顯示、不請求車輛數量與即時更新。",
+    "@offlineModeSubtitle": {},
+    "offlineMapPlaceholder": "離線模式下無法顯示地圖\n請開啟線上模式以查看即時地圖",
+    "@offlineMapPlaceholder": {}
 }

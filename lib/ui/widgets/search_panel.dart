@@ -80,15 +80,17 @@ class _SearchPanelState extends State<SearchPanel> {
     return Consumer<BikeStationViewModel>(
       builder: (context, bikeVm, child) {
         final l10n = AppLocalizations.of(context);
-        final config = Provider.of<AppConfigService>(context);
+        final bool isOffline = bikeVm.isOffline;
+        final bool isNarrow = !widget.isWide;
+        
         return Column(
           children: [
-            if (!widget.isWide)
+            // 窄螢幕模式下，離線時隱藏拖曳橫條；正常模式顯示
+            if (isNarrow && !isOffline)
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onVerticalDragStart: (details) {
-                  // 起點高度取「父層目前持有的 panelHeight」；
-                  // 第一次碰觸時若父層尚未回寫，沿用預設 35%。
+                  // 起點高度取「父層目前持有的 panelHeight」；第一次碰觸時若父層尚未回寫，沿用預設 35%。
                   _dragStartHeight = widget.panelHeight ??
                       MediaQuery.of(context).size.height * 0.35;
                   _dragStartGlobalY = details.globalPosition.dy;
@@ -98,9 +100,12 @@ class _SearchPanelState extends State<SearchPanel> {
                   final startHeight = _dragStartHeight;
                   final startY = _dragStartGlobalY;
                   if (startHeight == null || startY == null) return;
+                  // 正常模式：最高限制讓面板頂端留在設定按鈕(72) + 空氣(24) = 96px 之下
+                  // 定位按鈕在面板頂端上方 20px，如此兩按鈕都有合理呼吸空間
+                  final maxHeight = screenHeight - 96;
                   final newHeight = (startHeight -
                           (details.globalPosition.dy - startY))
-                      .clamp(screenHeight * 0.2, screenHeight * 0.8);
+                      .clamp(screenHeight * 0.2, maxHeight);
                   widget.onHeightChanged(newHeight);
                 },
                 onVerticalDragEnd: (_) {
@@ -124,19 +129,26 @@ class _SearchPanelState extends State<SearchPanel> {
                           borderRadius: BorderRadius.circular(3),
                           boxShadow: [
                             BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 3,
-                                offset: const Offset(0, 1))
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 1))
                           ]),
                     ),
                   ),
                 ),
               ),
+            // 離線模式窄螢幕：面板移除頂部圓角、頂到螢幕最上方、內部用 Padding 推下搜尋框
+            // 正常模式/寬螢幕：維持原本圓角 Container
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(isNarrow && isOffline ? 0 : 28),
+                    topRight: Radius.circular(isNarrow && isOffline ? 0 : 28),
+                    bottomLeft: const Radius.circular(28),
+                    bottomRight: const Radius.circular(28),
+                  ),
                   boxShadow: [
                     BoxShadow(
                         color: Colors.black.withValues(alpha: 0.1),
@@ -148,8 +160,12 @@ class _SearchPanelState extends State<SearchPanel> {
                 ),
                 child: Column(
                   children: [
+                    // 離線模式窄螢幕：頂部 72px 奶油色 Padding，推下搜尋框避開設定按鈕
+                    if (isNarrow && isOffline)
+                      const SizedBox(height: 72),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      padding: EdgeInsets.fromLTRB(
+                          16, isNarrow && isOffline ? 12 : 12, 16, 8),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
@@ -201,7 +217,7 @@ class _SearchPanelState extends State<SearchPanel> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  if (config.useStationFilter) 
+                                  if (Provider.of<AppConfigService>(context, listen: false).useStationFilter && !isOffline)
                                     GestureDetector(
                                       onTap: () {
                                         showDialog(
@@ -217,7 +233,7 @@ class _SearchPanelState extends State<SearchPanel> {
                                         size: 24,
                                       ),
                                     ),
-                                  ],
+                                ],
                               ),
                             ),
                           ),
@@ -229,7 +245,7 @@ class _SearchPanelState extends State<SearchPanel> {
                         ),
                       ),
                     ),
-                    Expanded(child: _buildStationPanel(bikeVm, l10n, cs)),
+                    Expanded(child: _buildStationPanel(bikeVm, l10n, cs, isOffline)),
                   ],
                 ),
               ),
@@ -241,7 +257,7 @@ class _SearchPanelState extends State<SearchPanel> {
   }
 
   Widget _buildStationPanel(
-          BikeStationViewModel bikeVm, AppLocalizations? l10n, ColorScheme cs) =>
+          BikeStationViewModel bikeVm, AppLocalizations? l10n, ColorScheme cs, bool isOffline) =>
       SizedBox(
         width: double.infinity,
         child: Consumer<BikeStationViewModel>(
@@ -286,6 +302,7 @@ class _SearchPanelState extends State<SearchPanel> {
                   onShowElectric: item.source == StationSource.youbike
                       ? () => _showElectricBikeDetails(item)
                       : null,
+                  isOffline: isOffline,
                 );
               },
             );

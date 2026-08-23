@@ -14,11 +14,13 @@ import 'package:youbike/data/services/app_config_service.dart';
 /// - 共用 layout (名稱 / 距離 / 地址 / 車數 / 電輔數 / 空位)
 /// - YouBike: 維持原本 surfaceLow 底色 + accentBlue 名稱。
 /// - Moovo: 淡綠底(#b9d302 0.12 alpha)區分來源,其他樣式一致。
+/// - 離線模式: 隱藏車輛數量、電輔數、空位等即時數據
 class BikeStationCard extends StatelessWidget {
   final BikeStationItem item;
   final VoidCallback onTap;
   final VoidCallback onNavigate;
   final VoidCallback? onShowElectric;
+  final bool isOffline;
 
   const BikeStationCard({
     super.key,
@@ -26,6 +28,7 @@ class BikeStationCard extends StatelessWidget {
     required this.onTap,
     required this.onNavigate,
     this.onShowElectric,
+    this.isOffline = false,
   });
 
   bool get _isMoovo => item.source == StationSource.moovo;
@@ -125,14 +128,15 @@ class BikeStationCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: onNavigate,
-                    child: const Icon(
-                      Icons.navigation,
-                      color: BrandColors.accentBlue,
-                      size: 22,
+                  if (!isOffline)
+                    GestureDetector(
+                      onTap: onNavigate,
+                      child: const Icon(
+                        Icons.navigation,
+                        color: BrandColors.accentBlue,
+                        size: 22,
+                      ),
                     ),
-                  ),
                 ]),
               ],
             ),
@@ -148,20 +152,25 @@ class BikeStationCard extends StatelessWidget {
               const SizedBox(height: 4),
               _infoRow(l10n.address, item.address!, cs),
             ],
-            // Moovo: 只留「距離」和「可借車輛數」,隱藏電輔 / 空位。
-            // YouBike: 沿用舊 layout — 保留全部欄位,避免破壞既有 YouBike 使用者。
-            if (_isMoovo) ...[
-              const SizedBox(height: 4),
-              _infoRow(l10n.rentableBikes, '${item.bikeCount ?? '—'}', cs),
-            ] else ...[
-              const SizedBox(height: 4),
-              _infoRow(l10n.availableBikes, '${item.bikeCount ?? '—'}', cs),
-              const SizedBox(height: 4),
-              _infoRow(l10n.availableElectricBikes, '${item.eBikeCount ?? '—'}', cs),
-              if (item.emptySpaces != null) ...[
+            // 離線模式：不顯示車輛數量、電輔數、空位等即時數據
+            if (!isOffline) ...[
+              // Moovo: 只留「距離」和「可借車輛數」,隱藏電輔 / 空位。
+              // YouBike: 沿用舊 layout — 保留全部欄位,避免破壞既有 YouBike 使用者。
+              if (_isMoovo) ...[
                 const SizedBox(height: 4),
-                _infoRow(l10n.emptySpaces, '${item.emptySpaces}', cs),
+                _infoRow(l10n.rentableBikes, '${item.bikeCount ?? '—'}', cs),
+              ] else ...[
+                const SizedBox(height: 4),
+                _infoRow(l10n.availableBikes, '${item.bikeCount ?? '—'}', cs),
+                const SizedBox(height: 4),
+                _infoRow(l10n.availableElectricBikes, '${item.eBikeCount ?? '—'}', cs),
+                if (item.emptySpaces != null) ...[
+                  const SizedBox(height: 4),
+                  _infoRow(l10n.emptySpaces, '${item.emptySpaces}', cs),
+                ],
               ],
+            ] else ...[
+              // 離線模式：不顯示任何即時數據，也不顯示離線標籤
             ],
           ],
         ),

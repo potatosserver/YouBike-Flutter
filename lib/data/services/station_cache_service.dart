@@ -29,8 +29,8 @@ class StationCacheService {
 
   // ── YouBike ───────────────────────────────────────
 
-  Future<List<Map<String, dynamic>>?> loadYouBike() async {
-    return _read(_youbikeKey, _maxAge);
+  Future<List<Map<String, dynamic>>?> loadYouBike({bool ignoreExpiry = false}) async {
+    return _read(_youbikeKey, _maxAge, ignoreExpiry: ignoreExpiry);
   }
 
   Future<void> saveYouBike(List<Map<String, dynamic>> data) async {
@@ -39,8 +39,8 @@ class StationCacheService {
 
   // ── Moovo ─────────────────────────────────────────
 
-  Future<List<Map<String, dynamic>>?> loadMoovo() async {
-    return _read(_moovoKey, _maxAge);
+  Future<List<Map<String, dynamic>>?> loadMoovo({bool ignoreExpiry = false}) async {
+    return _read(_moovoKey, _maxAge, ignoreExpiry: ignoreExpiry);
   }
 
   Future<void> saveMoovo(List<Map<String, dynamic>> data) async {
@@ -50,7 +50,7 @@ class StationCacheService {
   // ── internals ─────────────────────────────────────
 
   Future<List<Map<String, dynamic>>?> _read(
-      String key, Duration maxAge) async {
+      String key, Duration maxAge, {bool ignoreExpiry = false}) async {
     final raw = await _storage.read(key);
     if (raw == null) return null;
 
@@ -68,7 +68,9 @@ class StationCacheService {
 
       // 統一轉為 UTC 計算時間差，防止時區轉換異常導致計算出負數或誤判過期
       final age = DateTime.now().toUtc().difference(cachedAt.toUtc());
-      if (age > maxAge || age.isNegative) {
+      
+      // 離線模式忽略過期檢查
+      if (!ignoreExpiry && (age > maxAge || age.isNegative)) {
         LogService().i(
             'Cache', '$key expired (age ${age.inMinutes}m > max ${maxAge.inHours}h)');
         return null;

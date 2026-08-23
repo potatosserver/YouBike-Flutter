@@ -110,6 +110,58 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  /// 離線模式下的地圖佔位符 - 寬螢幕版顯示
+  Widget _buildOfflineMapPlaceholder(ColorScheme cs, AppLocalizations l10n) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.offline_bolt,
+                size: 64,
+                color: cs.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.offlineMapPlaceholder,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: cs.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  l10n.offlineMode,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onPrimaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -128,222 +180,247 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Future.microtask(() => _checkStartupUpdate());
         }
 
-        return Scaffold(
-      backgroundColor: cs.surface,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final availableHeight = constraints.maxHeight;
-          final availableWidth = constraints.maxWidth;
+        return Consumer<BikeStationViewModel>(
+          builder: (context, bikeVm, _) {
+            final bool isOffline = bikeVm.isOffline;
+            final l10n = AppLocalizations.of(context);
+            return Scaffold(
+              backgroundColor: cs.surface,
+              body: LayoutBuilder(
+                builder: (context, constraints) {
+                  final availableHeight = constraints.maxHeight;
+                  final availableWidth = constraints.maxWidth;
 
-          // Use actual screen size (not viewInsets-affected constraints)
-          // to determine layout type. Keyboard should not trigger layout switch.
-          final screenSize = MediaQuery.of(context).size;
-          final double screenAspectRatio = screenSize.width / screenSize.height;
-          final bool isWide = screenAspectRatio > 0.8;
+                  // Use actual screen size (not viewInsets-affected constraints)
+                  // to determine layout type. Keyboard should not trigger layout switch.
+                  final screenSize = MediaQuery.of(context).size;
+                  final double screenAspectRatio = screenSize.width / screenSize.height;
+                  final bool isWide = screenAspectRatio > 0.8;
 
-          final double sidebarWidth =
-              isWide ? (availableWidth * 0.3).clamp(300.0, 400.0) : 0.0;
-          const double horizontalMargin = 20.0;
-          const double gap = 20.0;
+                  final double sidebarWidth =
+                      isWide ? (availableWidth * 0.3).clamp(300.0, 400.0) : 0.0;
+                  const double horizontalMargin = 20.0;
+                  const double gap = 20.0;
 
-          return Stack(
-            children: [
-              if (isWide)
-                Positioned(
-                  left: horizontalMargin + sidebarWidth + gap,
-                  top: horizontalMargin,
-                  right: horizontalMargin,
-                  bottom: horizontalMargin,
-                  child: MapView(
-                    mapController: _mapController,
-                    isMapReady: _isMapReady,
-                    onReady: (ready) => setState(() => _isMapReady = ready),
-                    onMoveToStation: (pos, zoom) {
-                      if (_animatedMap != null) {
-                        _animatedMap!.animateTo(pos, zoom);
-                      } else {
-                        // Direct fallback when _animatedMap isn't built yet
-                        // (postFrame not yet fired). Guard against NaN at
-                        // this site so we don't bypass every other layer.
-                        if (pos.latitude.isFinite &&
-                            pos.longitude.isFinite &&
-                            zoom.isFinite) {
-                          _mapController.move(pos, zoom);
-                        }
-                      }
-                    },
-                    animatedMap: _animatedMap,
-                    onFirstReady: () =>
-                        Provider.of<BikeStationViewModel>(context, listen: false)
-                            .mapTrigger
-                            .setReady(),
-                  ),
-                )
-              else
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: availableHeight -
-                      (_panelHeight ?? availableHeight * 0.35),
-                  child: MapView(
-                    mapController: _mapController,
-                    isMapReady: _isMapReady,
-                    onReady: (ready) => setState(() => _isMapReady = ready),
-                    onMoveToStation: (pos, zoom) {
-                      if (_animatedMap != null) {
-                        _animatedMap!.animateTo(pos, zoom);
-                      } else {
-                        // Direct fallback when _animatedMap isn't built yet
-                        // (postFrame not yet fired). Guard against NaN at
-                        // this site so we don't bypass every other layer.
-                        if (pos.latitude.isFinite &&
-                            pos.longitude.isFinite &&
-                            zoom.isFinite) {
-                          _mapController.move(pos, zoom);
-                        }
-                      }
-                    },
-                    animatedMap: _animatedMap,
-                    onFirstReady: () =>
-                        Provider.of<BikeStationViewModel>(context, listen: false)
-                            .mapTrigger
-                            .setReady(),
-                  ),
-                ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: MapMaskOverlay(
-                    maskColor: cs.surface,
-                    panelHeight: _panelHeight ?? availableHeight * 0.35,
-                    isWide: isWide,
-                    leftOffset:
-                        isWide ? horizontalMargin + sidebarWidth + gap : null,
-                  ),
-                ),
-              ),
-              if (isWide)
-                Positioned(
-                    top: horizontalMargin,
-                    bottom: horizontalMargin,
-                    left: horizontalMargin,
-                    width: sidebarWidth,
-                    child: SearchPanel(
-                      isWide: true,
-                      mapController: _mapController,
-                      onHeightChanged: (h) => setState(() => _panelHeight = h),
-                    ))
-              else
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: _panelHeight ?? availableHeight * 0.35,
-                  child: SearchPanel(
-                    isWide: false,
-                    panelHeight: _panelHeight,
-                    mapController: _mapController,
-                    onHeightChanged: (h) => setState(() => _panelHeight = h),
-                  ),
-                ),
-              ...[
-                Positioned(
-                  top: isWide ? (horizontalMargin + 16.0) : 40,
-                  right: isWide ? (horizontalMargin + 16.0) : 15,
-                  child: GestureDetector(
-                    onTap: () => context.push('/settings'),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHigh,
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 4,
-                              offset: Offset(0, 2))
-                        ],
-                      ),
-                      child: Center(
-                          child: Icon(Icons.settings,
-                              size: 22, color: cs.onSurface)),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: isWide ? (horizontalMargin + 16.0) : 20,
-                  bottom: isWide
-                      ? (horizontalMargin + 16.0)
-                      : (_panelHeight ?? availableHeight * 0.35) + 20,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: const [
-                        BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 8,
-                            offset: Offset(0, 2))
+                  return Stack(
+                    children: [
+                      if (!isOffline) ...[
+                        // 線上模式：正常顯示地圖
+                        if (isWide)
+                          Positioned(
+                            left: horizontalMargin + sidebarWidth + gap,
+                            top: horizontalMargin,
+                            right: horizontalMargin,
+                            bottom: horizontalMargin,
+                            child: MapView(
+                              mapController: _mapController,
+                              isMapReady: _isMapReady,
+                              onReady: (ready) => setState(() => _isMapReady = ready),
+                              onMoveToStation: (pos, zoom) {
+                                if (_animatedMap != null) {
+                                  _animatedMap!.animateTo(pos, zoom);
+                                } else {
+                                  // Direct fallback when _animatedMap isn't built yet
+                                  // (postFrame not yet fired). Guard against NaN at
+                                  // this site so we don't bypass every other layer.
+                                  if (pos.latitude.isFinite &&
+                                      pos.longitude.isFinite &&
+                                      zoom.isFinite) {
+                                    _mapController.move(pos, zoom);
+                                  }
+                                }
+                              },
+                              animatedMap: _animatedMap,
+                              onFirstReady: () =>
+                                  Provider.of<BikeStationViewModel>(context, listen: false)
+                                      .mapTrigger
+                                      .setReady(),
+                            ),
+                          )
+                        else
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: availableHeight -
+                                (_panelHeight ?? availableHeight * 0.35),
+                            child: MapView(
+                              mapController: _mapController,
+                              isMapReady: _isMapReady,
+                              onReady: (ready) => setState(() => _isMapReady = ready),
+                              onMoveToStation: (pos, zoom) {
+                                if (_animatedMap != null) {
+                                  _animatedMap!.animateTo(pos, zoom);
+                                } else {
+                                  // Direct fallback when _animatedMap isn't built yet
+                                  // (postFrame not yet fired). Guard against NaN at
+                                  // this site so we don't bypass every other layer.
+                                  if (pos.latitude.isFinite &&
+                                      pos.longitude.isFinite &&
+                                      zoom.isFinite) {
+                                    _mapController.move(pos, zoom);
+                                  }
+                                }
+                              },
+                              animatedMap: _animatedMap,
+                              onFirstReady: () =>
+                                  Provider.of<BikeStationViewModel>(context, listen: false)
+                                      .mapTrigger
+                                      .setReady(),
+                            ),
+                          ),
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: MapMaskOverlay(
+                              maskColor: cs.surface,
+                              panelHeight: _panelHeight ?? availableHeight * 0.35,
+                              isWide: isWide,
+                              leftOffset:
+                                  isWide ? horizontalMargin + sidebarWidth + gap : null,
+                            ),
+                          ),
+                        ),
+                      ] else ...[
+                        // 離線模式：手機版完全隱藏地圖，寬螢幕版顯示離線指示器
+                        if (isWide)
+                          Positioned(
+                            left: horizontalMargin + sidebarWidth + gap,
+                            top: horizontalMargin,
+                            right: horizontalMargin,
+                            bottom: horizontalMargin,
+                            child: _buildOfflineMapPlaceholder(cs, l10n),
+                          ),
                       ],
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.my_location,
-                          size: 22, color: cs.onSurface),
-                      onPressed: () async {
-                        const gps = GpsRequester();
-                        final bikeVm = Provider.of<BikeStationViewModel>(context,
-                            listen: false);
-                        // 上次的定位位置（可能為 null，例如首次進入或權限剛被拒）。
-                        // 若有，馬上把地圖滑過去 — 給使用者即時視覺回饋，不必等 GPS。
-                        final cached = _mapVm.lastKnownLocation;
-                        if (cached != null && _animatedMap != null) {
-                          _animatedMap!.animateTo(cached, 18.0);
-                        }
-                        // 使用 requestOrFallback — GPS 失敗時回退到區域中心，確保按鈕永遠有反應。
-                        final pos = await gps.requestOrFallback(_mapVm);
-                        if (!mounted) return;
-                        // requestOrFallback 永遠回傳非 null，直接移動地圖
-                        if (_animatedMap != null) {
-                          // 若新位置與上次相差 < 50m，視為同一點，不觸發第二次動畫
-                          // （否則會打斷剛剛那段動畫造成畫面抖動）。
-                          final movedFar = cached == null ||
-                              const Distance()
-                                      .as(LengthUnit.Meter, cached, pos) >
-                                  50;
-                          if (movedFar) {
-                            _animatedMap!.animateTo(pos, 18.0);
-                          }
-                        }
-                        // 刷新即時車輛數據；camera 移動由上面手動控制，不傳 moveTo。
-                        bikeVm.refresh();
-                      },
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: isWide ? (horizontalMargin + 16.0) : 30,
-                  left: isWide ? (horizontalMargin + sidebarWidth + gap) : 0,
-                  right: isWide ? (horizontalMargin + 16.0) : 0,
-                  child: const Center(child: HomeUpdateButton()),
-                ),
-              ],
-              Positioned.fill(
-                child: Selector<LoadingViewModel, bool>(
-                  selector: (_, state) => state.isLoading,
-                  builder: (context, isLoading, child) {
-                    return isLoading
-                        ? const LoadingOverlay(isVisible: true)
-                        : const SizedBox.shrink();
-                  },
-                ),
+                      if (isWide)
+                        Positioned(
+                            top: horizontalMargin,
+                            bottom: horizontalMargin,
+                            left: horizontalMargin,
+                            width: sidebarWidth,
+                            child: SearchPanel(
+                              isWide: true,
+                              mapController: _mapController,
+                              onHeightChanged: (h) => setState(() => _panelHeight = h),
+                            ))
+                      else
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: isOffline
+                              ? availableHeight // 離線模式手機版：面板滿版，內部頂部 72px 奶油色推下搜尋框
+                              : _panelHeight ?? availableHeight * 0.35,
+                          child: SearchPanel(
+                            isWide: false,
+                            panelHeight: isOffline ? null : _panelHeight,
+                            mapController: _mapController,
+                            onHeightChanged: (h) => setState(() => _panelHeight = h),
+                          ),
+                        ),
+                      ...[
+                        Positioned(
+                          top: isWide ? (horizontalMargin + 16.0) : 40,
+                          right: isWide ? (horizontalMargin + 16.0) : 15,
+                          child: GestureDetector(
+                            onTap: () => context.push('/settings'),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: cs.surfaceContainerHigh,
+                                shape: BoxShape.circle,
+                                boxShadow: const [
+                                  BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2))
+                                ],
+                              ),
+                              child: Center(
+                                  child: Icon(Icons.settings,
+                                      size: 22, color: cs.onSurface)),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: isWide ? (horizontalMargin + 16.0) : 20,
+                          bottom: isWide
+                              ? (horizontalMargin + 16.0)
+                              : (_panelHeight ?? availableHeight * 0.35) + 20,
+                          child: !isOffline
+                              ? Container(
+                                  decoration: BoxDecoration(
+                                    color: cs.surfaceContainerHigh,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                          color: Colors.black12,
+                                          blurRadius: 8,
+                                          offset: Offset(0, 2))
+                                    ],
+                                  ),
+                                  child: IconButton(
+                                    icon: Icon(Icons.my_location,
+                                        size: 22, color: cs.onSurface),
+                                    onPressed: () async {
+                                      const gps = GpsRequester();
+                                      final bikeVm = Provider.of<BikeStationViewModel>(context,
+                                          listen: false);
+                                      // 上次的定位位置（可能為 null，例如首次進入或權限剛被拒）。
+                                      // 若有，馬上把地圖滑過去 — 給使用者即時視覺回饋，不必等 GPS。
+                                      final cached = _mapVm.lastKnownLocation;
+                                      if (cached != null && _animatedMap != null) {
+                                        _animatedMap!.animateTo(cached, 18.0);
+                                      }
+                                      // 使用 requestOrFallback — GPS 失敗時回退到區域中心，確保按鈕永遠有反應。
+                                      final pos = await gps.requestOrFallback(_mapVm);
+                                      if (!mounted) return;
+                                      // requestOrFallback 永遠回傳非 null，直接移動地圖
+                                      if (_animatedMap != null) {
+                                        // 若新位置與上次相差 < 50m，視為同一點，不觸發第二次動畫
+                                        // （否則會打斷剛剛那段動畫造成畫面抖動）。
+                                        final movedFar = cached == null ||
+                                            const Distance()
+                                                    .as(LengthUnit.Meter, cached, pos) >
+                                                50;
+                                        if (movedFar) {
+                                          _animatedMap!.animateTo(pos, 18.0);
+                                        }
+                                      }
+                                      // 刷新即時車輛數據；camera 移動由上面手動控制，不傳 moveTo。
+                                      bikeVm.refresh();
+                                    },
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                        Positioned(
+                          bottom: isWide ? (horizontalMargin + 16.0) : 30,
+                          left: isWide ? (horizontalMargin + sidebarWidth + gap) : 0,
+                          right: isWide ? (horizontalMargin + 16.0) : 0,
+                          child: !isOffline
+                              ? const Center(child: HomeUpdateButton())
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                      Positioned.fill(
+                        child: Selector<LoadingViewModel, bool>(
+                          selector: (_, state) => state.isLoading,
+                          builder: (context, isLoading, child) {
+                            return isLoading
+                                ? const LoadingOverlay(isVisible: true)
+                                : const SizedBox.shrink();
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-            ],
-          );
-        },
-      ),
+            );
+          },
+        );
+      },
     );
-   },
-   ); // Consumer
   }
 }

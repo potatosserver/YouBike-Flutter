@@ -611,4 +611,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get refresh_interval_5m => '5 min';
+
+  @override
+  String get offlineMode => 'Offline Mode';
+
+  @override
+  String get offlineDataNotAvailable => 'Data not available (offline)';
+
+  @override
+  String get offlineModeTitle => 'Offline Mode';
+
+  @override
+  String get offlineModeSubtitle =>
+      'View and search stations using cached data only. Vehicle counts and realtime updates are disabled.';
+
+  @override
+  String get offlineMapPlaceholder =>
+      'Map unavailable in offline mode\nEnable online mode to view live map';
 }

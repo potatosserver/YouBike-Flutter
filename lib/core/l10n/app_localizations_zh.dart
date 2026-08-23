@@ -585,4 +585,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get refresh_interval_5m => '5 分鐘';
+
+  @override
+  String get offlineMode => '離線模式';
+
+  @override
+  String get offlineDataNotAvailable => '資料不可用（離線）';
+
+  @override
+  String get offlineModeTitle => '離線模式';
+
+  @override
+  String get offlineModeSubtitle => '僅使用快取資料查看、搜尋站點。不顯示、不請求車輛數量與即時更新。';
+
+  @override
+  String get offlineMapPlaceholder => '離線模式下無法顯示地圖\n請開啟線上模式以查看即時地圖';
 }

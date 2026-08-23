@@ -1201,6 +1201,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'5 min'**
   String get refresh_interval_5m;
+
+  /// No description provided for @offlineMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline Mode'**
+  String get offlineMode;
+
+  /// No description provided for @offlineDataNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Data not available (offline)'**
+  String get offlineDataNotAvailable;
+
+  /// No description provided for @offlineModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline Mode'**
+  String get offlineModeTitle;
+
+  /// No description provided for @offlineModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View and search stations using cached data only. Vehicle counts and realtime updates are disabled.'**
+  String get offlineModeSubtitle;
+
+  /// No description provided for @offlineMapPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Map unavailable in offline mode\nEnable online mode to view live map'**
+  String get offlineMapPlaceholder;
 }
 
 class _AppLocalizationsDelegate

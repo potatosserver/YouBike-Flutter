@@ -5,6 +5,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:youbike/data/services/language_service.dart';
 import 'package:youbike/core/theme/theme_provider.dart';
 import 'package:youbike/data/services/app_config_service.dart';
+import 'package:youbike/data/services/network_connectivity_service.dart';
 import 'package:youbike/core/utils/log_service.dart';
 import 'package:youbike/providers/map_view_model.dart';
 
@@ -23,7 +24,7 @@ void main() async {
 
   // 1. 預先初始化全局配置
   final configService = AppConfigService();
-  await configService.init();
+  configService.init();
 
   final languageService = LanguageService();
   await languageService.loadLocale();
@@ -74,13 +75,15 @@ void main() async {
           create: (_) => MapViewModel(configService),
           update: (_, config, mapVm) => mapVm!..updateConfig(config),
         ),
-        
+        ChangeNotifierProvider(
+          create: (_) => NetworkConnectivityService()..start(),
+        ),
         ChangeNotifierProvider.value(value: languageService),
-        // BikeStation VM — unified source for the search panel.
         ChangeNotifierProvider<BikeStationViewModel>(
           create: (ctx) => BikeStationViewModel(
             config: configService,
             repository: BikeStationRepository(config: configService),
+            connectivityService: ctx.read<NetworkConnectivityService>(),
             mapVm: ctx.read<MapViewModel>(),
             trigger: ctx.read<MapMoveTrigger>(),
           ),

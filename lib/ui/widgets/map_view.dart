@@ -104,8 +104,13 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
   @override
   void dispose() {
     _connSub?.cancel();
-    final config = Provider.of<AppConfigService>(context, listen: false);
-    config.removeListener(_recomputeOnConfig);
+    // 安全地移除 config 監聽器，避免 context 在 dispose 時已失效
+    try {
+      final config = Provider.of<AppConfigService>(context, listen: false);
+      config.removeListener(_recomputeOnConfig);
+    } catch (_) {
+      // context 已失效，忽略
+    }
     _realtimeManager?.dispose();
     _realtimeManager = null;
     if (widget.animatedMap == null) {

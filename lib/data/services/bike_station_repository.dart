@@ -34,9 +34,9 @@ class BikeStationRepository {
 
   // ── YouBike ─────────────────────────────────────────
 
-  Future<List<BikeStation>?> fetchYouBikeStations() async {
+  Future<List<BikeStation>?> fetchYouBikeStations({bool ignoreExpiry = false}) async {
     // Step 1: 嘗試讀取快取
-    final cachedJson = await _cache.loadYouBike();
+    final cachedJson = await _cache.loadYouBike(ignoreExpiry: ignoreExpiry);
     if (cachedJson != null) {
       LogService().i('Repo', 'YouBike cache HIT (${cachedJson.length} stations)');
       // 流量節省模式下跳過背景刷新
@@ -94,8 +94,8 @@ class BikeStationRepository {
 
   // ── Moovo ──────────────────────────────────────────
 
-  Future<List<BikeStation>?> fetchMoovoStations() async {
-    final cachedJson = await _cache.loadMoovo();
+  Future<List<BikeStation>?> fetchMoovoStations({bool ignoreExpiry = false}) async {
+    final cachedJson = await _cache.loadMoovo(ignoreExpiry: ignoreExpiry);
     if (cachedJson != null) {
       LogService().i('MoovoRepo', 'Moovo cache HIT (${cachedJson.length} stations)');
       // Moovo 不受 dsSkipCacheRefresh 限制 — 該開關僅限制 YouBike。

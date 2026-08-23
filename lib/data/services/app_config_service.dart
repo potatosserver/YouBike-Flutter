@@ -77,7 +77,7 @@ class AppConfigService with ChangeNotifier {
   };
   Map<String, Map<String, dynamic>> get regions => _regions;
 
-  Future<void> init() async {
+  void init() async {
     _prefs = await SharedPreferences.getInstance();
     currentLang = _prefs?.getString('currentLang') ?? 'zh_TW';
     selectedRegion = _prefs?.getString('selectedRegion') ?? 'kaohsiung';

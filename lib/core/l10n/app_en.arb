@@ -403,5 +403,15 @@
     "refresh_interval_3m": "3 min",
     "@refresh_interval_3m": {},
     "refresh_interval_5m": "5 min",
-    "@refresh_interval_5m": {}
+    "@refresh_interval_5m": {},
+    "offlineMode": "Offline Mode",
+    "@offlineMode": {},
+    "offlineDataNotAvailable": "Data not available (offline)",
+    "@offlineDataNotAvailable": {},
+    "offlineModeTitle": "Offline Mode",
+    "@offlineModeTitle": {},
+    "offlineModeSubtitle": "View and search stations using cached data only. Vehicle counts and realtime updates are disabled.",
+    "@offlineModeSubtitle": {},
+    "offlineMapPlaceholder": "Map unavailable in offline mode\nEnable online mode to view live map",
+    "@offlineMapPlaceholder": {}
 }
