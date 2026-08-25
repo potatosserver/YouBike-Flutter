@@ -77,8 +77,11 @@ dependencies {
     // Firebase BoM (Bill of Materials)
     implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
 
-    // Firebase Analytics（Firebase 核心，必須加入）
+    // Firebase Analytics (Firebase 核心，必須加入)
     implementation("com.google.firebase:firebase-analytics")
+
+    // Material Components for edge-to-edge themes (Android 15+)
+    implementation("com.google.android.material:material:1.12.0")
 
     // flutter_local_notifications 需要 core library desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
