@@ -25,6 +25,10 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
 
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
     defaultConfig {
         applicationId = "com.potatosserver.youbike"
         minSdk = flutter.minSdkVersion  // flutter_local_notifications 最低需要 21
@@ -66,12 +70,6 @@ android {
                 "proguard-rules.pro"
             )
         }
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

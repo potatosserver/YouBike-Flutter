@@ -163,7 +163,6 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final mapVm = Provider.of<MapViewModel>(context, listen: false);
     final initialCenter = mapVm.center ?? mapVm.getEffectiveLocation();
 
@@ -226,15 +225,35 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
       ),
       children: [
         TileLayer(
-          urlTemplate: theme.brightness == Brightness.dark
-              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-              : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+          // 國土測繪中心 EMAP (GoogleMapsCompatible) — z/y/x 格式
+          urlTemplate:
+              'https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}.png',
           userAgentPackageName: 'com.youbike.android',
           tileProvider: NetworkTileProvider(),
           keepBuffer: 5,
           tileDisplay:
               const TileDisplay.fadeIn(duration: Duration(milliseconds: 200)),
           tileUpdateTransformer: _animatedMoveTransformer(),
+          // 深色模式：Luminance invert + hue preserve（最小二乘優化）
+          // 參考 Google Maps 暗色風格：白→#21、黑→#AA、水體/綠地色相保留
+          // 真正的色彩反向，而非單純降亮度
+          tileBuilder: (context, tileWidget, tile) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            if (!isDark) return tileWidget;
+            return ColorFiltered(
+              // new-invert-hue: luminance invert + hue preserve
+              // 白 (255,255,255) → #212121 (33,33,33)
+              // 黑 (0,0,0)       → #AAAAAA (170,170,170)
+              // 水體藍/綠地綠 色相基本不變
+              colorFilter: const ColorFilter.matrix([
+                 0.5622, -0.5682, -0.5287, 0, 169.7174,
+                -0.1784,  0.1680, -0.5265, 0, 169.3056,
+                -0.1664, -0.5568,  0.1904, 0, 169.8991,
+                 0,       0,       0,      1, 0,
+              ]),
+              child: tileWidget,
+            );
+          },
         ),
         Consumer<BikeStationViewModel>(
           builder: (context, bikeVm, _) {

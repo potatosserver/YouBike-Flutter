@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouBike 深色模式矩陣對比 Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a1a; color: #eee; min-height: 100vh; padding: 20px; }
+    h1 { text-align: center; margin-bottom: 8px; font-size: 1.5rem; }
+    .subtitle { text-align: center; color: #aaa; margin-bottom: 24px; font-size: 0.9rem; }
+    .controls { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+    label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    select, input[type="range"] { background: #2a2a2a; border: 1px solid #444; color: #eee; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; }
+    select:focus, input:focus { outline: none; border-color: #ff9800; }
+    .matrix-presets { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+    .preset-btn { padding: 6px 12px; background: #2a2a2a; border: 1px solid #444; color: #ddd; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: all 0.15s; }
+    .preset-btn:hover { border-color: #ff9800; }
+    .preset-btn.active { background: #ff9800; border-color: #ff9800; color: #000; font-weight: 600; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 1400px; margin: 0 auto; }
+    @media (max-width: 900px) { .comparison { grid-template-columns: 1fr; } }
+    .panel { background: #111; border-radius: 12px; overflow: hidden; border: 1px solid #333; display: flex; flex-direction: column; }
+    .panel-header { padding: 12px 16px; background: #1e1e1e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+    .panel-title { font-weight: 600; font-size: 0.9rem; }
+    .panel-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: #333; color: #aaa; }
+    .panel-badge.current { background: #ff9800; color: #000; }
+    .tile-container { position: relative; aspect-ratio: 4/3; overflow: hidden; }
+    .tile-layer { width: 100%; height: 100%; position: absolute; inset: 0; }
+    .tile-layer img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .canvas-layer { width: 100%; height: 100%; position: absolute; inset: 0; }
+    .matrix-display { padding: 12px 16px; background: #0d0d0d; border-top: 1px solid #333; font-family: 'Monaco', 'Menlo', monospace; font-size: 0.65rem; color: #888; overflow-x: auto; white-space: pre; line-height: 1.6; }
+    .zoom-controls { position: absolute; bottom: 12px; right: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
+    .zoom-btn { width: 32px; height: 32px; background: rgba(0,0,0,0.7); border: 1px solid #444; color: #fff; border-radius: 4px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+    .zoom-btn:hover { background: rgba(255,152,0,0.9); border-color: #ff9800; }
+    .coords { position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-family: monospace; color: #aaa; z-index: 10; }
+    .sync-notice { text-align: center; padding: 8px; color: #666; font-size: 0.75rem; }
+    .matrix-values { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px 12px; background: #181818; border-top: 1px solid #333; font-family: monospace; font-size: 0.65rem; }
+    .matrix-values input { width: 100%; padding: 4px; background: #111; border: 1px solid #333; color: #ddd; border-radius: 3px; text-align: center; font-family: inherit; font-size: inherit; }
+    .matrix-values input:focus { outline: none; border-color: #ff9800; }
+    .row-label { display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.6rem; }
+  </style>
+</head>
+<body>
+  <h1>🗺️ YouBike 深色模式 ColorFilter 矩陣即時對比</h1>
+  <p class="subtitle">資料來源：國土測繪中心 EMAP (GoogleMapsCompatible) · 左側 = 原圖 · 右側 = 套用矩陣後</p>
+
+  <div class="matrix-presets" id="presets"></div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>地點</label>
+      <select id="locationSelect"></select>
+    </div>
+    <div class="control-group">
+      <label>縮放層級 (z)</label>
+      <select id="zoomSelect"></select>
+    </div>
+    <div class="control-group">
+      <label>X 座標</label>
+      <input type="range" id="xRange" min="0" max="100" value="50">
+      <div style="font-size:0.75rem;color:#888;">X: <span id="xVal">50</span></div>
+    </div>
+    <div class="control-group">
+      <label>Y 座標</label>
+      <input type="range" id="yRange" min="0" max="100" value="50">
+      <div style="font-size:0.75rem;color:#888;">Y: <span id="yVal">50</span></div>
+    </div>
+    <div class="control-group">
+      <label>矩陣預設</label>
+      <select id="presetSelect"></select>
+    </div>
+  </div>
+
+  <div class="comparison">
+    <!-- Original Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">原始圖磚 (Original)</span>
+        <span class="panel-badge">EMAP 正常色彩</span>
+      </div>
+      <div class="tile-container" id="origContainer">
+        <div class="tile-layer" id="origLayer"></div>
+        <div class="zoom-controls">
+          <button class="zoom-btn" data-delta="-1" title="縮小">−</button>
+          <button class="zoom-btn" data-delta="+1" title="放大">+</button>
+        </div>
+        <div class="coords" id="origCoords">z/x/y</div>
+      </div>
+      <div class="matrix-values" id="origMatrix"></div>
+    </div>
+
+    <!-- Transformed Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">深色模式轉換 (Transformed)</span>
+        <span class="panel-badge current">ColorFilter.matrix 套用中</span>
+      </div>
+      <div class="tile-container" id="transContainer">
+        <canvas class="canvas-layer" id="transCanvas"></canvas>
+        <div class="zoom-controls">
+          <button class="zoom-btn" data-delta="-1" title="縮小">−</button>
+          <button class="zoom-btn" data-delta="+1" title="放大">+</button>
+        </div>
+        <div class="coords" id="transCoords">z/x/y</div>
+      </div>
+      <div class="matrix-values" id="transMatrix"></div>
+    </div>
+  </div>
+
+  <div class="sync-notice">🔄 兩側圖磚同步縮放/平移 · 拖曳圖片可移動 · 滾輪縮放 · 調整矩陣數值即時生效</div>
+
+<script>
+// ===== 矩陣預設定義 =====
+const PRESETS = {
+  'new-balanced': {
+    name: '新版：平衡 (推薦)',
+    matrix: [
+      0.27,  0.015, 0.015, 0, 15,
+      0.015, 0.27,  0.015, 0, 15,
+      0.015, 0.015, 0.27,  0, 15,
+      0,     0,     0,     1, 0,
+    ],
+    desc: 'brightness(0.3) + contrast(1.3) + desaturate(10%)'
+  },
+  'new-invert-hue': {
+    name: '新版：真正色彩翻轉 (最佳)',
+    matrix: [
+      0.5622, -0.5682, -0.5287, 0, 169.7174,
+     -0.1784,  0.1680, -0.5265, 0, 169.3056,
+     -0.1664, -0.5568,  0.1904, 0, 169.8991,
+      0,       0,       0,      1, 0,
+    ],
+    desc: 'Luminance invert + hue preserve (least-squares optimized). White→#21, Black→#AA, Water/Green hue preserved.'
+  },
+  'new-conservative': {
+    name: '新版：保守 (較亮)',
+    matrix: [
+      0.22,  0.015, 0.015, 0, 20,
+      0.015, 0.22,  0.015, 0, 20,
+      0.015, 0.015, 0.22,  0, 20,
+      0,     0,     0,     1, 0,
+    ],
+    desc: 'brightness(0.25) + contrast(1.2) + desaturate(10%)'
+  },
+  'new-darker': {
+    name: '新版：較暗 (接近 Google Maps)',
+    matrix: [
+      0.18,  0.01, 0.01, 0, 12,
+      0.01,  0.18, 0.01, 0, 12,
+      0.01,  0.01, 0.18,  0, 12,
+      0,     0,     0,     1, 0,
+    ],
+    desc: 'brightness(0.2) + contrast(1.4) + desaturate(5%)'
+  },
+  'old-potato': {
+    name: '舊版：Potato 風格 (有霧感)',
+    matrix: [
+      0.4275, -0.475, -0.475, 0, 230.8,
+     -0.475,   0.4275, -0.475, 0, 230.8,
+     -0.475,  -0.475,   0.4275, 0, 230.8,
+      0,       0,       0,      1, 0,
+    ],
+    desc: 'invert(100%) + hue-rotate(180°) + brightness(95%) + contrast(90%)'
+  },
+  'identity': {
+    name: '無轉換 (Identity)',
+    matrix: [
+      1, 0, 0, 0, 0,
+      0, 1, 0, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 0, 1, 0,
+    ],
+    desc: '原圖無修改'
+  },
+  'simple-invert': {
+    name: '單純反相',
+    matrix: [
+      -1, 0, 0, 0, 255,
+      0, -1, 0, 0, 255,
+      0, 0, -1, 0, 255,
+      0, 0, 0, 1, 0,
+    ],
+    desc: 'invert(100%) only'
+  },
+  'grayscale': {
+    name: '灰階 + 降亮度',
+    matrix: [
+      0.2126*0.3, 0.7152*0.3, 0.0722*0.3, 0, 20,
+      0.2126*0.3, 0.7152*0.3, 0.0722*0.3, 0, 20,
+      0.2126*0.3, 0.7152*0.3, 0.0722*0.3, 0, 20,
+      0, 0, 0, 1, 0,
+    ],
+    desc: 'luminance*0.3 + offset(20)'
+  },
+};
+
+let currentPreset = 'new-invert-hue';
+let currentMatrix = [...PRESETS[currentPreset].matrix];
+let zoom = 16;
+
+// 台灣主要城市 tile 座標 (以 z=16 為基準計算)
+const LOCATIONS = {
+  '高雄市中心': { lat: 22.6273, lng: 120.3014, z16: { x: 54668, y: 28537 }},
+  '高雄火車站': { lat: 22.6319, lng: 120.3007, z16: { x: 54668, y: 28536 }},
+  '高雄市政府': { lat: 22.6035, lng: 120.2981, z16: { x: 54667, y: 28540 }},
+  '蓮池潭': { lat: 22.6843, lng: 120.2945, z16: { x: 54665, y: 28523 }},
+  '旗津': { lat: 22.5986, lng: 120.2715, z16: { x: 54661, y: 28541 }},
+  '台北車站': { lat: 25.0478, lng: 121.5171, z16: { x: 54898, y: 28057 }},
+  '台北101': { lat: 25.0336, lng: 121.5652, z16: { x: 54899, y: 28058 }},
+  '台中車站': { lat: 24.1372, lng: 120.6855, z16: { x: 54759, y: 28271 }},
+  '台南車站': { lat: 22.9972, lng: 120.2125, z16: { x: 54647, y: 28450 }},
+};
+
+let tileX = LOCATIONS['高雄市中心'].z16.x;
+let tileY = LOCATIONS['高雄市中心'].z16.y;
+
+// EMAP 圖磚 URL (注意：WMTS GoogleMapsCompatible 使用 {z}/{y}/{x} 順序，非標準 {z}/{x}/{y})
+const TILE_URL = 'https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}.png';
+
+// DOM 元素
+const origLayer = document.getElementById('origLayer');
+const transCanvas = document.getElementById('transCanvas');
+const transCtx = transCanvas.getContext('2d');
+const zoomSelect = document.getElementById('zoomSelect');
+const xRange = document.getElementById('xRange');
+const yRange = document.getElementById('yRange');
+const xVal = document.getElementById('xVal');
+const yVal = document.getElementById('yVal');
+const presetSelect = document.getElementById('presetSelect');
+const locationSelect = document.getElementById('locationSelect');
+const origCoords = document.getElementById('origCoords');
+const transCoords = document.getElementById('transCoords');
+const origMatrixEl = document.getElementById('origMatrix');
+const transMatrixEl = document.getElementById('transMatrix');
+const presetsEl = document.getElementById('presets');
+
+let currentImg = null;
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let imgOffset = { x: 0, y: 0 };
+let imgScale = 1;
+
+// 初始化
+function init() {
+  // 填入 zoom 選單 (EMAP 大約 0-19)
+  for (let z = 0; z <= 19; z++) {
+    const opt = document.createElement('option');
+    opt.value = z;
+    opt.textContent = `z=${z} (${Math.pow(2, z)}×${Math.pow(2, z)})`;
+    if (z === zoom) opt.selected = true;
+    zoomSelect.appendChild(opt);
+  }
+
+  // 填入 preset 選單
+  for (const [key, preset] of Object.entries(PRESETS)) {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = preset.name;
+    if (key === currentPreset) opt.selected = true;
+    presetSelect.appendChild(opt);
+  }
+
+  // 填入地點選單
+  for (const [name, loc] of Object.entries(LOCATIONS)) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (name === '高雄市中心') opt.selected = true;
+    locationSelect.appendChild(opt);
+  }
+
+  // 產生 preset 按鈕
+  for (const [key, preset] of Object.entries(PRESETS)) {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (key === currentPreset ? ' active' : '');
+    btn.textContent = preset.name;
+    btn.dataset.key = key;
+    btn.title = preset.desc;
+    btn.onclick = () => applyPreset(key);
+    presetsEl.appendChild(btn);
+  }
+
+  // 事件綁定
+  zoomSelect.onchange = (e) => { zoom = parseInt(e.target.value); loadTile(); };
+  locationSelect.onchange = (e) => { 
+    const loc = LOCATIONS[e.target.value];
+    if (loc) {
+      // 根據當前 zoom 計算 tile 座標
+      const scale = Math.pow(2, zoom - 16);
+      tileX = Math.floor(loc.z16.x * scale);
+      tileY = Math.floor(loc.z16.y * scale);
+      syncSliders();  // 只同步滑桿，不重新計算
+      loadTile();
+    }
+  };
+  xRange.oninput = (e) => { xVal.textContent = e.target.value; updateTileXY(); };
+  yRange.oninput = (e) => { yVal.textContent = e.target.value; updateTileXY(); };
+  presetSelect.onchange = (e) => applyPreset(e.target.value);
+
+  // 滾輪縮放
+  [document.getElementById('origContainer'), document.getElementById('transContainer')].forEach(el => {
+    el.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -1 : 1;
+      const newZoom = Math.max(0, Math.min(19, zoom + delta));
+      if (newZoom !== zoom) {
+        zoom = newZoom;
+        zoomSelect.value = zoom;
+        loadTile();
+      }
+    }, { passive: false });
+  });
+
+  // 拖曳平移 (簡易版：調整 x/y)
+  let lastClientX = 0, lastClientY = 0;
+  function startDrag(e, container) {
+    isDragging = true;
+    lastClientX = e.clientX || (e.touches?.[0]?.clientX || 0);
+    lastClientY = e.clientY || (e.touches?.[0]?.clientY || 0);
+    container.style.cursor = 'grabbing';
+  }
+  function doDrag(e) {
+    if (!isDragging) return;
+    const clientX = e.clientX || (e.touches?.[0]?.clientX || 0);
+    const clientY = e.clientY || (e.touches?.[0]?.clientY || 0);
+    const dx = clientX - lastClientX;
+    const dy = clientY - lastClientY;
+    // 簡單映射：拖曳 50px 約移動 1 tile
+    if (Math.abs(dx) > 50) { tileX += dx > 0 ? -1 : 1; lastClientX = clientX; updateTileXY(); loadTile(); }
+    if (Math.abs(dy) > 50) { tileY += dy > 0 ? 1 : -1; lastClientY = clientY; updateTileXY(); loadTile(); }
+  }
+  function endDrag() { isDragging = false; document.querySelectorAll('.tile-container').forEach(c => c.style.cursor = 'grab'); }
+  ['mousedown', 'touchstart'].forEach(evt => {
+    document.getElementById('origContainer').addEventListener(evt, (e) => startDrag(e, document.getElementById('origContainer')), { passive: true });
+    document.getElementById('transContainer').addEventListener(evt, (e) => startDrag(e, document.getElementById('transContainer')), { passive: true });
+  });
+  ['mousemove', 'touchmove'].forEach(evt => document.addEventListener(evt, doDrag, { passive: true }));
+  ['mouseup', 'touchend', 'mouseleave'].forEach(evt => document.addEventListener(evt, endDrag));
+
+  // 縮放按鈕
+  document.querySelectorAll('.zoom-btn').forEach(btn => {
+    btn.onclick = () => {
+      const delta = parseInt(btn.dataset.delta);
+      const newZoom = Math.max(0, Math.min(19, zoom + delta));
+      if (newZoom !== zoom) { zoom = newZoom; zoomSelect.value = zoom; loadTile(); }
+    };
+  });
+
+  // 矩陣輸入框事件委派
+  [transMatrixEl].forEach(el => {
+    el.addEventListener('input', (e) => {
+      if (e.target.tagName === 'INPUT') {
+        const idx = parseInt(e.target.dataset.idx);
+        currentMatrix[idx] = parseFloat(e.target.value) || 0;
+        renderTransformed();
+        updatePresetButtons('custom');
+      }
+    });
+  });
+
+  loadTile();
+  renderMatrixInputs();
+}
+
+function applyPreset(key) {
+  if (!PRESETS[key]) return;
+  currentPreset = key;
+  currentMatrix = [...PRESETS[key].matrix];
+  presetSelect.value = key;
+  updatePresetButtons(key);
+  renderMatrixInputs();
+  renderTransformed();
+}
+
+function updatePresetButtons(activeKey) {
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.key === activeKey);
+  });
+}
+
+function updateTileXY() {
+  const maxTile = Math.pow(2, zoom) - 1;
+  tileX = Math.max(0, Math.min(maxTile, Math.floor((parseInt(xRange.value) / 100) * maxTile)));
+  tileY = Math.max(0, Math.min(maxTile, Math.floor((parseInt(yRange.value) / 100) * maxTile)));
+  xRange.value = Math.round((tileX / maxTile) * 100);
+  yRange.value = Math.round((tileY / maxTile) * 100);
+  xVal.textContent = xRange.value;
+  yVal.textContent = yRange.value;
+}
+
+// 同步滑桿到目前 tile 座標 (不重新計算 tileX/tileY)
+function syncSliders() {
+  const maxTile = Math.pow(2, zoom) - 1;
+  xRange.value = Math.round((tileX / maxTile) * 100);
+  yRange.value = Math.round((tileY / maxTile) * 100);
+  xVal.textContent = xRange.value;
+  yVal.textContent = yRange.value;
+}
+
+async function loadTile() {
+  const url = TILE_URL.replace('{z}', zoom).replace('{x}', tileX).replace('{y}', tileY);
+  origCoords.textContent = `z=${zoom} x=${tileX} y=${tileY}`;
+  transCoords.textContent = `z=${zoom} x=${tileX} y=${tileY}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    const imgUrl = URL.createObjectURL(blob);
+    
+    // 原圖
+    origLayer.innerHTML = `<img src="${imgUrl}" alt="EMAP tile">`;
+    
+    // 等待圖片載入後轉換
+    currentImg = new Image();
+    currentImg.crossOrigin = 'anonymous';
+    currentImg.onload = () => {
+      setupCanvas();
+      renderTransformed();
+      URL.revokeObjectURL(imgUrl);
+    };
+    currentImg.onerror = () => { console.error('Image load failed'); URL.revokeObjectURL(imgUrl); };
+    currentImg.src = imgUrl;
+  } catch (err) {
+    console.error('Tile load failed:', err);
+    origLayer.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#666;">載入失敗: ${err.message}</div>`;
+  }
+}
+
+function setupCanvas() {
+  const container = document.getElementById('transContainer');
+  const rect = container.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  transCanvas.width = Math.floor(rect.width * dpr);
+  transCanvas.height = Math.floor(rect.height * dpr);
+  transCanvas.style.width = rect.width + 'px';
+  transCanvas.style.height = rect.height + 'px';
+  transCtx.scale(dpr, dpr);
+}
+
+function renderTransformed() {
+  if (!currentImg) return;
+  const container = document.getElementById('transContainer');
+  const rect = container.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+
+  // 繪製原圖到 canvas
+  transCtx.clearRect(0, 0, w, h);
+  transCtx.drawImage(currentImg, 0, 0, w, h);
+
+  // 套用 ColorFilter 矩陣
+  const imageData = transCtx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  const m = currentMatrix;
+
+  // 矩陣運算：每像素 RGBA
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const a = data[i + 3];
+
+    data[i]     = clamp(m[0]*r + m[1]*g + m[2]*b + m[3]*a + m[4]);
+    data[i + 1] = clamp(m[5]*r + m[6]*g + m[7]*b + m[8]*a + m[9]);
+    data[i + 2] = clamp(m[10]*r + m[11]*g + m[12]*b + m[13]*a + m[14]);
+    data[i + 3] = clamp(m[15]*r + m[16]*g + m[17]*b + m[18]*a + m[19]);
+  }
+  transCtx.putImageData(imageData, 0, 0);
+}
+
+function clamp(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+
+function renderMatrixInputs() {
+  // 原始矩陣顯示 (Identity)
+  const ident = PRESETS['identity'].matrix;
+  origMatrixEl.innerHTML = ident.map((v, i) => `
+    <input type="number" step="0.001" value="${v}" disabled title="Identity matrix" style="background:#111;color:#666;">
+  `).join('');
+
+  // 可編輯矩陣
+  transMatrixEl.innerHTML = currentMatrix.map((v, i) => `
+    <input type="number" step="0.001" value="${v}" data-idx="${i}" title="Row ${Math.floor(i/5)} Col ${i%5}">
+  `).join('');
+}
+
+// 響應視窗大小變化
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    setupCanvas();
+    renderTransformed();
+  }, 100);
+});
+
+// 啟動
+init();
+</script>
+</body>
+</html>
