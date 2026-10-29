@@ -498,7 +498,11 @@ class CompiledApp {
       aI: x0 => x0.disabled,
       aJ: (a, l) => a.length = l,
       aK: (wasmFunction,f) => finalizeWrapper(f, function(x0) { return wasmFunction(f,arguments.length,x0) }),
-      aL: x0 => x0.recaptchaSiteKey,
+      aL: (o) => {
+        const typeofValue = typeof o;
+        return (typeofValue === 'object') ||
+            typeofValue === 'function';
+      },
       b: (x0,x1,x2) => { x0[x1] = x2 },
       bB: Function.prototype.call.bind(DataView.prototype.getUint32),
       bC: x0 => x0.ignoreCase,
